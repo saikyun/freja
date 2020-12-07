@@ -76,6 +76,7 @@
 (var mouse-down-time nil)
 (var mouse-up-pos    nil)
 (var selected-pos    nil)
+(var last-text-pos  nil)
 
 (varfn frame
   []
@@ -91,6 +92,26 @@
             (put text (length text) k))))    
     
     (set k (get-key-pressed)))
+  
+  (when (key-pressed? :home)
+    (if (or (key-down? :left-shift)
+          (key-down? :right-shift))
+      (do (buffer/push-string selected text)
+          (buffer/clear text))
+      (do (buffer/push-string text-after (string/reverse selected))
+          (buffer/push-string text-after (string/reverse text))
+          (buffer/clear selected)
+          (buffer/clear text))))
+  
+  (when (key-pressed? :end)
+    (if (or (key-down? :left-shift)
+          (key-down? :right-shift))
+      (do (buffer/push-string selected (string/reverse text-after))
+          (buffer/clear text-after))
+      (do (buffer/push-string text selected)
+          (buffer/push-string text (string/reverse text-after))
+          (buffer/clear selected)
+          (buffer/clear text-after))))
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
@@ -266,6 +287,7 @@
       
 #(print x " " y)
       (when (mouse-button-released? 0)
+        (set last-text-pos nil)
         (set mouse-just-down nil)
         (set mouse-recently-double-clicked nil)
         (set mouse-up-pos [x y])
@@ -289,22 +311,29 @@
           (set mouse-just-double-clicked true)
           (set mouse-recently-double-clicked true)))
       
-      (cond mouse-just-double-clicked
-            (do (def t-l (first (peg/match '(* (any :S) ($)) (string/reverse text))))
+      (cond (and mouse-just-double-clicked
+              (not (key-down? :left-shift))
+              (not (key-down? :right-shift)))
+            (do (buffer/push-string text selected)
+                (buffer/clear selected)                
+                
+                (def t-l (first (peg/match '(* (any :S) ($)) (string/reverse text))))
                 (def at-l (first (peg/match '(* (any :S) ($)) (string/reverse text-after))))
                 
-                (buffer/clear selected)
                 (buffer/push-string selected (string/slice text (dec (- t-l))))
                 (buffer/push-string selected (string/reverse (string/slice text-after (dec (- at-l)))))
                 (buffer/popn text t-l)
                 (buffer/popn text-after at-l)
                 
                 (set selected-left-right :right))
-
+            
             mouse-recently-double-clicked nil # don't start selecting until mouse is released again
             
             (mouse-button-down? 0)
-            (do (set mouse-down-time (get-time))
+            (do (when (nil? last-text-pos)
+                  (set last-text-pos (length text)))
+                
+                (set mouse-down-time (get-time))
                 (if (= nil mouse-just-down)
                   (do (set mouse-just-down true)
                       (set mouse-down-pos [x y]))
@@ -326,6 +355,10 @@
                 (var moved-caret false)
                 
                 (let [[start end] selected-pos
+                      start (if (or (key-down? :left-shift)
+                                  (key-down? :right-shift))
+                              last-text-pos
+                              start)
                       [start end] (if (> start end)
                                     (do (set selected-left-right :left)
                                         [end start])
