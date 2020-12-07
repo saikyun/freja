@@ -71,86 +71,274 @@
 
 (var mouse-just-down nil)
 (var mouse-just-double-clicked nil)
+(var mouse-just-triple-clicked nil)
 (var mouse-recently-double-clicked nil)
-(var mouse-down-pos  nil)
-(var mouse-down-time nil)
-(var mouse-up-pos    nil)
-(var selected-pos    nil)
-(var last-text-pos  nil)
+(var mouse-recently-triple-clicked nil)
+(var mouse-down-pos   nil)
+(var mouse-down-time  nil)
+(var mouse-down-time2 nil)
+(var mouse-up-pos     nil)
+(var selected-pos     nil)
+(var last-text-pos    nil)
+
+(defn select-until-beginning
+  "Selects all text from cursor to beginning of buffer."
+  []
+  (set selected-left-right :left)
+  (buffer/push-string selected text)
+  (buffer/clear text))
+
+(defn select-until-end
+  "Selects all text from cursor to end of buffer."
+  []
+  (set selected-left-right :right)
+  (buffer/push-string selected (string/reverse text-after))
+  (buffer/clear text-after))
+
+(defn move-to-beginning
+  "Moves cursor to beginning of buffer."
+  []
+  (buffer/push-string text-after (string/reverse selected))
+  (buffer/push-string text-after (string/reverse text))
+  (buffer/clear selected)
+  (buffer/clear text))
+
+(defn move-to-end
+  "Moves cursor to end of buffer."
+  []
+  (buffer/push-string text selected)
+  (buffer/push-string text (string/reverse text-after))
+  (buffer/clear selected)
+  (buffer/clear text-after))
+
+(defn copy
+  "Copies selected text into clipboard."
+  []
+  (set-clipboard-text (string selected)))
+
+(defn delete-selected
+  "Deletes selected text.
+  Always run when inserting (e.g. writing chars or when pasting).
+  Returns previously selected text.
+  Returns `nil` if no text was selected."
+  []
+  (def old selected)
+  (set selected @"")
+  (when (not (empty? old))
+    old))
+
+(defn cut
+  "Cuts selected text into clipboard."
+  []
+  (set-clipboard-text (string selected))
+  (delete-selected))
+
+(defn paste
+  "Pastes from clipboard."
+  []
+  (delete-selected)
+  (buffer/push-string text (get-clipboard-text)))
+
+(defn select-all
+  "Selects all text in buffer."
+  []
+  (def new-selected (buffer/new (+ (length text)
+                                  (length selected)
+                                  (length text-after))))    
+  (buffer/push-string new-selected text)    
+  (buffer/push-string new-selected selected)    
+  (buffer/push-string new-selected (string/reverse text-after))    
+  (set selected new-selected)    
+  (buffer/clear text)    
+  (buffer/clear text-after))
+
+(defn delete-word-before
+  "Deletes the word before the cursor.
+  If text is selected, deletes the selection instead."
+  []
+  (when (not (delete-selected))
+    (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
+      (buffer/popn text l))))
+
+(defn delete-word-after
+  "Deletes the word after the cursor.
+  If text is selected, deletes the selection instead."
+  []
+  (when (not (delete-selected))
+    (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text-after)))]
+      (buffer/popn text-after l))))
+
+(defn backspace
+  "Removes a single character before the cursor.
+  If text is selected, deletes the selection instead."
+  []
+  (when (not (delete-selected))
+    (buffer/popn text 1)))
+
+(defn forward-delete
+  "Removes a single character after the cursor.
+  If text is selected, deletes the selection instead."
+  []
+  (when (not (delete-selected))
+    (buffer/popn text-after 1)))
+
+(defn select-word-before
+  "Selects a word before the cursor."
+  []
+  (if (and (not (empty? selected))       # when text is selected, and the direction is right
+        (= selected-left-right :right))  # we deselect rather than select
+    (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse selected)))]
+      (buffer/push-string text-after (string/reverse (buffer/slice selected (dec (- l)))))
+      (buffer/popn selected l))
+    (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
+      (set selected-left-right :left)
+      (set selected (buffer (buffer/slice text (dec (- l))) selected))
+      (buffer/popn text l))))
+
+(defn select-word-after
+  "Selects a word after the cursor."
+  []
+  (if (and (not (empty? selected))     # when text is selected, and the direction is left
+        (= selected-left-right :left)) # we deselect rather than select
+    (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) selected))]
+      (buffer/push-string text (buffer/slice selected 0 l))
+      (set selected (buffer/slice selected l)))
+    (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text-after)))]
+      (set selected-left-right :right)
+      (buffer/push-string selected (string/reverse (buffer/slice text-after (dec (- l)))))
+      (buffer/popn text-after l))))
+
+(defn move-word-before
+  "Moves the cursor one word to the left."
+  []
+  (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
+    (when (not (empty? selected))
+      (buffer/push-string text-after (string/reverse selected))
+      (buffer/clear selected))
+    (buffer/push-string text-after (string/reverse (buffer/slice text (dec (- l)))))
+    (buffer/popn text l)))
+
+(defn move-word-after
+  "Moves the cursor one word to the right."
+  []
+  (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text-after)))]
+    (when (not (empty? selected))
+      (buffer/push-string text selected)
+      (buffer/clear selected))
+    (buffer/push-string text (string/reverse (buffer/slice text-after (dec (- l)))))
+    (buffer/popn text-after l)))
+
+(defn select-char-before
+  "Selects the char before the cursor."
+  []
+  (if (and (= selected-left-right :right)
+        (not (empty? selected)))
+    (do (put text-after (length text-after) (last selected))
+        (buffer/popn selected 1))
+    (when (not (empty? text))
+      (set selected-left-right :left)
+      (let [o selected]
+        (set selected (buffer/new (inc (length o))))
+        (put selected 0 (last text))                    
+        (buffer/push-string selected o))
+      (buffer/popn text 1))))
+
+(defn select-char-after
+  "Selects the char after the cursor."
+  []
+  (if (and (= selected-left-right :left)
+        (not (empty? selected)))
+    (do (put text (length text) (first selected))
+        (set selected (buffer/slice selected 1)))
+    (when (not (empty? text-after))
+      (set selected-left-right :right)
+      (put selected (length selected) (last text-after))
+      (buffer/popn text-after 1))))
+
+(defn move-char-before
+  "Moves the cursor one char to the left."
+  []
+  (if (not (empty? selected))
+    (do (buffer/push-string text-after (string/reverse selected))
+        (buffer/clear selected))
+    (when (not (empty? text))
+      (put text-after (length text-after) (last text))
+      (buffer/popn text 1))))
+
+(defn move-char-after
+  "Moves the cursor one char to the right."
+  []
+  (if (not (empty? selected))
+    (do (buffer/push-string text selected)
+        (buffer/clear selected))
+    (when (not (empty? text-after))
+      (put text (length text) (last text-after))
+      (buffer/popn text-after 1))))
+
+(defn insert-char
+  "Inserts a single char."
+  [k]
+  (case k
+    :space (buffer/push-string text " ")
+    :grave (buffer/push-string text "`")
+    (do (buffer/clear selected)
+        (if (keyword? k)
+          (buffer/push-string text (string k))
+          (put text (length text) k)))))
 
 (varfn frame
   []
   (var k (get-key-pressed))
   
   (while (not= 0 k)
-    (case k
-      :space (buffer/push-string text " ")
-      :grave (buffer/push-string text "`")
-      (do (buffer/clear selected)
-          (if (keyword? k)
-            (buffer/push-string text (string k))
-            (put text (length text) k))))    
-    
+    (insert-char k)
     (set k (get-key-pressed)))
   
   (when (key-pressed? :home)
     (if (or (key-down? :left-shift)
           (key-down? :right-shift))
-      (do (buffer/push-string selected text)
-          (buffer/clear text))
-      (do (buffer/push-string text-after (string/reverse selected))
-          (buffer/push-string text-after (string/reverse text))
-          (buffer/clear selected)
-          (buffer/clear text))))
+      (select-until-beginning)
+      (move-to-beginning)))
   
   (when (key-pressed? :end)
     (if (or (key-down? :left-shift)
           (key-down? :right-shift))
-      (do (buffer/push-string selected (string/reverse text-after))
-          (buffer/clear text-after))
-      (do (buffer/push-string text selected)
-          (buffer/push-string text (string/reverse text-after))
-          (buffer/clear selected)
-          (buffer/clear text-after))))
+      (select-until-end)
+      (move-to-end)))
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :.))
-    (print "paste")
-    (buffer/clear selected)
-    (buffer/push-string text (get-clipboard-text)))
+    (paste))
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :a))
-    (def new-selected (buffer/new (+ (length text)
-                                    (length selected)
-                                    (length text-after))))
-    (buffer/push-string new-selected text)
-    (buffer/push-string new-selected selected)
-    (buffer/push-string new-selected (string/reverse text-after))
-    (set selected new-selected)
-    (buffer/clear text)
-    (buffer/clear text-after))
+    (select-all))
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :i))
-    (set-clipboard-text (string selected)))
+    (copy))
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :b))
-    (set-clipboard-text (string selected))
-    (buffer/clear selected))
+    (cut))
   
   (when (key-pressed? :backspace)
-    (if (not (empty? selected))
-      (buffer/clear selected)
-      (buffer/popn text 1)))
+    (cond (or (key-down? :left-alt)
+            (key-down? :right-alt))
+          (delete-word-before)
+          
+          (backspace)))
   
   (when (key-pressed? :delete)
-    (buffer/popn text-after 1))
+    (cond (or (key-down? :left-alt)
+            (key-down? :right-alt))
+          (delete-word-after)
+          
+          (forward-delete)))
   
   (when (key-pressed? :left)
     (cond
@@ -159,93 +347,35 @@
              (key-down? :right-alt))
         (or (key-down? :left-shift)
           (key-down? :right-shift)))
-      (if (and (not (empty? selected))
-            (= selected-left-right :right))
-        (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse selected)))]
-          (buffer/push-string text-after (string/reverse (buffer/slice selected (dec (- l)))))
-          (buffer/popn selected l))
-        (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
-          (set selected-left-right :left)
-          (set selected (buffer (buffer/slice text (dec (- l))) selected))
-          (buffer/popn text l)))
+      (select-word-before)
       
       (or (key-down? :left-alt)
         (key-down? :right-alt)) 
-      (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
-        (when (not (empty? selected))
-          (buffer/push-string text-after (string/reverse selected))
-          (buffer/clear selected))
-        (buffer/push-string text-after (string/reverse (buffer/slice text (dec (- l)))))
-        (buffer/popn text l))
+      (move-word-before)
       
       (or (key-down? :left-shift)
         (key-down? :right-shift))
-      (if (and (= selected-left-right :right)
-            (not (empty? selected)))
-        (do (put text-after (length text-after) (last selected))
-            (buffer/popn selected 1))
-        (when (not (empty? text))
-          (set selected-left-right :left)
-          (let [o selected]
-            (set selected (buffer/new (inc (length o))))
-            (put selected 0 (last text))                    
-            (buffer/push-string selected o))
-          (buffer/popn text 1)))
+      (select-char-before)
       
-      (if (not (empty? selected))
-        (do (buffer/push-string text-after (string/reverse selected))
-            (buffer/clear selected))
-        (when (not (empty? text))
-          (put text-after (length text-after) (last text))
-          (buffer/popn text 1)))))
+      (move-char-before)))
   
   (when (key-pressed? :right)
     (cond 
-      ## select whole words
       (and (or (key-down? :left-alt)
              (key-down? :right-alt))
         (or (key-down? :left-shift)
           (key-down? :right-shift)))
-      (if (and (not (empty? selected))
-            (= selected-left-right :left))
-        (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) selected))]
-          (print "ye?" l)
-          (buffer/push-string text (buffer/slice selected 0 l))
-          (set selected (buffer/slice selected l)))
-        (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text-after)))]
-          (set selected-left-right :right)
-          (buffer/push-string selected (string/reverse (buffer/slice text-after (dec (- l)))))
-          (buffer/popn text-after l)))
+      (select-word-after)
       
-      ## jump whole words
       (or (key-down? :left-alt)
         (key-down? :right-alt))
-      (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text-after)))]
-        (when (not (empty? selected))
-          (buffer/push-string text selected)
-          (buffer/clear selected))
-        (buffer/push-string text (string/reverse (buffer/slice text-after (dec (- l)))))
-        (buffer/popn text-after l))
+      (move-word-after)
       
-      ## select single characters
       (or (key-down? :left-shift)
         (key-down? :right-shift))
-      (if (and (= selected-left-right :left)
-            (not (empty? selected)))
-        (do (put text (length text) (first selected))
-            (set selected (buffer/slice selected 1)))
-        (when (not (empty? text-after))
-          (set selected-left-right :right)
-          (put selected (length selected) (last text-after))
-          (buffer/popn text-after 1)))
+      (select-char-after)
       
-      ## move single characters
-      (if (not (empty? selected))
-        (do (buffer/push-string text selected)
-            (buffer/clear selected))
-        (when (not (empty? text-after))
-          (put text (length text) (last text-after))
-          (buffer/popn text-after 1)))))
+      (move-char-after)))
   
   (when (key-pressed? :enter)
     (print "Eval! " (string text (string/reverse text-after)))
@@ -279,6 +409,7 @@
         segments (colors :background)))
     
     (set mouse-just-double-clicked false)
+    (set mouse-just-triple-clicked false)
     
     (let [font-size 40
           left-margin 30
@@ -290,6 +421,7 @@
         (set last-text-pos nil)
         (set mouse-just-down nil)
         (set mouse-recently-double-clicked nil)
+        (set mouse-recently-triple-clicked nil)
         (set mouse-up-pos [x y])
         
         (set selected-pos [(get-pos-in-text
@@ -306,14 +438,31 @@
                              spacing)]))
       
       (when (mouse-button-pressed? 0)
+        (when mouse-down-time2
+          (print  (- (get-time) mouse-down-time2)))
+        (when (and mouse-down-time2
+                (> 0.4 (- (get-time) mouse-down-time2)))
+          (set mouse-just-triple-clicked true)
+          (set mouse-recently-triple-clicked true))
+        
+        (when mouse-down-time
+          (print "huh "  (- (get-time) mouse-down-time)))
         (when (and mouse-down-time
                 (> 0.25 (- (get-time) mouse-down-time)))
           (set mouse-just-double-clicked true)
-          (set mouse-recently-double-clicked true)))
+          (set mouse-recently-double-clicked true)
+          (set mouse-down-time2 (get-time))))
       
-      (cond (and mouse-just-double-clicked
+      (cond mouse-just-triple-clicked 
+            (do (buffer/clear text)
+                (buffer/clear text-after)
+                (set selected both)
+                
+                (set selected-left-right :right))
+            
+            (and mouse-just-double-clicked
               (not (key-down? :left-shift))
-              (not (key-down? :right-shift)))
+              (not (key-down? :right-shift))) 
             (do (buffer/push-string text selected)
                 (buffer/clear selected)                
                 
@@ -327,7 +476,8 @@
                 
                 (set selected-left-right :right))
             
-            mouse-recently-double-clicked nil # don't start selecting until mouse is released again
+            (or mouse-recently-double-clicked
+              mouse-recently-triple-clicked) nil # don't start selecting until mouse is released again
             
             (mouse-button-down? 0)
             (do (when (nil? last-text-pos)
@@ -401,48 +551,6 @@
     )
   (end-drawing))
 
-(comment
-#    Vector2 MeasureTextEx(Font font, const char *text, float fontSize, float spacing);
-  
-  (measure-text-ex font text 40 2)
-  
-  (measure-text-ex font "abc" 40 2)
-
-  (measure-text-ex font "a" 40 2)
-  
-  (measure-text-ex font "a" 40 2)
-  (measure-text-ex font " " 40 2)
-  (measure-text-ex font "aa " 40 2)
-  (measure-text-ex font "a" 40 2)
-  
-  (measure-text-ex font "aabbcc" 40 2)
-  
-  (measure-text-ex font "aabbccddee" 40 2)
-  
-  (do  (def sii "aab   bccd    dee aoeaoe ")
-       (var aoe @[])
-       (loop [i :range [0 (length sii)]
-              :let [s2 (string/slice sii i (inc i)) 
-                    w2 (first (measure-text-ex font s2 40 2))]]
-         (array/push aoe w2))
-       (print (+ ;aoe))
-       (print
-         (length sii) " "
-         (/
-           (- (first (measure-text-ex font sii 40 2)) (+ ;aoe))
-           2))
-       )
-  
-  
-  (measure-text-ex font "a" 40 2)
-  (measure-text-ex font "b" 40 2)
-  (measure-text-ex font "c" 40 2)
-  
-  (+ 26 14 14 11 11 )
-  
-  
-  )
-
 (defn loop-it
   []
   (set loop-fiber
@@ -488,3 +596,48 @@
     (netrepl/client "127.0.0.1" "9365" "bob")
     (do (netrepl/server "127.0.0.1" "9365" env)
         (start))))
+
+
+
+(comment
+#    Vector2 MeasureTextEx(Font font, const char *text, float fontSize, float spacing);
+  
+  (measure-text-ex font text 40 2)
+  
+  (measure-text-ex font "abc" 40 2)
+
+  (measure-text-ex font "a" 40 2)
+  
+  (measure-text-ex font "a" 40 2)
+  (measure-text-ex font " " 40 2)
+  (measure-text-ex font "aa " 40 2)
+  (measure-text-ex font "a" 40 2)
+  
+  (measure-text-ex font "aabbcc" 40 2)
+  
+  (measure-text-ex font "aabbccddee" 40 2)
+  
+  (do  (def sii "aab   bccd    dee aoeaoe ")
+       (var aoe @[])
+       (loop [i :range [0 (length sii)]
+              :let [s2 (string/slice sii i (inc i)) 
+                    w2 (first (measure-text-ex font s2 40 2))]]
+         (array/push aoe w2))
+       (print (+ ;aoe))
+       (print
+         (length sii) " "
+         (/
+           (- (first (measure-text-ex font sii 40 2)) (+ ;aoe))
+           2))
+       )
+  
+  
+  (measure-text-ex font "a" 40 2)
+  (measure-text-ex font "b" 40 2)
+  (measure-text-ex font "c" 40 2)
+  
+  (+ 26 14 14 11 11 )
+  
+  
+  )
+
