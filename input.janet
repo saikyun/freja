@@ -16,6 +16,115 @@
     :selected-pos               nil
     :last-text-pos              nil})
 
+(defn handle-keyboard
+  [data]
+  (def {:text-data text-data} data)
+  (var k (get-key-pressed))
+  
+  (while (not= 0 k)
+    (insert-char text-data k)
+    (set k (get-key-pressed)))  
+  
+  (when (and (key-pressed? :q)
+          (or (key-down? :left-control)
+            (key-down? :right-control)))
+    (put data :quit true))  
+  
+  (when (key-pressed? :home)
+    (if (or (key-down? :left-shift)
+          (key-down? :right-shift))
+      (select-until-beginning text-data)
+      (move-to-beginning text-data)))  
+  
+  (when (key-pressed? :end)
+    (if (or (key-down? :left-shift)
+          (key-down? :right-shift))
+      (select-until-end text-data)
+      (move-to-end text-data)))  
+  
+  (when (and (or (key-down? :left-super)
+               (key-down? :right-super))
+          (key-pressed? :.))
+    (paste text-data))  
+  
+  (when (and (or (key-down? :left-super)
+               (key-down? :right-super))
+          (key-pressed? :a))
+    (select-all text-data))  
+  
+  (when (and (or (key-down? :left-super)
+               (key-down? :right-super))
+          (key-pressed? :i))
+    (copy text-data))  
+  
+  (when (and (or (key-down? :left-super)
+               (key-down? :right-super))
+          (key-pressed? :b))
+    (cut text-data))  
+  
+  (when (key-pressed? :backspace)
+    (cond (or (key-down? :left-alt)
+            (key-down? :right-alt))
+          (delete-word-before text-data)
+          
+          (backspace text-data)))  
+  
+  (when (key-pressed? :delete)
+    (cond (or (key-down? :left-alt)
+            (key-down? :right-alt))
+          (delete-word-after text-data)
+          
+          (forward-delete text-data)))  
+  
+  (when (key-pressed? :left)
+    (cond
+      ## select whole words
+      (and (or (key-down? :left-alt)
+             (key-down? :right-alt))
+        (or (key-down? :left-shift)
+          (key-down? :right-shift)))
+      (select-word-before text-data)
+      
+      (or (key-down? :left-alt)
+        (key-down? :right-alt)) 
+      (move-word-before text-data)
+      
+      (or (key-down? :left-shift)
+        (key-down? :right-shift))
+      (select-char-before text-data)
+      
+      (move-char-before text-data)))  
+  
+  (when (key-pressed? :right)
+    (cond 
+      (and (or (key-down? :left-alt)
+             (key-down? :right-alt))
+        (or (key-down? :left-shift)
+          (key-down? :right-shift)))
+      (select-word-after text-data)
+      
+      (or (key-down? :left-alt)
+        (key-down? :right-alt))
+      (move-word-after text-data)
+      
+      (or (key-down? :left-shift)
+        (key-down? :right-shift))
+      (select-char-after text-data)
+      
+      (move-char-after text-data)))  
+  
+  (when (key-pressed? :enter)
+    (def code (string
+                (text-data :text)
+                (text-data :selected)
+                (string/reverse (text-data :after))))
+    (print "Eval! " code)
+    (-> (try (do (fiber/setenv (fiber/current) (data :top-env))
+                 (put data :latest-res (string (eval-string code))))
+             ([err fib]
+              (put data :latest-res (string "Error: " err))))
+      print)))
+
 (defn handle-mouse
   [mouse-data text-data]
   (def [x y] (get-mouse-position))
@@ -41,8 +150,6 @@
       (put mouse-data :just-triple-clicked true)
       (put mouse-data :recently-triple-clicked true))
     
-    (when (mouse-data :down-time)
-      (print "huh "  (- (get-time) (mouse-data :down-time))))
     (when (and (mouse-data :down-time)
             (> 0.25 (- (get-time) (mouse-data :down-time))))
       (put mouse-data :just-double-clicked true)
