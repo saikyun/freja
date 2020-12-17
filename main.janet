@@ -1,9 +1,15 @@
 (use ./build/jaylib)
 (import ./textfield :as t)
+(import ./textarea :prefix "" :fresh true)
 (import ./text_rendering :prefix "")
 (import ./text_api :prefix "")
 (import ./input :prefix "")
+(import ./find_row_etc :prefix "")
 (import spork/netrepl)
+
+(comment
+  (top-env 'ta/split-words)
+  )
 
 (var top-env (fiber/getenv (fiber/current)))
 (var font nil)
@@ -17,13 +23,11 @@
    :selected-text-background :blue
    :caret      [0.396 0.478 0.514]})
 
-(var text-conf nil)
 (var text-data @{:selected @""
                  :text @""
                  :after @""
                  :dir nil
-                 :offset 30
-                 :conf text-conf})
+                 :offset 30})
 (var mouse-data (new-mouse-data))
 (var conf nil)
 
@@ -35,13 +39,15 @@
 (varfn frame
   []
   (handle-keyboard data)
-  (handle-mouse mouse-data text-data)
+#(handle-mouse mouse-data text-data)
   
   (begin-drawing)
   (clear-background (colors :background))
   
   (t/render-textfield conf text-data)
-  (draw-text text-conf (data :latest-res) [30 120] :blue)
+  (render-textarea conf text-data {:y 100})
+  
+  (draw-text (conf :text) (data :latest-res) [30 200] :blue)
   (end-drawing))
 
 (defn loop-it
@@ -72,10 +78,9 @@
       (set font (load-font-ex (tc :font-path) (tc :size) (tc :glyphs)))
       (put tc :font font)
       
-      (set text-conf (freeze tc))
-      (set conf {:text text-conf
+      (set conf {:text   (freeze tc)
                  :colors colors})
-
+      
       (put text-data :conf (conf :text))
       
       (set-target-fps 60)

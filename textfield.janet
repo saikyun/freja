@@ -1,7 +1,7 @@
 (use ./build/jaylib)
 (import ./text_rendering :prefix "")
 
-(defn render-textfield
+(varfn render-textfield
   [conf text-data]
   (def {:text text-conf
         :colors colors} conf)

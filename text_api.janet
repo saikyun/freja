@@ -32,8 +32,13 @@
                           [start end]))]
     (put text-data :text (buffer/slice both 0 start))
     (put text-data :selected (buffer/slice both start end))
-    (buffer/clear after)                  
+    (buffer/clear after)
     (buffer/push-string after (string/reverse (buffer/slice both end)))))
+
+(defn move-to-pos
+  "Selects text between index start and index end."
+  [text-data pos]
+  (select-region text-data pos pos))
 
 (defn move-to-beginning
   "Moves cursor to beginning of buffer."

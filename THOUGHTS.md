@@ -8,5 +8,11 @@
 	:xs    [0 5 10 15 (comment etc)]}])
 
 (defn pos-in-text
-  [rows pos]
+  [rows pos])
   
+  
+  
+## render things
+## need to get all chars
+## position of cursor
+## rows
