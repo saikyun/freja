@@ -5,6 +5,7 @@
 (import ./text_api :prefix "")
 (import ./input :prefix "")
 (import ./find_row_etc :prefix "")
+(import ./highlight :prefix "")
 (import spork/netrepl)
 
 (comment
@@ -21,7 +22,12 @@
    :background [0.992 0.965 0.89]
    :selected-text [0.992 0.965 0.89]
    :selected-text-background :blue
-   :caret      [0.396 0.478 0.514]})
+   :caret      [0.396 0.478 0.514]
+   
+   :special-symbol     (map |(/ $ 255) [133 153 0])
+   :string     (map |(/ $ 255) [42 161 151])
+   :keyword    (map |(/ $ 255) [38 138 210])
+   })
 
 (var text-data @{:selected @""
                  :text @""

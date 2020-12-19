@@ -265,6 +265,8 @@
   (case k
     :space (buffer/push-string text " ")
     :grave (buffer/push-string text "`")
+    :left-bracket (buffer/push-string text "[")
+    :right-bracket (buffer/push-string text "]")
     (do (buffer/clear selected)
         (if (keyword? k)
           (buffer/push-string text (string k))
@@ -276,6 +278,8 @@
   (case k
     :space (buffer/push-string text " ")
     :grave (buffer/push-string text "`")
+    :left-bracket (buffer/push-string text "[")
+    :right-bracket (buffer/push-string text "]")
     (do (buffer/clear selected)
         (if (keyword? k)
           (buffer/push-string text (string/ascii-upper (string k)))

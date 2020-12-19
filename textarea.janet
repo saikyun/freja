@@ -3,6 +3,7 @@
 (import ./find_row_etc :prefix "")
 (import ./text_api :prefix "")
 (import ./input :prefix "")
+(import ./highlight :prefix "")
 
 (varfn split-words
   [t]
@@ -189,7 +190,10 @@
                  {:color style-color} (get styles abs-i (comptime {}))]]
       (put char 0 c)
       (when (not= char "\n")
-        (draw-text text-conf char [(+ x render-x) (+ y (* 40 i))] (or style-color color)))
+        (draw-text text-conf char 
+          [(+ x render-x) (+ y (* 40 i))]
+          
+          (or style-color color)))
       (+= render-x w))
     (set render-x 0)))
 
@@ -436,6 +440,16 @@
             (colors :selected-text-background)))
     
     (def styles @{})
+    
+    (try
+      (let [matches (peg/match styling-grammar all-text)]
+        (each {:start start :stop stop :kind kind} matches
+              (loop [i :range [start stop]]
+                (put styles i {:kind kind :color (colors kind)}))))
+      ([fib err]
+       (print "peg/match err")
+       ))
+    
     (loop [i :range [(length text) (+ (length text) (length selected))]]
       (put styles i {:color (colors :selected-text)}))
     
