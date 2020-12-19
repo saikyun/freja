@@ -2,6 +2,7 @@
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
 (import ./text_api :prefix "")
+(import ./input :prefix "")
 
 (varfn split-words
   [t]
@@ -16,8 +17,11 @@
   (seq [i :range [0 (length whole-text)]
         :let [c (whole-text i)]]
     (put arr 0 c)
-    (def [x y] (measure-text conf arr))
-    [(+ x 2) y]))
+    (if (= c (first "\n"))
+      (let [[x y] (measure-text conf " ")]
+        [x y])
+      (let [[x y] (measure-text conf arr)]
+        [(+ x 2) y]))))
 
 (varfn size-between
   [sizes start stop]
@@ -52,24 +56,35 @@
   (defn add-word [word stop {:w w :h h}]
     (update (last rows) :h max h)
     (+= curr-w w)
-    (when (> curr-w max-width)
-      (def new-y (+ acc-y ((last rows) :h)))
-      (if (> w max-width)
-        (let [i (index-before-max-width sizes start stop max-width)
-              p (- i start)]
-          (loop [word :in [(string/slice word 0 p) (string/slice word p)]
-                 :let [stop (+ start (length word))
-                       size (size-between sizes start stop)]]
-            (add-word word stop size)))
-        (do (when (not (empty? ((last rows) :words)))
-              (array/push rows @{:y new-y :h 0 :words @[]
-                                 :start start
-                                 :stop stop})
-              (set acc-y new-y))
-            (set curr-w w))))
     
-    (when (not (> w max-width))
-      (array/push ((last rows) :words) word))    
+    (if (= word "\n")
+      (do  (set curr-w w)
+           (array/push ((last rows) :words) word)
+           (def new-y (+ acc-y ((last rows) :h)))
+           (put (last rows) :stop stop)
+           (set start stop)
+           (array/push rows @{:y new-y :h 0 :words @[]
+                              :start start
+                              :stop stop})
+           (set acc-y new-y))
+      (do (when (> curr-w max-width)
+            (def new-y (+ acc-y ((last rows) :h)))
+            (if (> w max-width)
+              (let [i (index-before-max-width sizes start stop max-width)
+                    p (- i start)]
+                (loop [word :in [(string/slice word 0 p) (string/slice word p)]
+                       :let [stop (+ start (length word))
+                             size (size-between sizes start stop)]]
+                  (add-word word stop size)))
+              (do (when (not (empty? ((last rows) :words)))
+                    (array/push rows @{:y new-y :h 0 :words @[]
+                                       :start start
+                                       :stop stop})
+                    (set acc-y new-y))
+                  (set curr-w w))))
+          
+          (when (not (> w max-width))
+            (array/push ((last rows) :words) word))))    
     
     (set start stop))
   
@@ -158,54 +173,212 @@
   )
 
 (varfn render-rows
-  [text-conf {:x x :y y} rows text color]
+  [text-conf {:x x :y y} sizes styles rows text color]
   (def {:spacing spacing} text-conf)
-  (var nof 0)
-  (var new-x x)
-  (var render-x x)
-  (var new-y y)
-  (when (not (or (empty? rows)
-               (and (= (length rows) 1)
-                 (empty? (first rows)))))
-    (loop [i :range [0 (length rows)]
-           :let [l (+ ;(map (comp length first) (get rows i)))
-                 w (+ ;(map |(get $ 1) (get rows i))
-                     (- (* spacing (length (get rows i))) spacing))]]
-      (draw-text text-conf (string/slice text nof (+ nof l)) [(+ 30 render-x) (+ y (* 40 i))]
-        color)
-      (+= nof l)
-      (when-let [v (get (last (get rows i)) 1)]
-        (set new-x (+ render-x w)))
-      (set render-x 0)
-      (set new-y (+ y (* 40 i)))))
-  {:x (if (pos? nof)
-        (+ new-x spacing)
-        new-x)
-   :y new-y})
-
-(varfn render-rows
-  [text-conf {:x x :y y} rows text color]
-  (def {:spacing spacing} text-conf)
-  (var render-x x)
+  (var render-x 0)
+  (var char @"a")
+  (var active-styles @[])
+  
   (loop [i :range [0 (length rows)]
-         :let [{:words words} (rows i)
+         :let [{:words words :start start} (rows i)
                s (string/join words "")]]
-    (draw-text text-conf s [(+ 30 render-x) (+ y (* 40 i))] color)
+    (loop [ci :range [0 (length s)]
+           :let [c (s ci)
+                 abs-i (+ start ci)
+                 [w h] (sizes abs-i)
+                 {:color style-color} (get styles abs-i (comptime {}))]]
+      (put char 0 c)
+      (when (not= char "\n")
+        (draw-text text-conf char [(+ x render-x) (+ y (* 40 i))] (or style-color color)))
+      (+= render-x w))
     (set render-x 0)))
 
 (var hm nil)
 
-(varfn textarea-handle-mouse
-  [text-data text sizes ps rows x-offset y-offset]
+(defn handle-mouse
+  [mouse-data text-data]
   (def [x y] (get-mouse-position))
-  
-  (when (mouse-button-down? 0)
-    (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))
-    (def {:start start :stop stop} (rows (min row-i (dec (length rows)))))
-    (def column-i (binary-search-closest (array/slice ps start stop)
-                    |(compare x (+ ($ :center-x) x-offset))))
+
+  (put mouse-data :just-double-clicked false)  
+  (put mouse-data :just-triple-clicked false)  
+
+  (def both (content text-data))    
+
+  (when (mouse-button-released? 0)
+    (put mouse-data :last-text-pos nil)
+    (put mouse-data :just-down nil)
+    (put mouse-data :recently-double-clicked nil)
+    (put mouse-data :recently-triple-clicked nil)
+    (put mouse-data :up-pos [x y])
     
-    (move-to-pos text-data (+ start column-i))))
+    (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
+                                   (get-pos-in-text text-data x)]))  
+
+  (when (mouse-button-pressed? 0)
+    (when (and (mouse-data :down-time2)
+            (> 0.4 (- (get-time) (mouse-data :down-time2))))
+      (put mouse-data :just-triple-clicked true)
+      (put mouse-data :recently-triple-clicked true))
+    
+    (when (and (mouse-data :down-time)
+            (> 0.25 (- (get-time) (mouse-data :down-time))))
+      (put mouse-data :just-double-clicked true)
+      (put mouse-data :recently-double-clicked true)
+      (put mouse-data :down-time2 (get-time))))  
+
+  (cond (mouse-data :just-triple-clicked) 
+        (select-all text-data)
+        
+        (and (mouse-data :just-double-clicked)
+          (not (key-down? :left-shift))
+          (not (key-down? :right-shift)))
+        (select-surrounding-word text-data)
+        
+        (or (mouse-data :recently-double-clicked)
+          (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+        
+        (mouse-button-down? 0)
+        (do (when (nil? (mouse-data :last-text-pos))
+              (put mouse-data :last-text-pos (length (text-data :text))))
+            
+            (put mouse-data :down-time (get-time))
+            (if (= nil (mouse-data :just-down))
+              (do (put mouse-data :just-down true)
+                  (put mouse-data :down-pos [x y]))
+              (put mouse-data :just-down false))
+            
+            (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
+                                           (get-pos-in-text text-data x)])
+            
+            (var moved-caret false)
+            
+            (let [[start end] (mouse-data :selected-pos)
+                  start (if (or (key-down? :left-shift)
+                              (key-down? :right-shift))
+                          (mouse-data :last-text-pos)
+                          start)]
+              (select-region text-data start end)))))
+
+(varfn get-mouse-pos
+  [[x y] text-data text sizes ps rows x-offset y-offset]
+  (let [row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset)))   
+        {:start start :stop stop} (rows (min row-i (dec (length rows))))      
+        column-i (binary-search-closest (array/slice ps start stop)
+                   |(compare x (+ ($ :center-x) x-offset)))]      
+    (+ start column-i)))
+
+(varfn textarea-handle-mouse
+  [mouse-data text-data text sizes ps rows x-offset y-offset]
+  (def pos (get-mouse-position))
+  (def [x y] pos)
+  
+  (comment
+    (when (mouse-button-down? 0)
+      (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))   
+      (def {:start start :stop stop} (rows (min row-i (dec (length rows)))))      
+      (def column-i (binary-search-closest (array/slice ps start stop)
+                      |(compare x (+ ($ :center-x) x-offset))))      
+      
+      (def pos (+ start column-i))      
+      
+      (move-to-pos text-data pos))
+    ) 
+  
+  ## (def [x y] (get-mouse-position))
+  
+  (put mouse-data :just-double-clicked false)  
+  (put mouse-data :just-triple-clicked false)  
+  
+  (def both (content text-data))    
+  
+  (when (mouse-button-released? 0)
+    (put mouse-data :last-text-pos nil)
+    (put mouse-data :just-down nil)
+    (put mouse-data :recently-double-clicked nil)
+    (put mouse-data :recently-triple-clicked nil)
+    (put mouse-data :up-pos [x y])
+    
+    (put mouse-data :selected-pos [(get-mouse-pos
+                                     (mouse-data :down-pos)
+                                     text-data                                     
+                                     text                                     
+                                     sizes                                     
+                                     ps                                     
+                                     rows                                     
+                                     x-offset                                     
+                                     y-offset)
+                                   (get-mouse-pos
+                                     pos
+                                     text-data                                     
+                                     text                                     
+                                     sizes                                     
+                                     ps                                     
+                                     rows                                     
+                                     x-offset                                     
+                                     y-offset)]))  
+  
+  (when (mouse-button-pressed? 0)
+    (when (and (mouse-data :down-time2)
+            (> 0.4 (- (get-time) (mouse-data :down-time2))))
+      (put mouse-data :just-triple-clicked true)
+      (put mouse-data :recently-triple-clicked true))
+    
+    (when (and (mouse-data :down-time)
+            (> 0.25 (- (get-time) (mouse-data :down-time))))
+      (put mouse-data :just-double-clicked true)
+      (put mouse-data :recently-double-clicked true)
+      (put mouse-data :down-time2 (get-time))))  
+  
+  (cond (mouse-data :just-triple-clicked) 
+        (select-all text-data)
+        
+        (and (mouse-data :just-double-clicked)
+          (not (key-down? :left-shift))
+          (not (key-down? :right-shift)))
+        (select-surrounding-word text-data)
+        
+        (or (mouse-data :recently-double-clicked)
+          (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+        
+        (mouse-button-down? 0)
+        (do (when (nil? (mouse-data :last-text-pos))
+              (put mouse-data :last-text-pos (length (text-data :text))))
+            
+            (put mouse-data :down-time (get-time))
+            (if (= nil (mouse-data :just-down))
+              (do (put mouse-data :just-down true)
+                  (put mouse-data :down-pos [x y]))
+              (put mouse-data :just-down false))
+            
+            (put mouse-data :selected-pos [(get-mouse-pos
+                                             (mouse-data :down-pos)
+                                             text-data                                     
+                                             text                                     
+                                             sizes                                     
+                                             ps                                     
+                                             rows                                     
+                                             x-offset                                     
+                                             y-offset)
+                                           (get-mouse-pos
+                                             pos
+                                             text-data                                     
+                                             text                                     
+                                             sizes                                     
+                                             ps                                     
+                                             rows                                     
+                                             x-offset                                     
+                                             y-offset)])
+            
+            (var moved-caret false)
+            
+            (let [[start end] (mouse-data :selected-pos)
+                  start (if (or (key-down? :left-shift)
+                              (key-down? :right-shift))
+                          (mouse-data :last-text-pos)
+                          start)]
+              (select-region text-data start end)))))
+
+(var md (new-mouse-data))
 
 (varfn render-textarea
   [conf text-data {:y y}]
@@ -230,7 +403,7 @@
   
   (def ps (char-positions sizes rows))
   
-  (textarea-handle-mouse text-data all-text sizes ps rows 30 y)
+  (textarea-handle-mouse md text-data all-text sizes ps rows 30 y)
   
   (let [x 10
         w 500
@@ -255,60 +428,29 @@
     (def selection-end (+ (length text) (length selected)))
     
     (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
-          (draw-rectangle-rounded [(+ rx 30)
-                                   (+ ry y)
-                                   w h]
-            0.3
-            9
+          (draw-rectangle-rec [(+ rx 30)
+                               (+ ry y)
+                               w h]
+#            0.3
+#            9
             (colors :selected-text-background)))
     
-    (render-rows text-conf {:x 0 :y y} rows all-text (colors :text))
+    (def styles @{})
+    (loop [i :range [(length text) (+ (length text) (length selected))]]
+      (put styles i {:color (colors :selected-text)}))
     
-# (def new-pos (render-rows text-conf {:x 0 :y y} rows all-text (colors :text)))
-    (comment
-      (draw-rectangle-rounded [(+ 30 (new-pos :x) spacing)
-                               (+ (new-pos :y) (* 0.15 font-size))
-                               (+ spacing w2)
-                               (- h2 10)]
-        0.3
-        9
-        (colors :selected-text-background)))    
+    (render-rows text-conf {:x 30 :y y} sizes styles rows all-text (colors :text))
     
-#    (def rows-selected (break-up-words text-conf selected (new-pos :x) 280))
-    
-#    (def new-pos (render-rows text-conf new-pos rows-selected selected (colors :selected-text)))
-    
-#    (def rows-after (break-up-words text-conf (string/reverse after) (new-pos :x) 280))
-    
-#(draw-text text-conf selected [(+ 30 spacing w) y] (colors :selected-text))
-    
-#    (render-rows text-conf new-pos rows-after (string/reverse after)  (colors :text))
-    
-#(draw-text text-conf (string/reverse after) [(+ 30 spacing w spacing w2) y] (colors :text))
-    
-    (when-let [{:x cx :y cy} (get ps (max (dec (length text)) 0))]
-      (let [s (get sizes (dec (length text)))
-            w (get s 0 0)
-            h (get s 1 font-size)]
-        (draw-line-ex [(- (+ 30 cx w) (* spacing 0.5))
-                       (+ cy y (* 0.15 font-size))
-                       ] [(- (+ 30 cx w) (* spacing 0.5))
-                          (+ #font-size
-                            (+ cy y (* 0.15 font-size))
-                            (* h 0.75))
-                          
-                          ] 1 (colors :caret))))
-    
-    (comment
-      (draw-line-ex [(+ 30 spacing #w
-                       (new-pos :x)
-                       ) #font-size
-                     (+ (new-pos :y) (* 0.15 font-size))
-                     ] [(+ 30 spacing #w
-                          (new-pos :x)
-                          )
-                        (+ #font-size
-                          (+ (new-pos :y) (* 0.15 font-size))
-                          (* h 0.75))
-                        
-                        ] 1 (colors :caret)))))
+    (when (empty? selected)
+      (when-let [{:x cx :y cy} (get ps (max (dec (length text)) 0))]
+        (let [s (get sizes (dec (length text)))
+              w (get s 0 0)
+              h (get s 1 font-size)]
+          (draw-line-ex [(- (+ 30 cx w) (* spacing 0.5))
+                         (+ cy y (* 0.15 font-size))
+                         ] [(- (+ 30 cx w) (* spacing 0.5))
+                            (+ #font-size
+                              (+ cy y (* 0.15 font-size))
+                              (* h 0.75))
+                            
+                            ] 1 (colors :caret)))))))

@@ -22,8 +22,11 @@
   (var k (get-key-pressed))
   
   (while (not= 0 k)
-    (insert-char text-data k)
-    (set k (get-key-pressed)))  
+    (if (or (key-down? :left-shift)
+          (key-down? :right-shift))
+      (insert-char-upper text-data k)
+      (insert-char text-data k))
+    (set k (get-key-pressed)))
   
   (when (and (key-pressed? :q)
           (or (key-down? :left-control)
@@ -114,16 +117,22 @@
       (move-char-after text-data)))  
   
   (when (key-pressed? :enter)
-    (def code (string
-                (text-data :text)
-                (text-data :selected)
-                (string/reverse (text-data :after))))
-    (print "Eval! " code)
-    (-> (try (do (fiber/setenv (fiber/current) (data :top-env))
-                 (put data :latest-res (string (eval-string code))))
-             ([err fib]
-              (put data :latest-res (string "Error: " err))))
-      print)))
+    (insert-char text-data (first "\n"))
+    
+    ## (def code (string
+    ##             (text-data :text)
+    ##             (text-data :selected)
+    ##             (string/reverse (text-data :after))))
+    ## (print "Eval! " code)
+    ## (-> (try (do (fiber/setenv (fiber/current) (data :top-env))
+    ##              (put data :latest-res (string (eval-string code))))
+    ##          ([err fib]
+    ##           (put data :latest-res (string "Error: " err))))
+    ##   print)
+    
+    )
+  
+  )
 
 (defn handle-mouse
   [mouse-data text-data]

@@ -269,3 +269,14 @@
         (if (keyword? k)
           (buffer/push-string text (string k))
           (put text (length text) k)))))
+
+(defn insert-char-upper
+  "Inserts a single uppercase char."
+  [{:selected selected :text text :after after} k]
+  (case k
+    :space (buffer/push-string text " ")
+    :grave (buffer/push-string text "`")
+    (do (buffer/clear selected)
+        (if (keyword? k)
+          (buffer/push-string text (string/ascii-upper (string k)))
+          (put text (length text) k)))))

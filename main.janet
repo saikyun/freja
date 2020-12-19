@@ -44,7 +44,7 @@
   (begin-drawing)
   (clear-background (colors :background))
   
-  (t/render-textfield conf text-data)
+#(t/render-textfield conf text-data)
   (render-textarea conf text-data {:y 100})
   
   (draw-text (conf :text) (data :latest-res) [30 200] :blue)
