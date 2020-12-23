@@ -16,16 +16,22 @@
     :selected-pos               nil
     :last-text-pos              nil})
 
+(defn reset-blink
+  [props]
+  (set (props :blink) 0))
+
 (defn handle-keyboard
   [data]
-  (def {:text-data text-data} data)
+  (def {:text-data props} data)
   (var k (get-key-pressed))
   
   (while (not= 0 k)
+    (reset-blink props)
+    
     (if (or (key-down? :left-shift)
           (key-down? :right-shift))
-      (insert-char-upper text-data k)
-      (insert-char text-data k))
+      (insert-char-upper props k)
+      (insert-char props k))
     (set k (get-key-pressed)))
   
   (when (and (key-pressed? :q)
@@ -34,95 +40,113 @@
     (put data :quit true))  
   
   (when (key-pressed? :home)
+    (reset-blink props)
+    
     (if (or (key-down? :left-shift)
           (key-down? :right-shift))
-      (select-until-beginning text-data)
-      (move-to-beginning text-data)))  
+      (select-until-beginning props)
+      (move-to-beginning props)))  
   
   (when (key-pressed? :end)
+    (reset-blink props)    
+    
     (if (or (key-down? :left-shift)
           (key-down? :right-shift))
-      (select-until-end text-data)
-      (move-to-end text-data)))  
+      (select-until-end props)
+      (move-to-end props)))  
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :.))
-    (paste text-data))  
+    (reset-blink props)
+
+    (paste props))  
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :a))
-    (select-all text-data))  
+    (select-all props))  
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :i))
-    (copy text-data))  
+    (copy props))  
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :b))
-    (cut text-data))  
+    (reset-blink props)
+    
+    (cut props))  
   
   (when (key-pressed? :backspace)
+    (reset-blink props)
+    
     (cond (or (key-down? :left-alt)
             (key-down? :right-alt))
-          (delete-word-before text-data)
+          (delete-word-before props)
           
-          (backspace text-data)))  
+          (backspace props)))  
   
   (when (key-pressed? :delete)
+    (reset-blink props)
+
     (cond (or (key-down? :left-alt)
             (key-down? :right-alt))
-          (delete-word-after text-data)
+          (delete-word-after props)
           
-          (forward-delete text-data)))  
+          (forward-delete props)))  
   
   (when (key-pressed? :left)
+    (reset-blink props)
+
     (cond
       ## select whole words
       (and (or (key-down? :left-alt)
              (key-down? :right-alt))
         (or (key-down? :left-shift)
           (key-down? :right-shift)))
-      (select-word-before text-data)
+      (select-word-before props)
       
       (or (key-down? :left-alt)
         (key-down? :right-alt)) 
-      (move-word-before text-data)
+      (move-word-before props)
       
       (or (key-down? :left-shift)
         (key-down? :right-shift))
-      (select-char-before text-data)
+      (select-char-before props)
       
-      (move-char-before text-data)))  
+      (move-char-before props)))  
   
   (when (key-pressed? :right)
+    (reset-blink props)
+    
     (cond 
       (and (or (key-down? :left-alt)
              (key-down? :right-alt))
         (or (key-down? :left-shift)
           (key-down? :right-shift)))
-      (select-word-after text-data)
+      (select-word-after props)
       
       (or (key-down? :left-alt)
         (key-down? :right-alt))
-      (move-word-after text-data)
+      (move-word-after props)
       
       (or (key-down? :left-shift)
         (key-down? :right-shift))
-      (select-char-after text-data)
+      (select-char-after props)
       
-      (move-char-after text-data)))  
+      (move-char-after props)))  
   
   (when (key-pressed? :enter)
-    (insert-char text-data (first "\n"))
+    (reset-blink props)
+
+    (insert-char props (first "\n"))
     
     ## (def code (string
-    ##             (text-data :text)
-    ##             (text-data :selected)
-    ##             (string/reverse (text-data :after))))
+    ##             (props :text)
+    ##             (props :selected)
+    ##             (string/reverse (props :after))))
     ## (print "Eval! " code)
     ## (-> (try (do (fiber/setenv (fiber/current) (data :top-env))
     ##              (put data :latest-res (string (eval-string code))))

@@ -33,7 +33,11 @@
                  :text @""
                  :after @""
                  :dir nil
-                 :offset 30})
+                 :offset 30
+
+                 :y 100
+                 :caret-pos [0 0]
+                 :blink 0})
 (var mouse-data (new-mouse-data))
 (var conf nil)
 
@@ -44,17 +48,18 @@
 
 (varfn frame
   []
-  (handle-keyboard data)
 #(handle-mouse mouse-data text-data)
   
   (begin-drawing)
   (clear-background (colors :background))
   
 #(t/render-textfield conf text-data)
-  (render-textarea conf text-data {:y 100})
+  (render-textarea conf text-data)
   
   (draw-text (conf :text) (data :latest-res) [30 200] :blue)
-  (end-drawing))
+  (end-drawing)
+
+  (handle-keyboard data))
 
 (defn loop-it
   []
@@ -80,6 +85,7 @@
                :size 40
                :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
                :spacing 2}]
+      (set-config-flags :vsync-hint)
       (init-window 800 600 "Textfield")
       (set font (load-font-ex (tc :font-path) (tc :size) (tc :glyphs)))
       (put tc :font font)

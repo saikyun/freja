@@ -20,7 +20,7 @@
     (put arr 0 c)
     (if (= c (first "\n"))
       (let [[x y] (measure-text conf " ")]
-        [x y])
+        [0 y])
       (let [[x y] (measure-text conf arr)]
         [(+ x 2) y]))))
 
@@ -59,16 +59,17 @@
     (+= curr-w w)
     
     (if (= word "\n")
-      (do  (set curr-w w)
-           (array/push ((last rows) :words) word)
-           (def new-y (+ acc-y ((last rows) :h)))
-           (put (last rows) :stop stop)
-           (set start stop)
-           (array/push rows @{:y new-y :h 0 :words @[]
-                              :start start
-                              :stop stop})
-           (set acc-y new-y))
+      (do (set curr-w w)
+          (array/push ((last rows) :words) word)
+          (def new-y (+ acc-y ((last rows) :h)))
+          (put (last rows) :stop stop)
+          (set start stop)
+          (array/push rows @{:y new-y :h h :words @[]
+                             :start start
+                             :stop stop})
+          (set acc-y new-y))
       (do (when (> curr-w max-width)
+            (put (last rows) :word-wrapped true)
             (def new-y (+ acc-y ((last rows) :h)))
             (if (> w max-width)
               (let [i (index-before-max-width sizes start stop max-width)
@@ -174,7 +175,14 @@
   )
 
 (varfn render-rows
-  [text-conf {:x x :y y} sizes styles rows text color]
+  [{:conf text-conf
+    :position pos
+    :sizes sizes
+    :styles styles
+    :rows rows
+    :full-text text
+    :default-color color}]
+  (def [x y] pos)
   (def {:spacing spacing} text-conf)
   (var render-x 0)
   (var char @"a")
@@ -271,8 +279,104 @@
                    |(compare x (+ ($ :center-x) x-offset)))]      
     (+ start column-i)))
 
+
+### external
+## color configuration
+## mouse data
+
+### internal
+## caret position
+## styling
+## text data
+## offset of "component"
+## logical rows          3
+## sizes                 3
+## positions             3
+
+(varfn textarea-handle-keyboard
+  [props]
+  (def {:caret-pos caret-pos
+        :full-text text
+        :sizes sizes
+        :positions ps
+        :current-row current-row
+        :rows rows
+        :position offset}
+    props)
+  (def [x y] caret-pos)
+  (def [x-offset y-offset] offset)
+  
+  (when (key-pressed? :right)
+    
+    (put props :caret-pos (get-caret-pos props))
+    (pp (props :caret-pos))
+    )
+  
+  (when (key-pressed? :left)
+    
+    (put props :caret-pos (get-caret-pos props))
+    (pp (props :caret-pos))
+    )
+  
+  (when (key-pressed? :up)
+    (print "current row " current-row)    
+    (pp caret-pos)
+    
+    (reset-blink props)
+    
+    (def new-row (max 0 (dec current-row)))
+    (def {:start start :stop stop} (rows new-row))
+    (def column-i (binary-search-closest (array/slice ps start stop)
+                    |(compare x ($ :center-x))))
+    (var pos (+ start column-i))
+    
+    (when (or (= (first "\n") (get text (dec pos)))
+            (and (get-in rows [new-row :word-wrapped])
+              (= pos (get-in rows [new-row :stop]))))
+      (print "caretting up " (caret-pos 0))
+      (when (<= 0 (caret-pos 0))
+        (pp caret-pos)
+        (-= pos 1)))
+    
+    (put-in props [caret-pos 1] new-row)
+    (move-to-pos props pos)
+    
+    (print "new row " new-row))
+  
+  (when (key-pressed? :down)
+    (print "current row " current-row)
+    (pp caret-pos)
+    
+    (reset-blink props)
+    
+    (def new-row (min (dec (length rows)) (inc current-row)))
+    (def {:start start :stop stop} (rows new-row))      
+    (def column-i (binary-search-closest (array/slice ps start stop)
+                    |(compare x ($ :center-x))))
+    
+    (var pos (+ start column-i))
+    
+    (when (or (= (first "\n") (get text (dec pos)))
+            (and (get-in rows [new-row :word-wrapped])
+              (= pos (get-in rows [new-row :stop]))))
+      (print "carretting")
+      (when (<= 0 (caret-pos 0))
+        (pp caret-pos)
+        (-= pos 1)))
+    
+    (put-in props [caret-pos 1] new-row)
+    (move-to-pos props pos)
+    
+    (print "new row " new-row)))
+
 (varfn textarea-handle-mouse
-  [mouse-data text-data text sizes ps rows x-offset y-offset]
+  [mouse-data props]
+  (def {:full-text text
+        :sizes sizes
+        :positions ps
+        :rows rows
+        :position offset} props)
+  (def [x-offset y-offset] offset)
   (def pos (get-mouse-position))
   (def [x y] pos)
   
@@ -285,7 +389,7 @@
       
       (def pos (+ start column-i))      
       
-      (move-to-pos text-data pos))
+      (move-to-pos props pos))
     ) 
   
   ## (def [x y] (get-mouse-position))
@@ -293,7 +397,7 @@
   (put mouse-data :just-double-clicked false)  
   (put mouse-data :just-triple-clicked false)  
   
-  (def both (content text-data))    
+  (def both (content props))    
   
   (when (mouse-button-released? 0)
     (put mouse-data :last-text-pos nil)
@@ -304,7 +408,7 @@
     
     (put mouse-data :selected-pos [(get-mouse-pos
                                      (mouse-data :down-pos)
-                                     text-data                                     
+                                     props                                     
                                      text                                     
                                      sizes                                     
                                      ps                                     
@@ -313,7 +417,7 @@
                                      y-offset)
                                    (get-mouse-pos
                                      pos
-                                     text-data                                     
+                                     props                                     
                                      text                                     
                                      sizes                                     
                                      ps                                     
@@ -334,19 +438,19 @@
       (put mouse-data :down-time2 (get-time))))  
   
   (cond (mouse-data :just-triple-clicked) 
-        (select-all text-data)
+        (select-all props)
         
         (and (mouse-data :just-double-clicked)
           (not (key-down? :left-shift))
           (not (key-down? :right-shift)))
-        (select-surrounding-word text-data)
+        (select-surrounding-word props)
         
         (or (mouse-data :recently-double-clicked)
           (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
         
         (mouse-button-down? 0)
         (do (when (nil? (mouse-data :last-text-pos))
-              (put mouse-data :last-text-pos (length (text-data :text))))
+              (put mouse-data :last-text-pos (length (props :text))))
             
             (put mouse-data :down-time (get-time))
             (if (= nil (mouse-data :just-down))
@@ -356,7 +460,7 @@
             
             (put mouse-data :selected-pos [(get-mouse-pos
                                              (mouse-data :down-pos)
-                                             text-data                                     
+                                             props                                     
                                              text                                     
                                              sizes                                     
                                              ps                                     
@@ -365,7 +469,7 @@
                                              y-offset)
                                            (get-mouse-pos
                                              pos
-                                             text-data                                     
+                                             props                                     
                                              text                                     
                                              sizes                                     
                                              ps                                     
@@ -380,13 +484,13 @@
                               (key-down? :right-shift))
                           (mouse-data :last-text-pos)
                           start)]
-              (select-region text-data start end)))))
+              (select-region props start end)))))
 
 (var md (new-mouse-data))
 
 (varfn render-textarea
-  [conf text-data {:y y}]
-  (def {:selected selected :text text :after after :conf text-conf} text-data)
+  [conf props]
+  (def {:y y :selected selected :text text :after after :conf text-conf} props)
   
   (def {:spacing spacing
         :size font-size} text-conf)
@@ -407,11 +511,52 @@
   
   (def ps (char-positions sizes rows))
   
-  (textarea-handle-mouse md text-data all-text sizes ps rows 30 y)
+  (def styles @{})  
+  
+  (try
+    (let [matches (peg/match styling-grammar all-text)]
+      (each {:start start :stop stop :kind kind} matches
+            (loop [i :range [start stop]]
+              (put styles i {:kind kind :color (colors kind)}))))
+    ([fib err]
+     (print "peg/match err")))
+  
+  (loop [i :range [(length text) (+ (length text) (length selected))]]
+    (put styles i {:color (colors :selected-text)}))
+  
+  
+  (var current-row 0)
+  (loop [i :range [0 (length rows)]
+         :let [r (rows i)]]
+    (when (and (>= (max (dec (length text)) 0) (r :start))
+            (< (max (dec (length text)) 0) (r :stop)))
+      (set current-row i)
+      (break))
+    
+    ## it's the last, empty row
+    (set current-row i))
+
+  (when (= (first "\n") (last text))
+    (+= current-row 1))
+  
+  
+  
+  (put props :current-row current-row)
+  (put props :full-text all-text)     
+  (put props :sizes sizes)
+  (put props :positions ps)
+  (put props :styles styles)
+  (put props :rows rows)
+  (put props :position [30 y])
+  (put props :default-color (colors :text))
+  
+  (textarea-handle-keyboard props)
+  
+  (textarea-handle-mouse md props)
   
   (let [x 10
         w 500
-        h (* (length rows) 40)
+        h (+ (* (length rows) 40) 16)
         roundness 0.05
         segments 9
         diff 2]
@@ -423,48 +568,31 @@
       roundness
       segments (colors :background)))  
   
-  (let [[w h] (measure-text text-conf text)
-        [w2 h2] (measure-text text-conf selected)]
-    (var x-ye 0)
-    (var y-ye 0)
-    
-    (def selection-start (length text))
-    (def selection-end (+ (length text) (length selected)))
-    
-    (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
-          (draw-rectangle-rec [(+ rx 30)
-                               (+ ry y)
-                               w h]
-#            0.3
-#            9
-            (colors :selected-text-background)))
-    
-    (def styles @{})
-    
-    (try
-      (let [matches (peg/match styling-grammar all-text)]
-        (each {:start start :stop stop :kind kind} matches
-              (loop [i :range [start stop]]
-                (put styles i {:kind kind :color (colors kind)}))))
-      ([fib err]
-       (print "peg/match err")
-       ))
-    
-    (loop [i :range [(length text) (+ (length text) (length selected))]]
-      (put styles i {:color (colors :selected-text)}))
-    
-    (render-rows text-conf {:x 30 :y y} sizes styles rows all-text (colors :text))
-    
-    (when (empty? selected)
-      (when-let [{:x cx :y cy} (get ps (max (dec (length text)) 0))]
-        (let [s (get sizes (dec (length text)))
-              w (get s 0 0)
-              h (get s 1 font-size)]
-          (draw-line-ex [(- (+ 30 cx w) (* spacing 0.5))
-                         (+ cy y (* 0.15 font-size))
-                         ] [(- (+ 30 cx w) (* spacing 0.5))
-                            (+ #font-size
-                              (+ cy y (* 0.15 font-size))
-                              (* h 0.75))
-                            
-                            ] 1 (colors :caret)))))))
+  (def selection-start (length text))
+  (def selection-end (+ (length text) (length selected)))
+  
+  (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
+        (draw-rectangle-rec [(+ rx 30)
+                             (+ ry y)
+                             w h]
+          (colors :selected-text-background)))
+  
+  (render-rows props)
+  
+  ##(pp rows)
+  
+  (+= (props :blink) 1.1)
+  
+  (when (and (< (props :blink) 30)
+          (empty? selected))
+    (let [[wwx wwy] (get-caret-pos props)
+          h ((rows current-row) :h)
+          h (if (= 0 h) (get-in props [:conf :size]) h)]
+      (draw-line-ex
+        [(+ 30 wwx)
+         (+ y wwy (* 0.15 font-size))]
+        [(+ 30 wwx)
+         (+ (+ y wwy (* 0.15 font-size))
+           (* h 0.75))] 1 (colors :caret))))
+  
+  (when (> (props :blink) 60) (set (props :blink) 0)))

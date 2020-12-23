@@ -1,142 +1,99 @@
 (use ./build/jaylib)
 
-(varfn get-caret-pos
-  [{:current-row current-row
-    :rows rows
-    :positions ps
-    :sizes sizes
-    :conf text-conf
-    :text text}]
-  (def {:size font-size
-        :spacing spacing} text-conf)
-  
-  (let [newline (or (= (first "\n") (last text))
-                  (and (get-in rows [current-row :word-wrapped])
-                    (= (length text) (get-in rows [current-row :stop]))))]
-    (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
-                                   (if newline
-                                     (let [h ((get rows current-row {:h 0}) :h)]
-                                       {:x 0 :y (+ (pos :y) h)})
-                                     pos))
-                               {:x 0 :y 0})]
-      (let [s (get sizes (dec (length text)))
-            w (if newline 0 (get s 0 0))]
-        [(- (+ cx w) (* spacing 0.5)) cy]))))
-
-(varfn refresh-caret-pos
-  [props]
-  (put props :caret-pos (get-caret-pos props)))
-
-(varfn content
+(defn content
   "Returns a big string of all the pieces in the text data."
   [{:selected selected :text text :after after}]
   (string text selected (string/reverse after)))
 
-(varfn select-until-beginning
+(defn select-until-beginning
   "Selects all text from cursor to beginning of buffer."
-  [props]
-  (def {:selected selected :text text} props)
-  (put props :dir :left)
+  [text]
+  (def {:selected selected :text text} text)
+  (put text :dir :left)
   (buffer/push-string selected text)
-  (buffer/clear text)
-  
-  (refresh-caret-pos props))
+  (buffer/clear text))
 
-(varfn select-until-end
+(defn select-until-end
   "Selects all text from cursor to end of buffer."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [{:selected selected :text text :after after}]
   (put text :dir :right)
   (buffer/push-string selected (string/reverse after))
-  (buffer/clear after)
-  
-  (refresh-caret-pos props))
+  (buffer/clear after))
 
-(varfn select-region
+(defn select-region
   "Selects text between index start and index end."
-  [props start end]
-  (let [{:after after} props
-        both (content props)
+  [text-data start end]
+  (let [{:after after} text-data
+        both (content text-data)
         [start end] (if (> start end)
-                      (do (put props :dir :left)
+                      (do (put text-data :dir :left)
                           [end start])
-                      (do (put props :dir :right)
+                      (do (put text-data :dir :right)
                           [start end]))]
-    (put props :text (buffer/slice both 0 start))
-    (put props :selected (buffer/slice both start end))
+    (put text-data :text (buffer/slice both 0 start))
+    (put text-data :selected (buffer/slice both start end))
     (buffer/clear after)
     (buffer/push-string after (string/reverse (buffer/slice both end)))))
 
-(varfn move-to-pos
+(defn move-to-pos
   "Selects text between index start and index end."
-  [props pos]
-  (select-region props pos pos))
+  [text-data pos]
+  (select-region text-data pos pos))
 
-(varfn move-to-beginning
+(defn move-to-beginning
   "Moves cursor to beginning of buffer."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (buffer/push-string after (string/reverse selected))
   (buffer/push-string after (string/reverse text))
   (buffer/clear selected)
-  (buffer/clear text)
+  (buffer/clear text))
 
-  (refresh-caret-pos props))
-
-(varfn move-to-end
+(defn move-to-end
   "Moves cursor to end of buffer."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (buffer/push-string text selected)
   (buffer/push-string text (string/reverse after))
   (buffer/clear selected)
-  (buffer/clear after)
+  (buffer/clear after))
 
-  (refresh-caret-pos props))
-
-(varfn copy
+(defn copy
   "Copies selected text into clipboard."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (set-clipboard-text (string selected)))
 
-(varfn delete-selected
+(defn delete-selected
   "Deletes selected text.
   Always run when inserting (e.g. writing chars or when pasting).
   Returns previously selected text.
   Returns `nil` if no text was selected."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (def old selected)
-  (put props :selected @"")
-  
-  (refresh-caret-pos props)
-  
+  (put text-data :selected @"")
   (when (not (empty? old))
     old))
 
-(varfn cut
+(defn cut
   "Cuts selected text into clipboard."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (set-clipboard-text (string selected))
-  (delete-selected props)
+  (delete-selected text-data))
 
-  (refresh-caret-pos props))
-
-(varfn paste
+(defn paste
   "Pastes from clipboard."
-  [props]
-  (def {:selected selected :text text :after after} props)
-  (delete-selected props)
-  (buffer/push-string text (get-clipboard-text))
-  
-  (refresh-caret-pos props))
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
+  (delete-selected text-data)
+  (buffer/push-string text (get-clipboard-text)))
 
-(varfn select-surrounding-word
+(defn select-surrounding-word
   "Selects the word surrounding the cursor."
-  [props]
-  (def {:selected selected :text text :after after :dir dir} props)
+  [text-data]
+  (def {:selected selected :text text :after after :dir dir} text-data)
   (if (= dir :right)
     (buffer/push-string text selected)
     (buffer/push-string after (string/reverse selected)))
@@ -150,176 +107,161 @@
   (buffer/popn text t-l)
   (buffer/popn after at-l)
   
-  (put props :dir :right)
-  (refresh-caret-pos props))
+  (put text-data :dir :right))
 
-(varfn select-all
+(defn select-all
   "Selects all text in buffer."
-  [props]
-  (def {:selected selected :text text :after after} props)
-  (put props :dir :right)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
+  (put text-data :dir :right)
   (def new-selected (buffer/new (+ (length text)
                                   (length selected)
                                   (length after))))    
   (buffer/push-string new-selected text)    
   (buffer/push-string new-selected selected)    
   (buffer/push-string new-selected (string/reverse after))    
-  (put props :selected new-selected)    
+  (put text-data :selected new-selected)    
   (buffer/clear text)    
-  (buffer/clear after)
-  (refresh-caret-pos props))
+  (buffer/clear after))
 
-(varfn delete-word-before
+(defn delete-word-before
   "Deletes the word before the cursor.
   If text is selected deletes the selection instead."
-  [props]
-  (def {:selected selected :text text :after after} props)
-  (when (not (delete-selected props))
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
+  (when (not (delete-selected text-data))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
-      (buffer/popn text l)))
-  (refresh-caret-pos props))
+      (buffer/popn text l))))
 
-(varfn delete-word-after
+(defn delete-word-after
   "Deletes the word after the cursor.
   If text is selected deletes the selection instead."
-  [props]
-  (def {:selected selected :text text :after after} props)
-  (when (not (delete-selected props))
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
+  (when (not (delete-selected text-data))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse after)))]
-      (buffer/popn after l)))
-  (refresh-caret-pos props))
+      (buffer/popn after l))))
 
-(varfn backspace
+(defn backspace
   "Removes a single character before the cursor.
   If text is selected deletes the selection instead."
-  [props]
-  (def {:selected selected :text text :after after} props)
-  (when (not (delete-selected props))
-    (buffer/popn text 1))
-  (refresh-caret-pos props))
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
+  (when (not (delete-selected text-data))
+    (buffer/popn text 1)))
 
-(varfn forward-delete
+(defn forward-delete
   "Removes a single character after the cursor.
   If text is selected deletes the selection instead."
-  [props]
-  (def {:selected selected :text text :after after} props)
-  (when (not (delete-selected props))
-    (buffer/popn after 1))
-  (refresh-caret-pos props))
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
+  (when (not (delete-selected text-data))
+    (buffer/popn after 1)))
 
-(varfn select-word-before
+(defn select-word-before
   "Selects a word before the cursor."
-  [props]
-  (def {:selected selected :text text :after after :dir dir} props)
+  [text-data]
+  (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (not (empty? selected))       # when text is selected and the direction is right
         (= dir :right))                  # we deselect rather than select
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse selected)))]
       (buffer/push-string after (string/reverse (buffer/slice selected (dec (- l)))))
       (buffer/popn selected l))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
-      (put props :dir :left)
-      (put props :selected (buffer (buffer/slice text (dec (- l))) selected))
-      (buffer/popn text l)))
-  (refresh-caret-pos props))
+      (put text-data :dir :left)
+      (put text-data :selected (buffer (buffer/slice text (dec (- l))) selected))
+      (buffer/popn text l))))
 
-(varfn select-word-after
+(defn select-word-after
   "Selects a word after the cursor."
-  [props]
-  (def {:selected selected :text text :after after :dir dir} props)
+  [text-data]
+  (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (not (empty? selected))     # when text is selected and the direction is left
         (= dir :left)) # we deselect rather than select
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) selected))]
       (buffer/push-string text (buffer/slice selected 0 l))
-      (put props :selected (buffer/slice selected l)))
+      (put text-data :selected (buffer/slice selected l)))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse after)))]
-      (put props :dir :right)
+      (put text-data :dir :right)
       (buffer/push-string selected (string/reverse (buffer/slice after (dec (- l)))))
-      (buffer/popn after l)))
-  (refresh-caret-pos props))
+      (buffer/popn after l))))
 
-(varfn move-word-before
+(defn move-word-before
   "Moves the cursor one word to the left."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
     (when (not (empty? selected))
       (buffer/push-string after (string/reverse selected))
       (buffer/clear selected))
     (buffer/push-string after (string/reverse (buffer/slice text (dec (- l)))))
-    (buffer/popn text l))
-  (refresh-caret-pos props))
+    (buffer/popn text l)))
 
-(varfn move-word-after
+(defn move-word-after
   "Moves the cursor one word to the right."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse after)))]
     (when (not (empty? selected))
       (buffer/push-string text selected)
       (buffer/clear selected))
     (buffer/push-string text (string/reverse (buffer/slice after (dec (- l)))))
-    (buffer/popn after l))
-  (refresh-caret-pos props))
+    (buffer/popn after l)))
 
-(varfn select-char-before
+(defn select-char-before
   "Selects the char before the cursor."
-  [props]
-  (def {:selected selected :text text :after after :dir dir} props)
+  [text-data]
+  (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (= dir :right)
         (not (empty? selected)))
     (do (put after (length after) (last selected))
         (buffer/popn selected 1))
     (when (not (empty? text))
-      (put props :dir :left)
+      (put text-data :dir :left)
       (let [o selected]
-        (put props :selected (buffer/new (inc (length o))))
-        (put (props :selected) 0 (last text))
-        (buffer/push-string (props :selected) o))
-      (buffer/popn text 1)))
-  (refresh-caret-pos props))
+        (put text-data :selected (buffer/new (inc (length o))))
+        (put (text-data :selected) 0 (last text))
+        (buffer/push-string (text-data :selected) o))
+      (buffer/popn text 1))))
 
-(varfn select-char-after
+(defn select-char-after
   "Selects the char after the cursor."
-  [props]
-  (def {:selected selected :text text :after after :dir dir} props)
+  [text-data]
+  (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (= dir :left)
         (not (empty? selected)))
     (do (put text (length text) (first selected))
-        (put props :selected (buffer/slice selected 1)))
+        (put text-data :selected (buffer/slice selected 1)))
     (when (not (empty? after))
-      (put props :dir :right)
+      (put text-data :dir :right)
       (put selected (length selected) (last after))
-      (buffer/popn after 1)))
-  (refresh-caret-pos props))
+      (buffer/popn after 1))))
 
-(varfn move-char-before
+(defn move-char-before
   "Moves the cursor one char to the left."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (if (not (empty? selected))
     (do (buffer/push-string after (string/reverse selected))
         (buffer/clear selected))
     (when (not (empty? text))
       (put after (length after) (last text))
-      (buffer/popn text 1)))
-  (refresh-caret-pos props))
+      (buffer/popn text 1))))
 
-(varfn move-char-after
+(defn move-char-after
   "Moves the cursor one char to the right."
-  [props]
-  (def {:selected selected :text text :after after} props)
+  [text-data]
+  (def {:selected selected :text text :after after} text-data)
   (if (not (empty? selected))
     (do (buffer/push-string text selected)
         (buffer/clear selected))
     (when (not (empty? after))
       (put text (length text) (last after))
-      (buffer/popn after 1)))
-  (refresh-caret-pos props))
+      (buffer/popn after 1))))
 
-(varfn insert-char
+(defn insert-char
   "Inserts a single char."
-  [props k]
-  (def {:selected selected :text text :after after} props)
+  [{:selected selected :text text :after after} k]
   (case k
     :space (buffer/push-string text " ")
     :grave (buffer/push-string text "`")
@@ -328,13 +270,11 @@
     (do (buffer/clear selected)
         (if (keyword? k)
           (buffer/push-string text (string k))
-          (put text (length text) k))))
-  (refresh-caret-pos props))
+          (put text (length text) k)))))
 
-(varfn insert-char-upper
+(defn insert-char-upper
   "Inserts a single uppercase char."
-  [props k]
-  (def {:selected selected :text text :after after} props)
+  [{:selected selected :text text :after after} k]
   (case k
     :space (buffer/push-string text " ")
     :grave (buffer/push-string text "`")
@@ -343,5 +283,4 @@
     (do (buffer/clear selected)
         (if (keyword? k)
           (buffer/push-string text (string/ascii-upper (string k)))
-          (put text (length text) k))))
-  (refresh-caret-pos props))
+          (put text (length text) k)))))
