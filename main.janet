@@ -56,7 +56,7 @@
 #(t/render-textfield conf text-data)
   (render-textarea conf text-data)
   
-  (draw-text (conf :text) (data :latest-res) [30 200] :blue)
+  (draw-text (conf :text) (data :latest-res) [30 (+ (* (length (text-data :rows)) 40) 16 120)] :blue)
   (end-drawing)
 
   (handle-keyboard data))

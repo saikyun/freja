@@ -1,8 +1,9 @@
 (use ./build/jaylib)
 (import ./text_api :prefix "")
 (import ./text_rendering :prefix "")
+(import ./highlight :prefix "")
 
-(defn new-mouse-data
+(varfn new-mouse-data
   []
   @{:just-down                  nil
     :just-double-clicked        nil
@@ -16,11 +17,20 @@
     :selected-pos               nil
     :last-text-pos              nil})
 
-(defn reset-blink
+(varfn reset-blink
   [props]
   (set (props :blink) 0))
 
-(defn handle-keyboard
+(varfn eval-it
+  [data code]
+  (print "Eval! " code)
+  (try (do (fiber/setenv (fiber/current) (data :top-env))
+           (put data :latest-res (string (eval-string code))))
+       ([err fib]
+        (put data :latest-res (string "Error: " err))))
+  (pp (data :latest-res)))
+
+(varfn handle-keyboard
   [data]
   (def {:text-data props} data)
   (var k (get-key-pressed))
@@ -28,10 +38,14 @@
   (while (not= 0 k)
     (reset-blink props)
     
-    (if (or (key-down? :left-shift)
-          (key-down? :right-shift))
-      (insert-char-upper props k)
-      (insert-char props k))
+    (print "key pressed " k)
+    
+    (cond (or (key-down? :left-shift)
+            (key-down? :right-shift))
+          (insert-char-upper props k)
+          
+          (insert-char props k))
+    
     (set k (get-key-pressed)))
   
   (when (and (key-pressed? :q)
@@ -59,7 +73,7 @@
                (key-down? :right-super))
           (key-pressed? :.))
     (reset-blink props)
-
+    
     (paste props))  
   
   (when (and (or (key-down? :left-super)
@@ -77,7 +91,12 @@
           (key-pressed? :b))
     (reset-blink props)
     
-    (cut props))  
+    (cut props))
+  
+  (when (and (or (key-down? :left-super)
+               (key-down? :right-super))
+          (key-pressed? :e))
+    (eval-it data (last (peg/match sexp-grammar "(* 5 5) (+ 1 1)")))) 
   
   (when (key-pressed? :backspace)
     (reset-blink props)
@@ -140,25 +159,19 @@
   
   (when (key-pressed? :enter)
     (reset-blink props)
-
-    (insert-char props (first "\n"))
     
-    ## (def code (string
-    ##             (props :text)
-    ##             (props :selected)
-    ##             (string/reverse (props :after))))
-    ## (print "Eval! " code)
-    ## (-> (try (do (fiber/setenv (fiber/current) (data :top-env))
-    ##              (put data :latest-res (string (eval-string code))))
-    ##          ([err fib]
-    ##           (put data :latest-res (string "Error: " err))))
-    ##   print)
-    
-    )
-  
-  )
+    (cond
+      (or (key-down? :left-control)
+        (key-down? :right-control))    
+      (do (def code (string
+                      (props :text)
+                      (props :selected)
+                      (string/reverse (props :after))))
+          (eval-it data code))
+      
+      (insert-char props (first "\n")))))
 
-(defn handle-mouse
+(varfn handle-mouse
   [mouse-data text-data]
   (def [x y] (get-mouse-position))
   

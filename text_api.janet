@@ -1,31 +1,5 @@
 (use ./build/jaylib)
-
-(varfn get-caret-pos
-  [{:current-row current-row
-    :rows rows
-    :positions ps
-    :sizes sizes
-    :conf text-conf
-    :text text}]
-  (def {:size font-size
-        :spacing spacing} text-conf)
-  
-  (let [newline (or (= (first "\n") (last text))
-                  (and (get-in rows [current-row :word-wrapped])
-                    (= (length text) (get-in rows [current-row :stop]))))]
-    (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
-                                   (if newline
-                                     (let [h ((get rows current-row {:h 0}) :h)]
-                                       {:x 0 :y (+ (pos :y) h)})
-                                     pos))
-                               {:x 0 :y 0})]
-      (let [s (get sizes (dec (length text)))
-            w (if newline 0 (get s 0 0))]
-        [(- (+ cx w) (* spacing 0.5)) cy]))))
-
-(varfn refresh-caret-pos
-  [props]
-  (put props :caret-pos (get-caret-pos props)))
+(import ./text_rendering :prefix "")
 
 (varfn content
   "Returns a big string of all the pieces in the text data."
@@ -39,7 +13,6 @@
   (put props :dir :left)
   (buffer/push-string selected text)
   (buffer/clear text)
-  
   (refresh-caret-pos props))
 
 (varfn select-until-end
