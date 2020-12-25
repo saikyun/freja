@@ -156,50 +156,58 @@
     (reset-blink props)
     
     (def new-row (max 0 (dec current-row)))
-    (def {:start start :stop stop} (rows new-row))
-    (def column-i (binary-search-closest (array/slice ps start stop)
-                    |(compare x ($ :center-x))))
-    (var pos (+ start column-i))
     
-    (when (or (= (first "\n") (get text (dec pos)))
-            (and (get-in rows [new-row :word-wrapped])
-              (= pos (get-in rows [new-row :stop]))))
+    (if (= new-row current-row)
+      (move-to-beginning props)
+      (let [{:start start :stop stop} (rows new-row)]
+        (def column-i (binary-search-closest (array/slice ps start stop)
+                        |(compare x ($ :center-x))))
+        (var pos (+ start column-i))
+        
+        (when (or (= (first "\n") (get text (dec pos)))
+                (and (get-in rows [new-row :word-wrapped])
+                  (= pos (get-in rows [new-row :stop]))))
 #(print "caretting up " (caret-pos 0))
-      (when (<= 0 (caret-pos 0))
+          (when (<= 0 (caret-pos 0))
 # (pp caret-pos)
-        (-= pos 1)))
-    
-    (put-in props [caret-pos 1] new-row)
-    (move-to-pos props pos)
+            (-= pos 1)))
+        
+        (put-in props [caret-pos 1] new-row)
+        (move-to-pos props pos)))
     
 #(print "new row " new-row)
     )
   
   (when (key-pressed? :down)
-#(print "current row " current-row)
-#(pp caret-pos)
+    (print "current row " current-row)
+    (pp caret-pos)
     
     (reset-blink props)
     
     (def new-row (min (dec (length rows)) (inc current-row)))
-    (def {:start start :stop stop} (rows new-row))      
-    (def column-i (binary-search-closest (array/slice ps start stop)
-                    |(compare x ($ :center-x))))
     
-    (var pos (+ start column-i))
-    
-    (when (or (= (first "\n") (get text (dec pos)))
-            (and (get-in rows [new-row :word-wrapped])
-              (= pos (get-in rows [new-row :stop]))))
-#(print "carretting")
-      (when (<= 0 (caret-pos 0))
-# (pp caret-pos)
-        (-= pos 1)))
-    
-    (put-in props [caret-pos 1] new-row)
-    (move-to-pos props pos)
-    
-#(print "new row " new-row)
+    (if (= new-row current-row)
+      (move-to-end props)
+      (let [{:start start :stop stop} (rows new-row)]
+        (def column-i (binary-search-closest (array/slice ps start stop)
+                        |(compare x ($ :center-x))))
+        
+        (var pos (+ start column-i))
+        
+        (when (or (= (first "\n") (get text (dec pos)))
+                (and (get-in rows [new-row :word-wrapped])
+                  (= pos (get-in rows [new-row :stop]))))
+          (print "carretting")
+          (when (<= 0 (caret-pos 0))
+            (pp caret-pos)
+            (-= pos 1)))
+        
+        (put-in props [caret-pos 1] new-row)
+        (move-to-pos props pos)
+        
+        (pp (props :caret-pos))
+        
+        (print "new row " new-row)))
     ))
 
 (varfn textarea-handle-mouse

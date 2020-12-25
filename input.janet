@@ -38,8 +38,6 @@
   (while (not= 0 k)
     (reset-blink props)
     
-    (print "key pressed " k)
-    
     (cond (or (key-down? :left-shift)
             (key-down? :right-shift))
           (insert-char-upper props k)
@@ -58,16 +56,16 @@
     
     (if (or (key-down? :left-shift)
           (key-down? :right-shift))
-      (select-until-beginning props)
-      (move-to-beginning props)))  
+      (select-until-beginning-of-line props)
+      (move-to-beginning-of-line props)))  
   
   (when (key-pressed? :end)
     (reset-blink props)    
     
     (if (or (key-down? :left-shift)
           (key-down? :right-shift))
-      (select-until-end props)
-      (move-to-end props)))  
+      (select-until-end-of-line props)
+      (move-to-end-of-line props)))  
   
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
@@ -96,7 +94,7 @@
   (when (and (or (key-down? :left-super)
                (key-down? :right-super))
           (key-pressed? :e))
-    (eval-it data (last (peg/match sexp-grammar "(* 5 5) (+ 1 1)")))) 
+    (eval-it data (last (peg/match sexp-grammar (props :text))))) 
   
   (when (key-pressed? :backspace)
     (reset-blink props)

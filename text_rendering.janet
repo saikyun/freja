@@ -181,6 +181,29 @@
       (array/push rects @{:x x :y y :w w :h h})))
   rects)
 
+(varfn get-caret-pos
+  [{:current-row current-row
+    :rows rows
+    :positions ps
+    :sizes sizes
+    :conf text-conf
+    :text text}]
+  (def {:size font-size
+        :spacing spacing} text-conf)
+  
+  (let [newline (or (= (first "\n") (last text))
+                  (and (get-in rows [(dec current-row) :word-wrapped])
+                    (= (length text) (get-in rows [(dec current-row) :stop]))))]
+    (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
+                                   (if newline
+                                     (let [h ((get rows current-row {:h 0}) :h)]
+                                       {:x 0 :y (+ (pos :y) h)})
+                                     pos))
+                               {:x 0 :y 0})]
+      (let [s (get sizes (dec (length text)))
+            w (if newline 0 (get s 0 0))]
+        [(- (+ cx w) (* spacing 0.5)) cy]))))
+
 (varfn re-measure
   [props]
   (def {:text text :selected selected :after after :conf conf} props)
@@ -209,10 +232,10 @@
     ## it's the last, empty row
     (set current-row i))  
   
-  (when (= (first "\n") (last text))
+  (when (or (= (first "\n") (last text))
+          (and (get-in rows [current-row :word-wrapped])
+            (= (length text) (get-in rows [current-row :stop]))))
     (+= current-row 1))  
-  
-  
   
   (put props :current-row current-row)  
   (put props :full-text all-text)       
@@ -221,33 +244,8 @@
   (put props :rows rows)  
   (put props :position [30 (props :y)]))
 
-(varfn get-caret-pos
-  [{:current-row current-row
-    :rows rows
-    :positions ps
-    :sizes sizes
-    :conf text-conf
-    :text text}]
-  (def {:size font-size
-        :spacing spacing} text-conf)
-  
-  (let [newline (or (= (first "\n") (last text))
-                  (and (get-in rows [current-row :word-wrapped])
-                    (= (length text) (get-in rows [current-row :stop]))))]
-    (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
-                                   (if newline
-                                     (let [h ((get rows current-row {:h 0}) :h)]
-                                       {:x 0 :y (+ (pos :y) h)})
-                                     pos))
-                               {:x 0 :y 0})]
-      (let [s (get sizes (dec (length text)))
-            w (if newline 0 (get s 0 0))]
-        [(- (+ cx w) (* spacing 0.5)) cy]))))
-
 (varfn refresh-caret-pos
   [props]
   (re-measure props)
-  (put props :caret-pos (get-caret-pos props))
-  (print "refreshing:")
-  (pp (props :caret-pos)))
+  (put props :caret-pos (get-caret-pos props)))
 

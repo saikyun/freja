@@ -45,6 +45,16 @@
   [props pos]
   (select-region props pos pos))
 
+(varfn select-until-beginning-of-line
+  "Selects all text from cursor to beginning of line."
+  [props]
+  (def {:text text :rows rows :selected selected :current-row current-row} props)
+  (def {:start start} (rows current-row))
+  
+  (select-region props (+ (length text) (length selected)) start)
+  
+  (refresh-caret-pos props))
+
 (varfn move-to-beginning
   "Moves cursor to beginning of buffer."
   [props]
@@ -53,7 +63,30 @@
   (buffer/push-string after (string/reverse text))
   (buffer/clear selected)
   (buffer/clear text)
+  
+  (refresh-caret-pos props))
 
+(varfn move-to-beginning-of-line
+  "Moves cursor to beginning of line."
+  [props]
+  (def {:rows rows :current-row current-row} props)
+  (def {:start start} (rows current-row))
+  
+  (move-to-pos props start)
+  
+  (refresh-caret-pos props))
+
+(varfn select-until-end-of-line
+  "Selects all text from cursor to end of line."
+  [props]
+  (def {:text text :selected selected :rows rows :current-row current-row} props)
+  (def {:stop stop} (rows current-row))
+  
+  (select-region props (length text)
+    (if (= (dec (length rows)) current-row)
+      stop
+      (dec stop)))
+  
   (refresh-caret-pos props))
 
 (varfn move-to-end
@@ -64,7 +97,19 @@
   (buffer/push-string text (string/reverse after))
   (buffer/clear selected)
   (buffer/clear after)
+  
+  (refresh-caret-pos props))
 
+(varfn move-to-end-of-line
+  "Moves cursor to end of line."
+  [props]
+  (def {:rows rows :current-row current-row} props)
+  (def {:stop stop} (rows current-row))
+  
+  (move-to-pos props (if (= (dec (length rows)) current-row)
+                       stop
+                       (dec stop)))
+  
   (refresh-caret-pos props))
 
 (varfn copy
