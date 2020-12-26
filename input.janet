@@ -30,6 +30,14 @@
         (put data :latest-res (string "Error: " err))))
   (pp (data :latest-res)))
 
+(varfn meta-down?
+  []
+  (if (= :macos (os/which))
+    (or (key-down? :left-super)
+      (key-down? :right-super))
+    (or (key-down? :left-control)
+      (key-down? :right-control))))
+
 (varfn handle-keyboard
   [data]
   (def {:text-data props} data)
@@ -67,32 +75,27 @@
       (select-until-end-of-line props)
       (move-to-end-of-line props)))  
   
-  (when (and (or (key-down? :left-super)
-               (key-down? :right-super))
+  (when (and (meta-down?)
           (key-pressed? :.))
     (reset-blink props)
     
     (paste props))  
   
-  (when (and (or (key-down? :left-super)
-               (key-down? :right-super))
+  (when (and (meta-down?)
           (key-pressed? :a))
     (select-all props))  
   
-  (when (and (or (key-down? :left-super)
-               (key-down? :right-super))
+  (when (and (meta-down?)
           (key-pressed? :i))
     (copy props))  
   
-  (when (and (or (key-down? :left-super)
-               (key-down? :right-super))
+  (when (and (meta-down?)
           (key-pressed? :b))
     (reset-blink props)
     
     (cut props))
   
-  (when (and (or (key-down? :left-super)
-               (key-down? :right-super))
+  (when (and (meta-down?)
           (key-pressed? :e))
     (eval-it data (last (peg/match sexp-grammar (props :text))))) 
   

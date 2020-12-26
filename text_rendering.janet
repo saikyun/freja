@@ -94,7 +94,7 @@
          :let [[w h] (sizes i)]]
     (+= acc-w w)
     (when (> acc-w max-width)
-      (set ret (dec i))
+      (set ret i)
       (break)))
   ret)
 
@@ -127,6 +127,7 @@
             (if (> w max-width)
               (let [i (index-before-max-width sizes start stop max-width)
                     p (- i start)]
+                (put (last rows) :stop p)
                 (loop [word :in [(string/slice word 0 p) (string/slice word p)]
                        :let [stop (+ start (length word))
                              size (size-between sizes start stop)]]
@@ -139,7 +140,8 @@
                   (set curr-w w))))
           
           (when (not (> w max-width))
-            (array/push ((last rows) :words) word))))    
+            (array/push ((last rows) :words) word)
+            (update (last rows) :h max h))))    
     
     (set start stop))
   
@@ -148,7 +150,7 @@
                size (size-between sizes start stop)]]
     (add-word word stop size)
     (put (last rows) :stop stop))
-  
+
   rows)
 
 (varfn char-positions
@@ -196,7 +198,7 @@
                     (= (length text) (get-in rows [(dec current-row) :stop]))))]
     (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
                                    (if newline
-                                     (let [h ((get rows current-row {:h 0}) :h)]
+                                     (let [h ((get rows current-row) :h)]
                                        {:x 0 :y (+ (pos :y) h)})
                                      pos))
                                {:x 0 :y 0})]

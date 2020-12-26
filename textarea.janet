@@ -186,6 +186,8 @@
     
     (def new-row (min (dec (length rows)) (inc current-row)))
     
+    (pp rows)
+    
     (if (= new-row current-row)
       (move-to-end props)
       (let [{:start start :stop stop} (rows new-row)]
@@ -206,6 +208,8 @@
         (move-to-pos props pos)
         
         (pp (props :caret-pos))
+        
+        
         
         (print "new row " new-row)))
     ))
