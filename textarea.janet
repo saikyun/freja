@@ -1,4 +1,4 @@
-(use ./build/jaylib)
+(use jaylib)
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
 (import ./text_api :prefix "")
@@ -30,9 +30,9 @@
       (put char 0 c)
       (when (not= char "\n")
         (draw-text text-conf char 
-          [(+ x render-x) (+ y (* 40 i))]
-          
-          (or style-color color)))
+                   [(+ x render-x) (+ y (* 40 i))]
+                   
+                   (or style-color color)))
       (+= render-x w))
     (set render-x 0)))
 
@@ -59,12 +59,12 @@
 
   (when (mouse-button-pressed? 0)
     (when (and (mouse-data :down-time2)
-            (> 0.4 (- (get-time) (mouse-data :down-time2))))
+               (> 0.4 (- (get-time) (mouse-data :down-time2))))
       (put mouse-data :just-triple-clicked true)
       (put mouse-data :recently-triple-clicked true))
     
     (when (and (mouse-data :down-time)
-            (> 0.25 (- (get-time) (mouse-data :down-time))))
+               (> 0.25 (- (get-time) (mouse-data :down-time))))
       (put mouse-data :just-double-clicked true)
       (put mouse-data :recently-double-clicked true)
       (put mouse-data :down-time2 (get-time))))  
@@ -73,12 +73,12 @@
         (select-all text-data)
         
         (and (mouse-data :just-double-clicked)
-          (not (key-down? :left-shift))
-          (not (key-down? :right-shift)))
+             (not (key-down? :left-shift))
+             (not (key-down? :right-shift)))
         (select-surrounding-word text-data)
         
         (or (mouse-data :recently-double-clicked)
-          (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+            (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
         
         (mouse-button-down? 0)
         (do (when (nil? (mouse-data :last-text-pos))
@@ -97,7 +97,7 @@
             
             (let [[start end] (mouse-data :selected-pos)
                   start (if (or (key-down? :left-shift)
-                              (key-down? :right-shift))
+                                (key-down? :right-shift))
                           (mouse-data :last-text-pos)
                           start)]
               (select-region text-data start end)))))
@@ -107,7 +107,7 @@
   (let [row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset)))   
         {:start start :stop stop} (rows (min row-i (dec (length rows))))      
         column-i (binary-search-closest (array/slice ps start stop)
-                   |(compare x (+ ($ :center-x) x-offset)))]      
+                                        |(compare x (+ ($ :center-x) x-offset)))]      
     (+ start column-i)))
 
 
@@ -150,8 +150,8 @@
     )
   
   (when (key-pressed? :up)
-#(print "current row " current-row)    
-#(pp caret-pos)
+    #(print "current row " current-row)    
+    #(pp caret-pos)
     
     (reset-blink props)
     
@@ -161,21 +161,21 @@
       (move-to-beginning props)
       (let [{:start start :stop stop} (rows new-row)]
         (def column-i (binary-search-closest (array/slice ps start stop)
-                        |(compare x ($ :center-x))))
+                                             |(compare x ($ :center-x))))
         (var pos (+ start column-i))
         
         (when (or (= (first "\n") (get text (dec pos)))
-                (and (get-in rows [new-row :word-wrapped])
-                  (= pos (get-in rows [new-row :stop]))))
-#(print "caretting up " (caret-pos 0))
+                  (and (get-in rows [new-row :word-wrapped])
+                       (= pos (get-in rows [new-row :stop]))))
+          #(print "caretting up " (caret-pos 0))
           (when (<= 0 (caret-pos 0))
-# (pp caret-pos)
+            # (pp caret-pos)
             (-= pos 1)))
         
         (put-in props [caret-pos 1] new-row)
         (move-to-pos props pos)))
     
-#(print "new row " new-row)
+    #(print "new row " new-row)
     )
   
   (when (key-pressed? :down)
@@ -192,13 +192,13 @@
       (move-to-end props)
       (let [{:start start :stop stop} (rows new-row)]
         (def column-i (binary-search-closest (array/slice ps start stop)
-                        |(compare x ($ :center-x))))
+                                             |(compare x ($ :center-x))))
         
         (var pos (+ start column-i))
         
         (when (or (= (first "\n") (get text (dec pos)))
-                (and (get-in rows [new-row :word-wrapped])
-                  (= pos (get-in rows [new-row :stop]))))
+                  (and (get-in rows [new-row :word-wrapped])
+                       (= pos (get-in rows [new-row :stop]))))
           (print "carretting")
           (when (<= 0 (caret-pos 0))
             (pp caret-pos)
@@ -226,16 +226,16 @@
   (def [x y] pos)
   
   (comment
-    (when (mouse-button-down? 0)
-      (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))   
-      (def {:start start :stop stop} (rows (min row-i (dec (length rows)))))      
-      (def column-i (binary-search-closest (array/slice ps start stop)
-                      |(compare x (+ ($ :center-x) x-offset))))      
-      
-      (def pos (+ start column-i))      
-      
-      (move-to-pos props pos))
-    ) 
+   (when (mouse-button-down? 0)
+     (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))   
+     (def {:start start :stop stop} (rows (min row-i (dec (length rows)))))      
+     (def column-i (binary-search-closest (array/slice ps start stop)
+                                          |(compare x (+ ($ :center-x) x-offset))))      
+     
+     (def pos (+ start column-i))      
+     
+     (move-to-pos props pos))
+   ) 
   
   ## (def [x y] (get-mouse-position))
   
@@ -252,32 +252,32 @@
     (put mouse-data :up-pos [x y])
     
     (put mouse-data :selected-pos [(get-mouse-pos
-                                     (mouse-data :down-pos)
-                                     props                                     
-                                     text                                     
-                                     sizes                                     
-                                     ps                                     
-                                     rows                                     
-                                     x-offset                                     
-                                     y-offset)
+                                    (mouse-data :down-pos)
+                                    props                                     
+                                    text                                     
+                                    sizes                                     
+                                    ps                                     
+                                    rows                                     
+                                    x-offset                                     
+                                    y-offset)
                                    (get-mouse-pos
-                                     pos
-                                     props                                     
-                                     text                                     
-                                     sizes                                     
-                                     ps                                     
-                                     rows                                     
-                                     x-offset                                     
-                                     y-offset)]))  
+                                    pos
+                                    props                                     
+                                    text                                     
+                                    sizes                                     
+                                    ps                                     
+                                    rows                                     
+                                    x-offset                                     
+                                    y-offset)]))  
   
   (when (mouse-button-pressed? 0)
     (when (and (mouse-data :down-time2)
-            (> 0.4 (- (get-time) (mouse-data :down-time2))))
+               (> 0.4 (- (get-time) (mouse-data :down-time2))))
       (put mouse-data :just-triple-clicked true)
       (put mouse-data :recently-triple-clicked true))
     
     (when (and (mouse-data :down-time)
-            (> 0.25 (- (get-time) (mouse-data :down-time))))
+               (> 0.25 (- (get-time) (mouse-data :down-time))))
       (put mouse-data :just-double-clicked true)
       (put mouse-data :recently-double-clicked true)
       (put mouse-data :down-time2 (get-time))))  
@@ -286,12 +286,12 @@
         (select-all props)
         
         (and (mouse-data :just-double-clicked)
-          (not (key-down? :left-shift))
-          (not (key-down? :right-shift)))
+             (not (key-down? :left-shift))
+             (not (key-down? :right-shift)))
         (select-surrounding-word props)
         
         (or (mouse-data :recently-double-clicked)
-          (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+            (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
         
         (mouse-button-down? 0)
         (do (when (nil? (mouse-data :last-text-pos))
@@ -304,29 +304,29 @@
               (put mouse-data :just-down false))
             
             (put mouse-data :selected-pos [(get-mouse-pos
-                                             (mouse-data :down-pos)
-                                             props                                     
-                                             text                                     
-                                             sizes                                     
-                                             ps                                     
-                                             rows                                     
-                                             x-offset                                     
-                                             y-offset)
+                                            (mouse-data :down-pos)
+                                            props                                     
+                                            text                                     
+                                            sizes                                     
+                                            ps                                     
+                                            rows                                     
+                                            x-offset                                     
+                                            y-offset)
                                            (get-mouse-pos
-                                             pos
-                                             props                                     
-                                             text                                     
-                                             sizes                                     
-                                             ps                                     
-                                             rows                                     
-                                             x-offset                                     
-                                             y-offset)])
+                                            pos
+                                            props                                     
+                                            text                                     
+                                            sizes                                     
+                                            ps                                     
+                                            rows                                     
+                                            x-offset                                     
+                                            y-offset)])
             
             (var moved-caret false)
             
             (let [[start end] (mouse-data :selected-pos)
                   start (if (or (key-down? :left-shift)
-                              (key-down? :right-shift))
+                                (key-down? :right-shift))
                           (mouse-data :last-text-pos)
                           start)]
               (select-region props start end)))))
@@ -345,8 +345,8 @@
   (try
     (let [matches (peg/match styling-grammar full-text)]
       (each {:start start :stop stop :kind kind} matches
-            (loop [i :range [start stop]]
-              (put styles i {:kind kind :color (colors kind)}))))
+        (loop [i :range [start stop]]
+          (put styles i {:kind kind :color (colors kind)}))))
     ([err fib]
      (pp err)
      (print "peg/match err")))    
@@ -390,17 +390,17 @@
                              (+ y diff)
                              (- w (* 2 diff))
                              (- h (* 2 diff))]
-      roundness
-      segments (colors :background)))  
+                            roundness
+                            segments (colors :background)))  
   
   (def selection-start (length text))
   (def selection-end (+ (length text) (length selected)))
   
   (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
-        (draw-rectangle-rec [(+ rx 30)
-                             (+ ry y)
-                             w h]
-          (colors :selected-text-background)))
+    (draw-rectangle-rec [(+ rx 30)
+                         (+ ry y)
+                         w h]
+                        (colors :selected-text-background)))
   
   (render-rows props)
   
@@ -409,15 +409,15 @@
   (+= (props :blink) 1.1)
   
   (when (and (< (props :blink) 30)
-          (empty? selected))
+             (empty? selected))
     (let [[wwx wwy] (get-caret-pos props)
           h ((rows current-row) :h)
           h (if (= 0 h) (get-in props [:conf :size]) h)]
       (draw-line-ex
-        [(+ 30 wwx)
-         (+ y wwy (* 0.15 font-size))]
-        [(+ 30 wwx)
-         (+ (+ y wwy (* 0.15 font-size))
+       [(+ 30 wwx)
+        (+ y wwy (* 0.15 font-size))]
+       [(+ 30 wwx)
+        (+ (+ y wwy (* 0.15 font-size))
            (* h 0.75))] 1 (colors :caret))))
   
   (when (> (props :blink) 60) (set (props :blink) 0)))

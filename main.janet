@@ -1,4 +1,4 @@
-(use ./build/jaylib)
+(use jaylib)
 (import ./textfield :as t)
 (import ./textarea :prefix "" :fresh true)
 (import ./text_rendering :prefix "")
@@ -9,8 +9,8 @@
 (import spork/netrepl)
 
 (comment
-  (top-env 'ta/split-words)
-  )
+ (top-env 'ta/split-words)
+ )
 
 (var top-env (fiber/getenv (fiber/current)))
 (var font nil)
@@ -22,12 +22,12 @@
    :background [0.992 0.965 0.89]
    :selected-text [0.992 0.965 0.89]
    :selected-text-background :blue
-   :caret      [0.396 0.478 0.514]
+     :caret      [0.396 0.478 0.514]
    
    :special-symbol     (map |(/ $ 255) [133 153 0])
    :string     (map |(/ $ 255) [42 161 151])
    :keyword    (map |(/ $ 255) [38 138 210])
-   })
+  })
 
 (var text-data @{:selected @""
                  :text @""
@@ -48,12 +48,12 @@
 
 (varfn frame
   []
-#(handle-mouse mouse-data text-data)
+  #(handle-mouse mouse-data text-data)
   
   (begin-drawing)
   (clear-background (colors :background))
   
-#(t/render-textfield conf text-data)
+  #(t/render-textfield conf text-data)
   (render-textarea conf text-data)
   
   (draw-text (conf :text) (data :latest-res) [30 (+ (* (length (text-data :rows)) 40) 16 120)] :blue)
@@ -65,19 +65,19 @@
 (defn loop-it
   []
   (set loop-fiber
-    (ev/call (fn [] (while true
-                      (when (data :quit)
-                        (close-window)
-                        (os/exit)
-                        (error "QUIT!"))
-                      
-                      (try
-                        (do (frame)
-                            (ev/sleep 0.01))
-                        ([err fib]
-                         (print "loop-it err: ")
-                         (print (debug/stacktrace fib err))
-                         (ev/sleep 1))))))))
+       (ev/call (fn [] (while true
+                         (when (data :quit)
+                           (close-window)
+                           (os/exit)
+                           (error "QUIT!"))
+                         
+                         (try
+                           (do (frame)
+                               (ev/sleep 0.01))
+                           ([err fib]
+                            (print "loop-it err: ")
+                            (print (debug/stacktrace fib err))
+                            (ev/sleep 1))))))))
 
 (defn start
   []

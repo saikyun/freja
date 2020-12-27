@@ -1,4 +1,4 @@
-(use ./build/jaylib)
+(use jaylib)
 (import ./text_api :prefix "")
 (import ./text_rendering :prefix "")
 (import ./highlight :prefix "")
@@ -34,9 +34,9 @@
   []
   (if (= :macos (os/which))
     (or (key-down? :left-super)
-      (key-down? :right-super))
+        (key-down? :right-super))
     (or (key-down? :left-control)
-      (key-down? :right-control))))
+        (key-down? :right-control))))
 
 (varfn handle-keyboard
   [data]
@@ -47,7 +47,7 @@
     (reset-blink props)
     
     (cond (or (key-down? :left-shift)
-            (key-down? :right-shift))
+              (key-down? :right-shift))
           (insert-char-upper props k)
           
           (insert-char props k))
@@ -55,15 +55,15 @@
     (set k (get-key-pressed)))
   
   (when (and (key-pressed? :q)
-          (or (key-down? :left-control)
-            (key-down? :right-control)))
+             (or (key-down? :left-control)
+                 (key-down? :right-control)))
     (put data :quit true))  
   
   (when (key-pressed? :home)
     (reset-blink props)
     
     (if (or (key-down? :left-shift)
-          (key-down? :right-shift))
+            (key-down? :right-shift))
       (select-until-beginning-of-line props)
       (move-to-beginning-of-line props)))  
   
@@ -71,39 +71,39 @@
     (reset-blink props)    
     
     (if (or (key-down? :left-shift)
-          (key-down? :right-shift))
+            (key-down? :right-shift))
       (select-until-end-of-line props)
       (move-to-end-of-line props)))  
   
   (when (and (meta-down?)
-          (key-pressed? :.))
+             (key-pressed? :v))
     (reset-blink props)
     
     (paste props))  
   
   (when (and (meta-down?)
-          (key-pressed? :a))
+             (key-pressed? :a))
     (select-all props))  
   
   (when (and (meta-down?)
-          (key-pressed? :i))
+             (key-pressed? :c))
     (copy props))  
   
   (when (and (meta-down?)
-          (key-pressed? :b))
+             (key-pressed? :x))
     (reset-blink props)
     
     (cut props))
   
   (when (and (meta-down?)
-          (key-pressed? :e))
+             (key-pressed? :e))
     (eval-it data (last (peg/match sexp-grammar (props :text))))) 
   
   (when (key-pressed? :backspace)
     (reset-blink props)
     
     (cond (or (key-down? :left-alt)
-            (key-down? :right-alt))
+              (key-down? :right-alt))
           (delete-word-before props)
           
           (backspace props)))  
@@ -112,7 +112,7 @@
     (reset-blink props)
 
     (cond (or (key-down? :left-alt)
-            (key-down? :right-alt))
+              (key-down? :right-alt))
           (delete-word-after props)
           
           (forward-delete props)))  
@@ -123,17 +123,17 @@
     (cond
       ## select whole words
       (and (or (key-down? :left-alt)
-             (key-down? :right-alt))
-        (or (key-down? :left-shift)
-          (key-down? :right-shift)))
+               (key-down? :right-alt))
+           (or (key-down? :left-shift)
+               (key-down? :right-shift)))
       (select-word-before props)
       
       (or (key-down? :left-alt)
-        (key-down? :right-alt)) 
+          (key-down? :right-alt)) 
       (move-word-before props)
       
       (or (key-down? :left-shift)
-        (key-down? :right-shift))
+          (key-down? :right-shift))
       (select-char-before props)
       
       (move-char-before props)))  
@@ -143,17 +143,17 @@
     
     (cond 
       (and (or (key-down? :left-alt)
-             (key-down? :right-alt))
-        (or (key-down? :left-shift)
-          (key-down? :right-shift)))
+               (key-down? :right-alt))
+           (or (key-down? :left-shift)
+               (key-down? :right-shift)))
       (select-word-after props)
       
       (or (key-down? :left-alt)
-        (key-down? :right-alt))
+          (key-down? :right-alt))
       (move-word-after props)
       
       (or (key-down? :left-shift)
-        (key-down? :right-shift))
+          (key-down? :right-shift))
       (select-char-after props)
       
       (move-char-after props)))  
@@ -163,11 +163,11 @@
     
     (cond
       (or (key-down? :left-control)
-        (key-down? :right-control))    
+          (key-down? :right-control))    
       (do (def code (string
-                      (props :text)
-                      (props :selected)
-                      (string/reverse (props :after))))
+                     (props :text)
+                     (props :selected)
+                     (string/reverse (props :after))))
           (eval-it data code))
       
       (insert-char props (first "\n")))))
@@ -193,12 +193,12 @@
   
   (when (mouse-button-pressed? 0)
     (when (and (mouse-data :down-time2)
-            (> 0.4 (- (get-time) (mouse-data :down-time2))))
+               (> 0.4 (- (get-time) (mouse-data :down-time2))))
       (put mouse-data :just-triple-clicked true)
       (put mouse-data :recently-triple-clicked true))
     
     (when (and (mouse-data :down-time)
-            (> 0.25 (- (get-time) (mouse-data :down-time))))
+               (> 0.25 (- (get-time) (mouse-data :down-time))))
       (put mouse-data :just-double-clicked true)
       (put mouse-data :recently-double-clicked true)
       (put mouse-data :down-time2 (get-time))))
@@ -207,12 +207,12 @@
         (select-all text-data)
         
         (and (mouse-data :just-double-clicked)
-          (not (key-down? :left-shift))
-          (not (key-down? :right-shift)))
+             (not (key-down? :left-shift))
+             (not (key-down? :right-shift)))
         (select-surrounding-word text-data)
         
         (or (mouse-data :recently-double-clicked)
-          (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+            (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
         
         (mouse-button-down? 0)
         (do (when (nil? (mouse-data :last-text-pos))
@@ -231,7 +231,7 @@
             
             (let [[start end] (mouse-data :selected-pos)
                   start (if (or (key-down? :left-shift)
-                              (key-down? :right-shift))
+                                (key-down? :right-shift))
                           (mouse-data :last-text-pos)
                           start)]
               (select-region text-data start end)))))

@@ -1,4 +1,4 @@
-(use ./build/jaylib)
+(use jaylib)
 #(import ./text_api :prefix "")
 
 (defn measure-text
@@ -48,7 +48,7 @@
           ##   (colors :caret))
           
           (when (and (<= x (- (+ total-w offset) w3))
-                  (>= x last))
+                     (>= x last))
             (set res i)
             (break))
           
@@ -61,8 +61,8 @@
 (varfn split-words
   [t]
   (peg/match '(any (+ (capture (some (if-not :s 1)))
-                     (capture (* (if-not "\n" :s)))
-                     (capture "\n"))) t))
+                      (capture (* (if-not "\n" :s)))
+                      (capture "\n"))) t))
 
 (varfn measure-each-char
   [conf whole-text]
@@ -70,12 +70,12 @@
   (var arr (buffer/new 1))
   (seq [i :range [0 (length whole-text)]
         :let [c (whole-text i)]]
-    (put arr 0 c)
-    (if (= c (first "\n"))
-      (let [[x y] (measure-text conf " ")]
-        [0 y])
-      (let [[x y] (measure-text conf arr)]
-        [(+ x 2) y]))))
+       (put arr 0 c)
+       (if (= c (first "\n"))
+         (let [[x y] (measure-text conf " ")]
+           [0 y])
+         (let [[x y] (measure-text conf arr)]
+           [(+ x 2) y]))))
 
 (varfn size-between
   [sizes start stop]
@@ -83,7 +83,7 @@
   (loop [i :range [start stop]
          :let [[w h] (sizes i)]]
     (-> (update size :w + w)
-      (update :h max h)))
+        (update :h max h)))
   size)
 
 (varfn index-before-max-width
@@ -178,8 +178,8 @@
                r (last rects)]]
     (if (= (get r :y) y)
       (-> r
-        (put :w (- (+ x w) (r :x)))
-        (update :h max h))
+          (put :w (- (+ x w) (r :x)))
+          (update :h max h))
       (array/push rects @{:x x :y y :w w :h h})))
   rects)
 
@@ -194,14 +194,14 @@
         :spacing spacing} text-conf)
   
   (let [newline (or (= (first "\n") (last text))
-                  (and (get-in rows [(dec current-row) :word-wrapped])
-                    (= (length text) (get-in rows [(dec current-row) :stop]))))]
+                    (and (get-in rows [(dec current-row) :word-wrapped])
+                         (= (length text) (get-in rows [(dec current-row) :stop]))))]
     (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
                                    (if newline
                                      (let [h ((get rows current-row) :h)]
                                        {:x 0 :y (+ (pos :y) h)})
                                      pos))
-                               {:x 0 :y 0})]
+                                 {:x 0 :y 0})]
       (let [s (get sizes (dec (length text)))
             w (if newline 0 (get s 0 0))]
         [(- (+ cx w) (* spacing 0.5)) cy]))))
@@ -214,10 +214,10 @@
                     @""
                     v)))
   
-#(def rows (break-up-words text-conf all-text 0 280 (dec (length text))))
+  #(def rows (break-up-words text-conf all-text 0 280 (dec (length text))))
   
   (def sizes (measure-each-char conf all-text))
-#(size-between sizes 0 5)
+  #(size-between sizes 0 5)
   (def words (split-words all-text))  
   (def rows (wordwrap sizes words 450))  
   
@@ -227,7 +227,7 @@
   (loop [i :range [0 (length rows)]
          :let [r (rows i)]]
     (when (and (>= (max (dec (length text)) 0) (r :start))
-            (< (max (dec (length text)) 0) (r :stop)))
+               (< (max (dec (length text)) 0) (r :stop)))
       (set current-row i)
       (break))
     
@@ -235,8 +235,8 @@
     (set current-row i))  
   
   (when (or (= (first "\n") (last text))
-          (and (get-in rows [current-row :word-wrapped])
-            (= (length text) (get-in rows [current-row :stop]))))
+            (and (get-in rows [current-row :word-wrapped])
+                 (= (length text) (get-in rows [current-row :stop]))))
     (+= current-row 1))  
   
   (put props :current-row current-row)  

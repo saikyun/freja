@@ -1,4 +1,4 @@
-(use ./build/jaylib)
+(use jaylib)
 
 (defn content
   "Returns a big string of all the pieces in the text data."
@@ -115,8 +115,8 @@
   (def {:selected selected :text text :after after} text-data)
   (put text-data :dir :right)
   (def new-selected (buffer/new (+ (length text)
-                                  (length selected)
-                                  (length after))))    
+                                   (length selected)
+                                   (length after))))    
   (buffer/push-string new-selected text)    
   (buffer/push-string new-selected selected)    
   (buffer/push-string new-selected (string/reverse after))    
@@ -163,7 +163,7 @@
   [text-data]
   (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (not (empty? selected))       # when text is selected and the direction is right
-        (= dir :right))                  # we deselect rather than select
+           (= dir :right))                  # we deselect rather than select
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse selected)))]
       (buffer/push-string after (string/reverse (buffer/slice selected (dec (- l)))))
       (buffer/popn selected l))
@@ -177,7 +177,7 @@
   [text-data]
   (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (not (empty? selected))     # when text is selected and the direction is left
-        (= dir :left)) # we deselect rather than select
+           (= dir :left)) # we deselect rather than select
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) selected))]
       (buffer/push-string text (buffer/slice selected 0 l))
       (put text-data :selected (buffer/slice selected l)))
@@ -213,7 +213,7 @@
   [text-data]
   (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (= dir :right)
-        (not (empty? selected)))
+           (not (empty? selected)))
     (do (put after (length after) (last selected))
         (buffer/popn selected 1))
     (when (not (empty? text))
@@ -229,7 +229,7 @@
   [text-data]
   (def {:selected selected :text text :after after :dir dir} text-data)
   (if (and (= dir :left)
-        (not (empty? selected)))
+           (not (empty? selected)))
     (do (put text (length text) (first selected))
         (put text-data :selected (buffer/slice selected 1)))
     (when (not (empty? after))

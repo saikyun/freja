@@ -1,4 +1,4 @@
-(use ./build/jaylib)
+(use jaylib)
 (import ./text_rendering :prefix "")
 
 (varfn content
@@ -83,9 +83,9 @@
   (def {:stop stop} (rows current-row))
   
   (select-region props (length text)
-    (if (= (dec (length rows)) current-row)
-      stop
-      (dec stop)))
+                 (if (= (dec (length rows)) current-row)
+                   stop
+                   (dec stop)))
   
   (refresh-caret-pos props))
 
@@ -177,8 +177,8 @@
   (def {:selected selected :text text :after after} props)
   (put props :dir :right)
   (def new-selected (buffer/new (+ (length text)
-                                  (length selected)
-                                  (length after))))    
+                                   (length selected)
+                                   (length after))))    
   (buffer/push-string new-selected text)    
   (buffer/push-string new-selected selected)    
   (buffer/push-string new-selected (string/reverse after))    
@@ -230,7 +230,7 @@
   [props]
   (def {:selected selected :text text :after after :dir dir} props)
   (if (and (not (empty? selected))       # when text is selected and the direction is right
-        (= dir :right))                  # we deselect rather than select
+           (= dir :right))                  # we deselect rather than select
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse selected)))]
       (buffer/push-string after (string/reverse (buffer/slice selected (dec (- l)))))
       (buffer/popn selected l))
@@ -245,7 +245,7 @@
   [props]
   (def {:selected selected :text text :after after :dir dir} props)
   (if (and (not (empty? selected))     # when text is selected and the direction is left
-        (= dir :left)) # we deselect rather than select
+           (= dir :left)) # we deselect rather than select
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) selected))]
       (buffer/push-string text (buffer/slice selected 0 l))
       (put props :selected (buffer/slice selected l)))
@@ -284,7 +284,7 @@
   [props]
   (def {:selected selected :text text :after after :dir dir} props)
   (if (and (= dir :right)
-        (not (empty? selected)))
+           (not (empty? selected)))
     (do (put after (length after) (last selected))
         (buffer/popn selected 1))
     (when (not (empty? text))
@@ -301,7 +301,7 @@
   [props]
   (def {:selected selected :text text :after after :dir dir} props)
   (if (and (= dir :left)
-        (not (empty? selected)))
+           (not (empty? selected)))
     (do (put text (length text) (first selected))
         (put props :selected (buffer/slice selected 1)))
     (when (not (empty? after))
