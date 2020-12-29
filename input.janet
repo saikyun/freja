@@ -38,9 +38,141 @@
     (or (key-down? :left-control)
         (key-down? :right-control))))
 
+## stores held keys and the delay until they should trigger
+(var delay-left @{})
+
+## delay before first repetition of held keys
+(var initial-delay 0.2)
+
+## delay of each repetition thereafter
+(var repeat-delay 0.03)
+
+## bindings from key to function
+(def binds @{:end (fn [props]
+                    (if (or (key-down? :left-shift)
+                            (key-down? :right-shift))
+                      (select-until-end-of-line props)
+                      (move-to-end-of-line props)))
+             
+             :left (fn [props]
+                     (reset-blink props)
+                     
+                     (cond
+                       ## select whole words
+                       (and (or (key-down? :left-alt)
+                                (key-down? :right-alt))
+                            (or (key-down? :left-shift)
+                                (key-down? :right-shift)))
+                       (select-word-before props)
+                       
+                       (or (key-down? :left-alt)
+                           (key-down? :right-alt)) 
+                       (move-word-before props)
+                       
+                       (or (key-down? :left-shift)
+                           (key-down? :right-shift))
+                       (select-char-before props)
+                       
+                       (move-char-before props)))
+             
+             :right (fn [props]
+                      (reset-blink props)
+                      
+                      (cond 
+                        (and (or (key-down? :left-alt)
+                                 (key-down? :right-alt))
+                             (or (key-down? :left-shift)
+                                 (key-down? :right-shift)))
+                        (select-word-after props)
+                        
+                        (or (key-down? :left-alt)
+                            (key-down? :right-alt))
+                        (move-word-after props)
+                        
+                        (or (key-down? :left-shift)
+                            (key-down? :right-shift))
+                        (select-char-after props)
+                        
+                        (move-char-after props)))
+
+             :v (fn [props]
+                  (when (meta-down?)
+                    (reset-blink props)
+                    
+                    (paste props)))
+
+             :delete (fn [props]
+                       (reset-blink props)
+                       
+                       (cond (or (key-down? :left-alt)
+                                 (key-down? :right-alt))
+                             (delete-word-after props)
+                             
+                             (forward-delete props)))
+             
+             
+             :a (fn [props]
+                  (when (meta-down?)
+                    (select-all props)))  
+             
+             :c (fn [props]
+                  (when (meta-down?)
+                    (copy props)))    
+             
+             :x (fn [props]
+                  (when (meta-down?)
+                    (reset-blink props)
+                    
+                    (cut props)))  
+             
+             :e (fn [props]
+                  (when (meta-down?)
+                    (eval-it (props :data) (last (peg/match sexp-grammar (props :text))))))   
+             
+             :backspace (fn [props] (reset-blink props)
+                          
+                          (cond (or (key-down? :left-alt)
+                                    (key-down? :right-alt))
+                                (delete-word-before props)
+                                
+                                (backspace props)))
+             
+             :q (fn [props]
+                  (when (or (key-down? :left-control)
+                            (key-down? :right-control))
+                    (put (props :data) :quit true)))
+
+             
+             :home (fn [props]
+                     (reset-blink props)
+                     
+                     (if (or (key-down? :left-shift)
+                             (key-down? :right-shift))
+                       (select-until-beginning-of-line props)
+                       (move-to-beginning-of-line props)))
+
+
+             
+             :enter (fn [props]
+                      (reset-blink props)
+                      
+                      (cond
+                        (or (key-down? :left-control)
+                            (key-down? :right-control))    
+                        (do (def code (string
+                                       (props :text)
+                                       (props :selected)
+                                       (string/reverse (props :after))))
+                            (eval-it (props :data) code))
+                        
+                        (insert-char props (first "\n"))))})
+
 (varfn handle-keyboard
-  [data]
+  [data dt]
   (def {:text-data props} data)
+  
+  (put props :data data)
+  
   (var k (get-key-pressed))
   
   (while (not= 0 k)
@@ -54,184 +186,82 @@
     
     (set k (get-key-pressed)))
   
-  (when (and (key-pressed? :q)
-             (or (key-down? :left-control)
-                 (key-down? :right-control)))
-    (put data :quit true))  
+  (loop [[k dl] :pairs delay-left
+         :let [left ((update delay-left k - dt) k)]]
+    (when (<= left 0)
+      ((binds k) props)
+      (put delay-left k repeat-delay)))
   
-  (when (key-pressed? :home)
-    (reset-blink props)
+  (loop [k :keys binds]
+    (when (key-released? k)
+      (put delay-left k nil))
     
-    (if (or (key-down? :left-shift)
-            (key-down? :right-shift))
-      (select-until-beginning-of-line props)
-      (move-to-beginning-of-line props)))  
+    (when (key-pressed? k)
+      (reset-blink props)    
+      (put delay-left k initial-delay)
+      ((binds k) props)))
   
-  (when (key-pressed? :end)
-    (reset-blink props)    
+
+  (varfn handle-mouse
+    [mouse-data text-data]
+    (def [x y] (get-mouse-position))
     
-    (if (or (key-down? :left-shift)
-            (key-down? :right-shift))
-      (select-until-end-of-line props)
-      (move-to-end-of-line props)))  
-  
-  (when (and (meta-down?)
-             (key-pressed? :v))
-    (reset-blink props)
+    (put mouse-data :just-double-clicked false)
+    (put mouse-data :just-triple-clicked false)
     
-    (paste props))  
-  
-  (when (and (meta-down?)
-             (key-pressed? :a))
-    (select-all props))  
-  
-  (when (and (meta-down?)
-             (key-pressed? :c))
-    (copy props))  
-  
-  (when (and (meta-down?)
-             (key-pressed? :x))
-    (reset-blink props)
+    (def both (content text-data))  
     
-    (cut props))
-  
-  (when (and (meta-down?)
-             (key-pressed? :e))
-    (eval-it data (last (peg/match sexp-grammar (props :text))))) 
-  
-  (when (key-pressed? :backspace)
-    (reset-blink props)
+    (when (mouse-button-released? 0)
+      (put mouse-data :last-text-pos nil)
+      (put mouse-data :just-down nil)
+      (put mouse-data :recently-double-clicked nil)
+      (put mouse-data :recently-triple-clicked nil)
+      (put mouse-data :up-pos [x y])
+      
+      (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
+                                     (get-pos-in-text text-data x)]))
     
-    (cond (or (key-down? :left-alt)
-              (key-down? :right-alt))
-          (delete-word-before props)
+    (when (mouse-button-pressed? 0)
+      (when (and (mouse-data :down-time2)
+                 (> 0.4 (- (get-time) (mouse-data :down-time2))))
+        (put mouse-data :just-triple-clicked true)
+        (put mouse-data :recently-triple-clicked true))
+      
+      (when (and (mouse-data :down-time)
+                 (> 0.25 (- (get-time) (mouse-data :down-time))))
+        (put mouse-data :just-double-clicked true)
+        (put mouse-data :recently-double-clicked true)
+        (put mouse-data :down-time2 (get-time))))
+    
+    (cond (mouse-data :just-triple-clicked) 
+          (select-all text-data)
           
-          (backspace props)))  
-  
-  (when (key-pressed? :delete)
-    (reset-blink props)
-
-    (cond (or (key-down? :left-alt)
-              (key-down? :right-alt))
-          (delete-word-after props)
+          (and (mouse-data :just-double-clicked)
+               (not (key-down? :left-shift))
+               (not (key-down? :right-shift)))
+          (select-surrounding-word text-data)
           
-          (forward-delete props)))  
-  
-  (when (key-pressed? :left)
-    (reset-blink props)
-
-    (cond
-      ## select whole words
-      (and (or (key-down? :left-alt)
-               (key-down? :right-alt))
-           (or (key-down? :left-shift)
-               (key-down? :right-shift)))
-      (select-word-before props)
-      
-      (or (key-down? :left-alt)
-          (key-down? :right-alt)) 
-      (move-word-before props)
-      
-      (or (key-down? :left-shift)
-          (key-down? :right-shift))
-      (select-char-before props)
-      
-      (move-char-before props)))  
-  
-  (when (key-pressed? :right)
-    (reset-blink props)
-    
-    (cond 
-      (and (or (key-down? :left-alt)
-               (key-down? :right-alt))
-           (or (key-down? :left-shift)
-               (key-down? :right-shift)))
-      (select-word-after props)
-      
-      (or (key-down? :left-alt)
-          (key-down? :right-alt))
-      (move-word-after props)
-      
-      (or (key-down? :left-shift)
-          (key-down? :right-shift))
-      (select-char-after props)
-      
-      (move-char-after props)))  
-  
-  (when (key-pressed? :enter)
-    (reset-blink props)
-    
-    (cond
-      (or (key-down? :left-control)
-          (key-down? :right-control))    
-      (do (def code (string
-                     (props :text)
-                     (props :selected)
-                     (string/reverse (props :after))))
-          (eval-it data code))
-      
-      (insert-char props (first "\n")))))
-
-(varfn handle-mouse
-  [mouse-data text-data]
-  (def [x y] (get-mouse-position))
-  
-  (put mouse-data :just-double-clicked false)
-  (put mouse-data :just-triple-clicked false)
-  
-  (def both (content text-data))  
-  
-  (when (mouse-button-released? 0)
-    (put mouse-data :last-text-pos nil)
-    (put mouse-data :just-down nil)
-    (put mouse-data :recently-double-clicked nil)
-    (put mouse-data :recently-triple-clicked nil)
-    (put mouse-data :up-pos [x y])
-    
-    (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
-                                   (get-pos-in-text text-data x)]))
-  
-  (when (mouse-button-pressed? 0)
-    (when (and (mouse-data :down-time2)
-               (> 0.4 (- (get-time) (mouse-data :down-time2))))
-      (put mouse-data :just-triple-clicked true)
-      (put mouse-data :recently-triple-clicked true))
-    
-    (when (and (mouse-data :down-time)
-               (> 0.25 (- (get-time) (mouse-data :down-time))))
-      (put mouse-data :just-double-clicked true)
-      (put mouse-data :recently-double-clicked true)
-      (put mouse-data :down-time2 (get-time))))
-  
-  (cond (mouse-data :just-triple-clicked) 
-        (select-all text-data)
-        
-        (and (mouse-data :just-double-clicked)
-             (not (key-down? :left-shift))
-             (not (key-down? :right-shift)))
-        (select-surrounding-word text-data)
-        
-        (or (mouse-data :recently-double-clicked)
-            (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
-        
-        (mouse-button-down? 0)
-        (do (when (nil? (mouse-data :last-text-pos))
-              (put mouse-data :last-text-pos (length (text-data :text))))
-            
-            (put mouse-data :down-time (get-time))
-            (if (= nil (mouse-data :just-down))
-              (do (put mouse-data :just-down true)
-                  (put mouse-data :down-pos [x y]))
-              (put mouse-data :just-down false))
-            
-            (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
-                                           (get-pos-in-text text-data x)])
-            
-            (var moved-caret false)
-            
-            (let [[start end] (mouse-data :selected-pos)
-                  start (if (or (key-down? :left-shift)
-                                (key-down? :right-shift))
-                          (mouse-data :last-text-pos)
-                          start)]
-              (select-region text-data start end)))))
+          (or (mouse-data :recently-double-clicked)
+              (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+          
+          (mouse-button-down? 0)
+          (do (when (nil? (mouse-data :last-text-pos))
+                (put mouse-data :last-text-pos (length (text-data :text))))
+              
+              (put mouse-data :down-time (get-time))
+              (if (= nil (mouse-data :just-down))
+                (do (put mouse-data :just-down true)
+                    (put mouse-data :down-pos [x y]))
+                (put mouse-data :just-down false))
+              
+              (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
+                                             (get-pos-in-text text-data x)])
+              
+              (var moved-caret false)
+              
+              (let [[start end] (mouse-data :selected-pos)
+                    start (if (or (key-down? :left-shift)
+                                  (key-down? :right-shift))
+                            (mouse-data :last-text-pos)
+                            start)]
+                (select-region text-data start end))))))

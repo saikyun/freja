@@ -60,7 +60,7 @@
   (draw-text (conf :text) (string (text-data :current-row)) [30 (+ (* (length (text-data :rows)) 40) 16 180)] :blue)
   (end-drawing)
   
-  (handle-keyboard data))
+  (handle-keyboard data (get-frame-time)))
 
 (defn loop-it
   []
