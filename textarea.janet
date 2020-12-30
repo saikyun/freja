@@ -124,96 +124,6 @@
 ## sizes                 3
 ## positions             3
 
-(varfn textarea-handle-keyboard
-  [props]
-  (def {:caret-pos caret-pos
-        :full-text text
-        :sizes sizes
-        :positions ps
-        :current-row current-row
-        :rows rows
-        :position offset}
-    props)
-  (def [x y] caret-pos)
-  (def [x-offset y-offset] offset)
-  
-  (when (key-pressed? :right)
-    
-    (put props :caret-pos (get-caret-pos props))
-    (pp (props :caret-pos))
-    )
-  
-  (when (key-pressed? :left)
-    
-    (put props :caret-pos (get-caret-pos props))
-    (pp (props :caret-pos))
-    )
-  
-  (when (key-pressed? :up)
-    #(print "current row " current-row)    
-    #(pp caret-pos)
-    
-    (reset-blink props)
-    
-    (def new-row (max 0 (dec current-row)))
-    
-    (if (= new-row current-row)
-      (move-to-beginning props)
-      (let [{:start start :stop stop} (rows new-row)]
-        (def column-i (binary-search-closest (array/slice ps start stop)
-                                             |(compare x ($ :center-x))))
-        (var pos (+ start column-i))
-        
-        (when (or (= (first "\n") (get text (dec pos)))
-                  (and (get-in rows [new-row :word-wrapped])
-                       (= pos (get-in rows [new-row :stop]))))
-          #(print "caretting up " (caret-pos 0))
-          (when (<= 0 (caret-pos 0))
-            # (pp caret-pos)
-            (-= pos 1)))
-        
-        (put-in props [caret-pos 1] new-row)
-        (move-to-pos props pos)))
-    
-    #(print "new row " new-row)
-    )
-  
-  (when (key-pressed? :down)
-    (print "current row " current-row)
-    (pp caret-pos)
-    
-    (reset-blink props)
-    
-    (def new-row (min (dec (length rows)) (inc current-row)))
-    
-    (pp rows)
-    
-    (if (= new-row current-row)
-      (move-to-end props)
-      (let [{:start start :stop stop} (rows new-row)]
-        (def column-i (binary-search-closest (array/slice ps start stop)
-                                             |(compare x ($ :center-x))))
-        
-        (var pos (+ start column-i))
-        
-        (when (or (= (first "\n") (get text (dec pos)))
-                  (and (get-in rows [new-row :word-wrapped])
-                       (= pos (get-in rows [new-row :stop]))))
-          (print "carretting")
-          (when (<= 0 (caret-pos 0))
-            (pp caret-pos)
-            (-= pos 1)))
-        
-        (put-in props [caret-pos 1] new-row)
-        (move-to-pos props pos)
-        
-        (pp (props :caret-pos))
-        
-        
-        
-        (print "new row " new-row)))
-    ))
-
 (varfn textarea-handle-mouse
   [mouse-data props]
   (def {:full-text text
@@ -369,8 +279,6 @@
   (re-measure props)
   
   (stylize conf props)
-  
-  (textarea-handle-keyboard props)
   
   (textarea-handle-mouse md props)
   

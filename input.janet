@@ -2,6 +2,7 @@
 (import ./text_api :prefix "")
 (import ./text_rendering :prefix "")
 (import ./highlight :prefix "")
+(import ./find_row_etc :prefix "")
 
 (varfn new-mouse-data
   []
@@ -37,6 +38,64 @@
         (key-down? :right-super))
     (or (key-down? :left-control)
         (key-down? :right-control))))
+
+(defn vertical-move
+  [new-row extreme]
+  (fn [props]
+    (def {:caret-pos caret-pos
+          :full-text text
+          :sizes sizes
+          :positions ps
+          :current-row current-row
+          :rows rows
+          :position offset}
+      props)  
+    (def [x y] caret-pos)  
+    (def [x-offset y-offset] offset)
+    
+    #(print "current row " current-row)    
+    #(pp caret-pos)
+    
+    (reset-blink props)
+    
+    (def nr (new-row props))
+    
+    (print "new row " nr)
+    
+    (if (= nr current-row)
+      (extreme props)
+      (let [{:start start :stop stop} (rows nr)]
+        (def column-i (binary-search-closest (array/slice ps start stop)
+                                             |(compare x ($ :center-x))))
+        
+        (var pos (+ start column-i))
+        
+        (pp rows)
+        
+        (when (or (= (first "\n") (get text (dec pos)))
+                  (and (get-in rows [nr :word-wrapped])
+                       (= pos (get-in rows [nr :stop]))))
+          (when (< 0 (caret-pos 0))
+            (pp caret-pos)
+            (-= pos 1)
+            ))
+        
+        (print "going to " pos)
+        
+        (move-to-pos props pos)
+        (put props :caret-pos [(caret-pos 0) ((get-caret-pos props) 1)])
+        
+        (pp (props :caret-pos))))))
+
+(comment
+ (put binds :up (vertical-move |(max 0 (dec ($ :current-row)))
+                               move-to-beginning-of-line))
+ 
+ (put binds :down (vertical-move
+                   |(min (dec (length ($ :rows))) (inc ($ :current-row)))
+                   move-to-end)))
+
+
 
 ## stores held keys and the delay until they should trigger
 (var delay-left @{})
@@ -150,8 +209,6 @@
                              (key-down? :right-shift))
                        (select-until-beginning-of-line props)
                        (move-to-beginning-of-line props)))
-
-
              
              :enter (fn [props]
                       (reset-blink props)
@@ -165,7 +222,14 @@
                                        (string/reverse (props :after))))
                             (eval-it (props :data) code))
                         
-                        (insert-char props (first "\n"))))})
+                        (insert-char props (first "\n"))))
+             
+             :up (vertical-move |(max 0 (dec ($ :current-row)))
+                                move-to-beginning-of-line)
+             
+             :down (vertical-move
+                    |(min (dec (length ($ :rows))) (inc ($ :current-row)))
+                    move-to-end)})
 
 (varfn handle-keyboard
   [data dt]

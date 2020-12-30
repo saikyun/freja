@@ -29,23 +29,23 @@
                      w3 (math/ceil (/ w2 2))]]
           (set total-w (+ total-w w2))
           
-          ## (draw-line-ex
-          ##   [(- (+ offset total-w) w2) 60]
-          ##   [(- (+ offset total-w) w2) (+ 60 (* h 0.75))]
-          ##   1
-          ##   (colors :caret))            
+          # (draw-line-ex
+          #  [(- (+ offset total-w) w2) 60]
+          #  [(- (+ offset total-w) w2) (+ 60 (* h 0.75))]
+          #  1
+          #  (colors :caret))            
           
-          ## (draw-line-ex
-          ##   [(- (+ offset total-w) w3) 60]
-          ##   [(- (+ offset total-w) w3) (+ 60 (* h 0.75))]
-          ##   1
-          ##   :blue)
+          # (draw-line-ex
+          #  [(- (+ offset total-w) w3) 60]
+          #  [(- (+ offset total-w) w3) (+ 60 (* h 0.75))]
+          #  1
+          #  :blue)
           
-          ## (draw-line-ex
-          ##   [(+ offset total-w) 60]
-          ##   [(+ offset total-w) (+ 60 (* h 0.75))]
-          ##   1
-          ##   (colors :caret))
+          # (draw-line-ex
+          #  [(+ offset total-w) 60]
+          #  [(+ offset total-w) (+ 60 (* h 0.75))]
+          #  1
+          #  (colors :caret))
           
           (when (and (<= x (- (+ total-w offset) w3))
                      (>= x last))
@@ -88,7 +88,7 @@
 
 (varfn index-before-max-width
   [sizes start stop max-width]
-  (var ret 0)
+  (var ret start)
   (var acc-w 0)
   (loop [i :range [start stop]
          :let [[w h] (sizes i)]]
@@ -98,59 +98,124 @@
       (break)))
   ret)
 
+(varfn regular-word
+  [state word {:w w}]
+  (let [row (last (state :rows))]
+    (-> row
+        (put :stop (+ (row :stop) (length word)))
+        (update :w + w)
+        (update :words array/push word))))
+
+(varfn handle-newline
+  [state word {:w w :h h}]
+  (let [row    (last (state :rows))
+        start  (row :stop)
+        stop   (+ start (length word))
+        new-y  (+ (row :y) (row :h))]
+    
+    (array/push (row :words) word)
+    (put row :stop stop)
+    
+    (update state :rows array/push @{:y new-y
+                                     :h h
+                                     :w 0
+                                     :words @[]
+                                     :start stop
+                                     :stop  stop})))
+
+(varfn add-word [w i] nil)
+
+(varfn handle-wide-word
+  [state word {:h h}]
+  (let [row   (last (state :rows))
+        start (row :stop)
+        stop  (+ start (length word))
+        i (index-before-max-width (state :sizes) start stop (state :max-width))
+        p (- i start)]
+    
+    (loop [word :in [(string/slice word 0 p) (string/slice word p)]
+           :let [row (last (state :rows))
+                 new-y (+ (row :y) (row :h))
+                 start (row :stop)]]
+      
+      (when (not (empty? (row :words)))
+        (update state :rows array/push @{:y new-y
+                                         :h h
+                                         :w 0
+                                         :words @[]
+                                         :start start
+                                         :stop  start}))
+      
+      (add-word state word))
+    
+    state))
+
+(varfn handle-wide-line
+  [state word size]
+  (let [{:w w :h h} size
+        {:rows rows 
+         :max-width max-width} state
+        row (last rows)
+        new-y (+ (row :y) (row :h))
+        start (row :stop)]
+    
+    (put row :word-wrapped true)
+    
+    (cond (> w max-width)
+          (handle-wide-word state word size)
+          
+          (not (empty? (row :words)))
+          (-> state
+              (update :rows array/push @{:y new-y
+                                         :h h
+                                         :w 0
+                                         :words @[]
+                                         :start start
+                                         :stop  start})
+              (add-word word))
+          
+          (add-word state word))))
+
+(varfn add-word [state word]
+  (let [{:rows rows
+         :max-width max-width} state
+        
+        row (last rows)
+        
+        start (row :stop)
+        
+        stop  (+ start (length word))
+        size  (size-between (state :sizes) start stop)
+        
+        {:w w :h h} size
+        curr-w (+ (row :w) w)]
+    
+    (update row :h max h)
+    
+    (cond (= word "\n")
+          (handle-newline state word size)
+          
+          (> curr-w max-width)
+          (handle-wide-line state word size)
+          
+          (regular-word state word size))))
+
 (varfn wordwrap
   [sizes words max-width]
-  (var rows @[@{:y 0 :h 0 :words @[]
-                :start 0 :end 0}])
-  (var start 0)
-  (var curr-w 0)
-  (var acc-y 0)
-  (var max-h 0)
+  (var rows @[@{:y 0
+                :h 0
+                :w 0
+                :words @[]
+                :start 0
+                :stop 0}])
   
-  (defn add-word [word stop {:w w :h h}]
-    (update (last rows) :h max h)
-    (+= curr-w w)
-    
-    (if (= word "\n")
-      (do (set curr-w w)
-          (array/push ((last rows) :words) word)
-          (def new-y (+ acc-y ((last rows) :h)))
-          (put (last rows) :stop stop)
-          (set start stop)
-          (array/push rows @{:y new-y :h h :words @[]
-                             :start start
-                             :stop stop})
-          (set acc-y new-y))
-      (do (when (> curr-w max-width)
-            (put (last rows) :word-wrapped true)
-            (def new-y (+ acc-y ((last rows) :h)))
-            (if (> w max-width)
-              (let [i (index-before-max-width sizes start stop max-width)
-                    p (- i start)]
-                (put (last rows) :stop p)
-                (loop [word :in [(string/slice word 0 p) (string/slice word p)]
-                       :let [stop (+ start (length word))
-                             size (size-between sizes start stop)]]
-                  (add-word word stop size)))
-              (do (when (not (empty? ((last rows) :words)))
-                    (array/push rows @{:y new-y :h 0 :words @[]
-                                       :start start
-                                       :stop stop})
-                    (set acc-y new-y))
-                  (set curr-w w))))
-          
-          (when (not (> w max-width))
-            (array/push ((last rows) :words) word)
-            (update (last rows) :h max h))))    
-    
-    (set start stop))
+  (def state @{:max-width max-width
+               :sizes sizes
+               :rows rows})
   
-  (loop [word :in words
-         :let [stop (+ start (length word))
-               size (size-between sizes start stop)]]
-    (add-word word stop size)
-    (put (last rows) :stop stop))
-
+  (loop [word :in words]
+    (add-word state word))
+  
   rows)
 
 (varfn char-positions
@@ -234,10 +299,11 @@
     ## it's the last, empty row
     (set current-row i))  
   
-  (when (or (= (first "\n") (last text))
-            (and (get-in rows [current-row :word-wrapped])
-                 (= (length text) (get-in rows [current-row :stop]))))
-    (+= current-row 1))  
+  (comment
+   (when (or (= (first "\n") (last text))
+             (and (get-in rows [current-row :word-wrapped])
+                  (= (length text) (get-in rows [current-row :stop]))))
+     (+= current-row 1)))
   
   (put props :current-row current-row)  
   (put props :full-text all-text)       
