@@ -43,7 +43,8 @@
   [new-row extreme]
   (fn [props]
     (def {:caret-pos caret-pos
-          :full-text text
+          :text text
+          :full-text full-text
           :sizes sizes
           :positions ps
           :current-row current-row
@@ -72,7 +73,7 @@
         
         (pp rows)
         
-        (let [newline (= (first "\n") (get text (dec pos)))
+        (let [newline (= (first "\n") (get full-text (dec pos)))
               wordwrap (and (get-in rows [nr :word-wrapped])
                             (= pos (get-in rows [nr :stop])))]
           (print "cp")
@@ -91,7 +92,11 @@
         
         (print "going to " pos)
         
-        (move-to-pos props pos)
+        (if (or (key-down? :left-shift)
+                (key-down? :right-shift))
+          (do (print "selecting " (length text)  " - " pos)
+              (select-region props (length text) pos))
+          (move-to-pos props pos))
         (put props :caret-pos [(caret-pos 0) ((get-caret-pos props) 1)])
         
         (pp (props :caret-pos))))
@@ -99,7 +104,7 @@
     props))
 
 (comment
-
+ 
  (do (put binds :up (vertical-move |(max 0 (dec ($ :current-row)))
                                    move-to-beginning-of-line))
      
@@ -275,69 +280,219 @@
     (when (key-pressed? k)
       (reset-blink props)    
       (put delay-left k initial-delay)
-      ((binds k) props)))
-  
+      ((binds k) props))))
 
-  (varfn handle-mouse
-    [mouse-data text-data]
-    (def [x y] (get-mouse-position))
+
+(varfn handle-mouse
+  [mouse-data text-data]
+  (def [x y] (get-mouse-position))
+  
+  (put mouse-data :just-double-clicked false)
+  (put mouse-data :just-triple-clicked false)
+  
+  (def both (content text-data))  
+  
+  (when (mouse-button-released? 0)
+    (put mouse-data :last-text-pos nil)
+    (put mouse-data :just-down nil)
+    (put mouse-data :recently-double-clicked nil)
+    (put mouse-data :recently-triple-clicked nil)
+    (put mouse-data :up-pos [x y])
     
-    (put mouse-data :just-double-clicked false)
-    (put mouse-data :just-triple-clicked false)
+    (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
+                                   (get-pos-in-text text-data x)]))
+  
+  (when (mouse-button-pressed? 0)
+    (reset-blink text-data)
     
-    (def both (content text-data))  
+    (when (and (mouse-data :down-time2)
+               (> 0.4 (- (get-time) (mouse-data :down-time2))))
+      (put mouse-data :just-triple-clicked true)
+      (put mouse-data :recently-triple-clicked true))
     
-    (when (mouse-button-released? 0)
-      (put mouse-data :last-text-pos nil)
-      (put mouse-data :just-down nil)
-      (put mouse-data :recently-double-clicked nil)
-      (put mouse-data :recently-triple-clicked nil)
-      (put mouse-data :up-pos [x y])
-      
-      (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
-                                     (get-pos-in-text text-data x)]))
+    (when (and (mouse-data :down-time)
+               (> 0.25 (- (get-time) (mouse-data :down-time))))
+      (put mouse-data :just-double-clicked true)
+      (put mouse-data :recently-double-clicked true)
+      (put mouse-data :down-time2 (get-time))))
+  
+  
+  (cond (mouse-data :just-triple-clicked) 
+        (select-all text-data)
+        
+        (and (mouse-data :just-double-clicked)
+             (not (key-down? :left-shift))
+             (not (key-down? :right-shift)))
+        (select-surrounding-word text-data)
+        
+        (or (mouse-data :recently-double-clicked)
+            (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+        
+        (mouse-button-down? 0)
+        (do (when (nil? (mouse-data :last-text-pos))
+              (put mouse-data :last-text-pos (length (text-data :text))))
+            
+            (put mouse-data :down-time (get-time))
+            (if (= nil (mouse-data :just-down))
+              (do (put mouse-data :just-down true)
+                  (put mouse-data :down-pos [x y]))
+              (put mouse-data :just-down false))
+            
+            (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
+                                           (get-pos-in-text text-data x)])
+            
+            (var moved-caret false)
+            
+            (let [[start end] (mouse-data :selected-pos)
+                  start (if (or (key-down? :left-shift)
+                                (key-down? :right-shift))
+                          (mouse-data :last-text-pos)
+                          start)]
+              (select-region text-data start end)))))
+
+(varfn get-mouse-pos
+  [[x y] text-data text sizes ps rows x-offset y-offset]
+  (let [row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset)))   
+        {:start start :stop stop} (rows (min row-i (dec (length rows))))      
+        column-i (binary-search-closest (array/slice ps start stop)
+                                        |(compare x (+ ($ :center-x) x-offset)))]      
+    (+ start column-i)))
+
+(varfn get-mouse-row
+  [[_ y] rows y-offset]
+  (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))
+
+(varfn handle-mouse
+  [mouse-data props]
+  (def {:full-text text
+        :sizes sizes
+        :positions ps
+        :rows rows
+        :position offset} props)
+  (def [x-offset y-offset] offset)
+  (def pos (get-mouse-position))
+  (def [x y] pos)
+  
+  (comment
+   (when (mouse-button-down? 0)
+     (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))   
+     (def {:start start :stop stop} (rows (min row-i (dec (length rows)))))      
+     (def column-i (binary-search-closest (array/slice ps start stop)
+                                          |(compare x (+ ($ :center-x) x-offset))))      
+     
+     (def pos (+ start column-i))      
+     
+     (move-to-pos props pos))
+   ) 
+  
+  ## (def [x y] (get-mouse-position))
+  
+  (put mouse-data :just-double-clicked false)  
+  (put mouse-data :just-triple-clicked false)  
+  
+  (def both (content props))    
+  
+  (when (mouse-button-released? 0)
+    (put mouse-data :last-text-pos nil)
+    (put mouse-data :just-down nil)
+    (put mouse-data :recently-double-clicked nil)
+    (put mouse-data :recently-triple-clicked nil)
+    (put mouse-data :up-pos [x y])
     
-    (when (mouse-button-pressed? 0)
-      (when (and (mouse-data :down-time2)
-                 (> 0.4 (- (get-time) (mouse-data :down-time2))))
-        (put mouse-data :just-triple-clicked true)
-        (put mouse-data :recently-triple-clicked true))
-      
-      (when (and (mouse-data :down-time)
-                 (> 0.25 (- (get-time) (mouse-data :down-time))))
-        (put mouse-data :just-double-clicked true)
-        (put mouse-data :recently-double-clicked true)
-        (put mouse-data :down-time2 (get-time))))
+    (put mouse-data :selected-pos [(get-mouse-pos
+                                    (mouse-data :down-pos)
+                                    props                                     
+                                    text                                     
+                                    sizes                                     
+                                    ps                                     
+                                    rows
+                                    x-offset
+                                    y-offset)
+                                   (get-mouse-pos
+                                    pos
+                                    props                                     
+                                    text                                     
+                                    sizes                                     
+                                    ps                                     
+                                    rows                                     
+                                    x-offset                                     
+                                    y-offset)]))  
+  
+  (when (mouse-button-pressed? 0)
+    (reset-blink props)
     
-    (cond (mouse-data :just-triple-clicked) 
-          (select-all text-data)
-          
-          (and (mouse-data :just-double-clicked)
-               (not (key-down? :left-shift))
-               (not (key-down? :right-shift)))
-          (select-surrounding-word text-data)
-          
-          (or (mouse-data :recently-double-clicked)
-              (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
-          
-          (mouse-button-down? 0)
-          (do (when (nil? (mouse-data :last-text-pos))
-                (put mouse-data :last-text-pos (length (text-data :text))))
+    (when (and (mouse-data :down-time2)
+               (> 0.4 (- (get-time) (mouse-data :down-time2))))
+      (put mouse-data :just-triple-clicked true)
+      (put mouse-data :recently-triple-clicked true))
+    
+    (when (and (mouse-data :down-time)
+               (> 0.25 (- (get-time) (mouse-data :down-time))))
+      (put mouse-data :just-double-clicked true)
+      (put mouse-data :recently-double-clicked true)
+      (put mouse-data :down-time2 (get-time))))  
+  
+  (cond (mouse-data :just-triple-clicked) 
+        (select-all props)
+        
+        (and (mouse-data :just-double-clicked)
+             (not (key-down? :left-shift))
+             (not (key-down? :right-shift)))
+        (select-surrounding-word props)
+        
+        (or (mouse-data :recently-double-clicked)
+            (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
+        
+        (mouse-button-down? 0)
+        (do (when (nil? (mouse-data :last-text-pos))
+              (put mouse-data :last-text-pos (length (props :text))))
+            
+            (put mouse-data :down-time (get-time))
+            (if (= nil (mouse-data :just-down))
+              (do (put mouse-data :just-down true)
+                  (put mouse-data :down-pos [x y]))
+              (put mouse-data :just-down false))
+            
+            (put mouse-data :selected-pos [(get-mouse-pos
+                                            (mouse-data :down-pos)
+                                            props                                     
+                                            text                                     
+                                            sizes                                     
+                                            ps                                     
+                                            rows                                     
+                                            x-offset                                     
+                                            y-offset)
+                                           (get-mouse-pos
+                                            pos
+                                            props                                     
+                                            text                                     
+                                            sizes                                     
+                                            ps                                     
+                                            rows                                     
+                                            x-offset                                     
+                                            y-offset)])
+            
+            (var moved-caret false)
+            
+            (let [[start end] (mouse-data :selected-pos)
+                  start (if (or (key-down? :left-shift)
+                                (key-down? :right-shift))
+                          (mouse-data :last-text-pos)
+                          start)
+                  
+                  single (= start end)
+                  p       (dec (get-in mouse-data [:selected-pos 1])) ## position before mouse
+                  rp      (row-of-pos (props :rows) p)
+                  newline (= (first "\n") (get both p))]
               
-              (put mouse-data :down-time (get-time))
-              (if (= nil (mouse-data :just-down))
-                (do (put mouse-data :just-down true)
-                    (put mouse-data :down-pos [x y]))
-                (put mouse-data :just-down false))
-              
-              (put mouse-data :selected-pos [(get-pos-in-text text-data (first (mouse-data :down-pos)))
-                                             (get-pos-in-text text-data x)])
-              
-              (var moved-caret false)
-              
-              (let [[start end] (mouse-data :selected-pos)
-                    start (if (or (key-down? :left-shift)
-                                  (key-down? :right-shift))
-                            (mouse-data :last-text-pos)
-                            start)]
-                (select-region text-data start end))))))
+              (if (and single
+                       newline
+                       (= rp (get-mouse-row pos rows y-offset)))
+                (select-region props (dec start) (dec end))
+                (do
+                  (if (= (row-of-pos (props :rows) (get-in mouse-data [:selected-pos 1]))
+                         (get-mouse-row pos rows y-offset))
+                    (put props :stickiness :down)
+                    (put props :stickiness :right))
+                  
+                  (select-region props start end)))))))

@@ -37,7 +37,8 @@
 
                  :y 100
                  :caret-pos [0 0]
-                 :blink 0})
+                 :blink 0
+                 :position [0 0]})
 (var mouse-data (new-mouse-data))
 (var conf nil)
 
@@ -48,7 +49,7 @@
 
 (varfn frame
   []
-  #(handle-mouse mouse-data text-data)
+  (handle-mouse mouse-data text-data)
   
   (begin-drawing)
   (clear-background (colors :background))

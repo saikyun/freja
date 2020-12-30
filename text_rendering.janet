@@ -142,6 +142,7 @@
         (update state :rows array/push @{:y new-y
                                          :h h
                                          :w 0
+                                         :word-wrapped true
                                          :words @[]
                                          :start start
                                          :stop  start}))
@@ -284,6 +285,20 @@
             w (if (or newline word-wrapped-down) 0 (get s 0 0))]
         [(- (+ cx w) (* spacing 0.5)) cy]))))
 
+(varfn row-of-pos
+  [rows pos]
+  (var current-row 0)    
+  (loop [i :range [0 (length rows)]
+         :let [r (rows i)]]
+    (when (and (>= (max pos 0) (r :start))
+               (< (max pos 0) (r :stop)))
+      (set current-row i)
+      (break))
+    
+    ## it's the last, empty row
+    (set current-row i))
+  current-row)
+
 (varfn re-measure
   [props]
   (def {:text text :selected selected :after after :conf conf} props)
@@ -310,7 +325,9 @@
       (break))
     
     ## it's the last, empty row
-    (set current-row i))  
+    (set current-row i))
+  
+  (put props :non-moved-row current-row)
   
   (when (= (first "\n") (last text))
     (+= current-row 1))

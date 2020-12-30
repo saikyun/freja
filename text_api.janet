@@ -28,15 +28,17 @@
 (varfn select-region
   "Selects text between index start and index end."
   [props start end]
-  (let [{:after after} props
+  (let [{:after after :selected selected :text text} props
         both (content props)
         [start end] (if (> start end)
                       (do (put props :dir :left)
                           [end start])
                       (do (put props :dir :right)
                           [start end]))]
+    
     (put props :text (buffer/slice both 0 start))
     (put props :selected (buffer/slice both start end))
+    
     (buffer/clear after)
     (buffer/push-string after (string/reverse (buffer/slice both end)))))
 
