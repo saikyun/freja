@@ -254,21 +254,34 @@
     :positions ps
     :sizes sizes
     :conf text-conf
-    :text text}]
+    :text text
+    :stickiness stickiness}]
   (def {:size font-size
         :spacing spacing} text-conf)
   
-  (let [newline (or (= (first "\n") (last text))
-                    (and (get-in rows [(dec current-row) :word-wrapped])
-                         (= (length text) (get-in rows [(dec current-row) :stop]))))]
+  (let [newline (= (first "\n") (last text))
+        word-wrapped-down (and (= stickiness :down)
+                               (get-in rows [(dec current-row) :word-wrapped])
+                               (= (length text) (get-in rows [(dec current-row) :stop])))
+        word-wrapped-right (and (= stickiness :right)
+                                (get-in rows [current-row :word-wrapped])
+                                (= (length text) (get-in rows [current-row :stop])))]
     (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
-                                   (if newline
-                                     (let [h ((get rows current-row) :h)]
-                                       {:x 0 :y (+ (pos :y) h)})
-                                     pos))
+                                   (cond newline
+                                         (let [h ((get rows current-row) :h)]
+                                           {:x 0 :y (+ (pos :y) h)})
+                                         
+                                         word-wrapped-down
+                                         (let [h ((get rows current-row) :h)]
+                                           {:x 0 :y (+ (pos :y) h)})
+                                         
+                                         word-wrapped-right
+                                         pos
+                                         
+                                         pos))
                                  {:x 0 :y 0})]
       (let [s (get sizes (dec (length text)))
-            w (if newline 0 (get s 0 0))]
+            w (if (or newline word-wrapped-down) 0 (get s 0 0))]
         [(- (+ cx w) (* spacing 0.5)) cy]))))
 
 (varfn re-measure
@@ -299,11 +312,13 @@
     ## it's the last, empty row
     (set current-row i))  
   
-  (comment
-   (when (or (= (first "\n") (last text))
-             (and (get-in rows [current-row :word-wrapped])
-                  (= (length text) (get-in rows [current-row :stop]))))
-     (+= current-row 1)))
+  (when (= (first "\n") (last text))
+    (+= current-row 1))
+  
+  (when (and (get-in rows [current-row :word-wrapped])
+             (= (length text) (get-in rows [current-row :stop]))
+             (= (props :stickiness) :down))
+    (+= current-row 1))
   
   (put props :current-row current-row)  
   (put props :full-text all-text)       

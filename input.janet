@@ -72,28 +72,40 @@
         
         (pp rows)
         
-        (when (or (= (first "\n") (get text (dec pos)))
-                  (and (get-in rows [nr :word-wrapped])
-                       (= pos (get-in rows [nr :stop]))))
-          (when (< 0 (caret-pos 0))
-            (pp caret-pos)
-            (-= pos 1)
-            ))
+        (let [newline (= (first "\n") (get text (dec pos)))
+              wordwrap (and (get-in rows [nr :word-wrapped])
+                            (= pos (get-in rows [nr :stop])))]
+          (print "cp")
+          (pp caret-pos)
+          
+          (cond newline
+                (when (< 0 (caret-pos 0))
+                  (-= pos 1))
+                
+                wordwrap
+                (if (< 0 (caret-pos 0))
+                  (put props :stickiness :right)
+                  (put props :stickiness :down))))
+        
+        (print (props :stickiness))
         
         (print "going to " pos)
         
         (move-to-pos props pos)
         (put props :caret-pos [(caret-pos 0) ((get-caret-pos props) 1)])
         
-        (pp (props :caret-pos))))))
+        (pp (props :caret-pos))))
+    
+    props))
 
 (comment
- (put binds :up (vertical-move |(max 0 (dec ($ :current-row)))
-                               move-to-beginning-of-line))
- 
- (put binds :down (vertical-move
-                   |(min (dec (length ($ :rows))) (inc ($ :current-row)))
-                   move-to-end)))
+
+ (do (put binds :up (vertical-move |(max 0 (dec ($ :current-row)))
+                                   move-to-beginning-of-line))
+     
+     (put binds :down (vertical-move
+                       |(min (dec (length ($ :rows))) (inc ($ :current-row)))
+                       move-to-end))))
 
 
 

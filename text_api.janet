@@ -72,6 +72,8 @@
   (def {:rows rows :current-row current-row} props)
   (def {:start start} (rows current-row))
   
+  (put props :stickiness :down)
+  
   (move-to-pos props start)
   
   (refresh-caret-pos props))
@@ -106,9 +108,12 @@
   (def {:rows rows :current-row current-row} props)
   (def {:stop stop} (rows current-row))
   
-  (move-to-pos props (if (= (dec (length rows)) current-row)
-                       stop
-                       (dec stop)))
+  (let [last-word (last (get-in rows [current-row :words]))]
+    (move-to-pos props (if (= last-word "\n")
+                         (dec stop)
+                         stop)))
+
+  (put props :stickiness :right)
   
   (refresh-caret-pos props))
 
@@ -332,6 +337,9 @@
     (when (not (empty? after))
       (put text (length text) (last after))
       (buffer/popn after 1)))
+  
+  (put props :stickiness :down)
+  
   (refresh-caret-pos props))
 
 (varfn insert-char
