@@ -421,9 +421,6 @@
       (put text (length text) (last after))
       (buffer/popn after 1)))
   
-  (print "wat?")
-  (error "omfg")
-  
   (put props :stickiness :down)
   
   (refresh-caret-pos props))
