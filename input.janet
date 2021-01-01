@@ -49,6 +49,7 @@
           :positions ps
           :current-row current-row
           :rows rows
+          :dir dir
           :position offset}
       props)  
     (def [x y] caret-pos)  
@@ -95,7 +96,7 @@
         (if (or (key-down? :left-shift)
                 (key-down? :right-shift))
           (do (print "selecting " (length text)  " - " pos)
-              (select-region props (length text) pos))
+              (select-region-append props (cursor-pos props) pos))
           (move-to-pos props pos))
         (put props :caret-pos [(caret-pos 0) ((get-caret-pos props) 1)])
         
@@ -105,14 +106,17 @@
 
 (comment
  
- (do (put binds :up (vertical-move |(max 0 (dec ($ :current-row)))
+ (do (put binds :up (vertical-move |(max 0 (dec (row-of-pos ($ :rows)
+                                                            (cursor-pos $))))
                                    move-to-beginning-of-line))
      
      (put binds :down (vertical-move
-                       |(min (dec (length ($ :rows))) (inc ($ :current-row)))
-                       move-to-end))))
-
-
+                       |(min (dec (length ($ :rows)))
+                             (tracev (inc (row-of-pos ($ :rows)
+                                                      (cursor-pos $)))))
+                       move-to-end)))
+ 
+ )
 
 ## stores held keys and the delay until they should trigger
 (var delay-left @{})
@@ -241,11 +245,14 @@
                         
                         (insert-char props (first "\n"))))
              
-             :up (vertical-move |(max 0 (dec ($ :current-row)))
+             :up (vertical-move |(max 0 (dec (row-of-pos ($ :rows)
+                                                         (cursor-pos $))))
                                 move-to-beginning-of-line)
              
              :down (vertical-move
-                    |(min (dec (length ($ :rows))) (inc ($ :current-row)))
+                    |(min (dec (length ($ :rows)))
+                          (tracev (inc (row-of-pos ($ :rows)
+                                                   (cursor-pos $)))))
                     move-to-end)})
 
 (varfn handle-keyboard

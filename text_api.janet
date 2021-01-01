@@ -6,6 +6,14 @@
   [{:selected selected :text text :after after}]
   (string text selected (string/reverse after)))
 
+(varfn cursor-pos
+  "Returns the position of the cursor, which depends on the direction of selection."
+  [props]
+  (if (= :right (props :dir))
+    (+ (length (props :text))
+       (length (props :selected)))
+    (length (props :text))))
+
 (varfn select-until-beginning
   "Selects all text from cursor to beginning of buffer."
   [props]
@@ -40,7 +48,60 @@
     (put props :selected (buffer/slice both start end))
     
     (buffer/clear after)
-    (buffer/push-string after (string/reverse (buffer/slice both end)))))
+    (buffer/push-string after (string/reverse (buffer/slice both end)))
+
+    props))
+
+(varfn select-region-append
+  "Selects text between index start and index end. If a selection is already active, it appends to that selection."
+  [props start end]
+  (let [{:after after :selected selected :text text} props
+        both (content props)
+        
+        start (cond (empty? selected)
+                    start
+                    
+                    (= (props :dir) :left)
+                    (+ (length text) (length selected))
+                    
+                    (length text))
+        
+        [start end] (if (> start end)
+                      (do (put props :dir :left)
+                          [end start])
+                      (do (put props :dir :right)
+                          [start end]))]
+    
+    (put props :text (buffer/slice both 0 start))
+    (put props :selected (buffer/slice both start end))
+    
+    (buffer/clear after)
+    (buffer/push-string after (string/reverse (buffer/slice both end)))
+    
+    props))
+
+(comment
+ (def stuff @{:text (buffer (text-data :text))
+              :selected (buffer (text-data :selected))
+              :after (buffer (text-data :after))
+              :dir (text-data :dir)})
+
+ (select-region-append stuff 20 (dec (length (content stuff))))
+ 
+ 
+ (-> (select-region-append @{:text @"a" :selected @"b" :after @"c" :dir :left} 1 0)
+     (get :selected)
+     string
+     (compare= "ab"))
+ #=> true
+ 
+ (-> (select-region-append @{:text @"a" :selected @"b" :after @"c" :dir :left} 1 2)
+     (get :selected)
+     string
+     (compare= ""))
+ #=> true
+ 
+ )
 
 (varfn move-to-pos
   "Selects text between index start and index end."

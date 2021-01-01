@@ -287,7 +287,7 @@
 
 (varfn row-of-pos
   [rows pos]
-  (var current-row 0)    
+  (var current-row 0)
   (loop [i :range [0 (length rows)]
          :let [r (rows i)]]
     (when (and (>= (max pos 0) (r :start))
