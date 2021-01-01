@@ -1,6 +1,34 @@
 (use jaylib)
 (import ./text_rendering :prefix "")
 
+(varfn dump-state
+  [path props]
+  (let [props (table/clone props)
+        f (file/open path :w)]
+    (put props :conf (table ;(reduce array/concat @[] (pairs (props :conf)))))
+    (put props :conf nil)
+    (put props :data nil)
+    
+    (file/write f (marshal props))
+    (file/flush f)
+    (file/close f)))
+
+(varfn load-state
+  [path]
+  (let [f (file/open path :r)
+        content (file/read f :all)
+        res (unmarshal content)]
+    (file/close f)
+    res))
+
+(comment
+ (dump-state "text_experiment_dump" text-data)
+ 
+ (merge-into text-data (load-state "text_experiment_dump"))
+ 
+ text-data
+ )
+
 (varfn content
   "Returns a big string of all the pieces in the text data."
   [{:selected selected :text text :after after}]
@@ -77,7 +105,7 @@
               :selected (buffer (text-data :selected))
               :after (buffer (text-data :after))
               :dir (text-data :dir)})
-
+ 
  (select-region-append stuff 20 (dec (length (content stuff))))
  
  
@@ -392,6 +420,9 @@
     (when (not (empty? after))
       (put text (length text) (last after))
       (buffer/popn after 1)))
+  
+  (print "wat?")
+  (error "omfg")
   
   (put props :stickiness :down)
   

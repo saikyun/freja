@@ -76,7 +76,10 @@
                            (do (frame)
                                (ev/sleep 0.01))
                            ([err fib]
-                            (print "loop-it err: ")
+                            (let [path "text_experiment_dump"]
+                              (print "Error!")
+                              (dump-state path text-data)
+                              (print "Dumped state to " path))
                             (print (debug/stacktrace fib err))
                             (ev/sleep 1))))))))
 
@@ -103,6 +106,11 @@
     ([err fib]
      (print "error! " err)
      (debug/stacktrace fib err)
+     
+     (let [path "text_experiment_dump"]
+       (dump-state path text-data)
+       (print "Dumped state to " path))
+
      (close-window))))
 
 (def env (fiber/getenv (fiber/current)))

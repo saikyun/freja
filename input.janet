@@ -70,8 +70,6 @@
       
       (var pos 0)
       
-      (pp rows)
-      
       (if (= nr current-row)
         (do
           (print "extreme!")
@@ -255,13 +253,13 @@
              
              :up (vertical-move |(max 0 (dec (row-of-pos ($ :rows)
                                                          (cursor-pos $))))
-                                move-to-beginning-of-line)
+                                (fn [_] 0))
              
              :down (vertical-move
                     |(min (dec (length ($ :rows)))
                           (tracev (inc (row-of-pos ($ :rows)
                                                    (cursor-pos $)))))
-                    move-to-end)})
+                    |(length (content $)))})
 
 (varfn handle-keyboard
   [data dt]

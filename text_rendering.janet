@@ -142,7 +142,7 @@
         (update state :rows array/push @{:y new-y
                                          :h h
                                          :w 0
-                                         :word-wrapped true
+                                         :word-wrapped false
                                          :words @[]
                                          :start start
                                          :stop  start}))
@@ -326,7 +326,7 @@
   
   (def cp (cursor-pos props))
   
-  (var current-row 0)  
+  (var current-row 0)
   (loop [i :range [0 (length rows)]
          :let [r (rows i)]]
     (when (and (>= (max (dec cp) 0) (r :start))
