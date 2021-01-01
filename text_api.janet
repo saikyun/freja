@@ -6,14 +6,6 @@
   [{:selected selected :text text :after after}]
   (string text selected (string/reverse after)))
 
-(varfn cursor-pos
-  "Returns the position of the cursor, which depends on the direction of selection."
-  [props]
-  (if (= :right (props :dir))
-    (+ (length (props :text))
-       (length (props :selected)))
-    (length (props :text))))
-
 (varfn select-until-beginning
   "Selects all text from cursor to beginning of buffer."
   [props]
@@ -114,7 +106,7 @@
   (def {:text text :rows rows :selected selected :current-row current-row} props)
   (def {:start start} (rows current-row))
   
-  (select-region props (+ (length text) (length selected)) start)
+  (select-region-append props (+ (length text) (length selected)) start)
   
   (refresh-caret-pos props))
 
@@ -147,10 +139,10 @@
   (def {:text text :selected selected :rows rows :current-row current-row} props)
   (def {:stop stop} (rows current-row))
   
-  (select-region props (length text)
-                 (if (= (dec (length rows)) current-row)
-                   stop
-                   (dec stop)))
+  (select-region-append props (length text)
+                        (if (= (dec (length rows)) current-row)
+                          stop
+                          (dec stop)))
   
   (refresh-caret-pos props))
 

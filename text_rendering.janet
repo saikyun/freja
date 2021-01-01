@@ -299,6 +299,14 @@
     (set current-row i))
   current-row)
 
+(varfn cursor-pos
+  "Returns the position of the cursor, which depends on the direction of selection."
+  [props]
+  (if (= :right (props :dir))
+    (+ (length (props :text))
+       (length (props :selected)))
+    (length (props :text))))
+
 (varfn re-measure
   [props]
   (def {:text text :selected selected :after after :conf conf} props)
@@ -331,10 +339,11 @@
   
   (put props :non-moved-row current-row)
   
-  (when (= (first "\n")
-           (all-text (max (dec cp) 0))
-           #(last text)
-           )
+  (when (and (not (empty? all-text))
+             (= (first "\n")
+                (all-text (max (dec cp) 0))
+                #(last text)
+                ))
     (+= current-row 1))
   
   (when (and (get-in rows [current-row :word-wrapped])
