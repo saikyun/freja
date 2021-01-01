@@ -316,11 +316,13 @@
   
   (def ps (char-positions sizes rows))  
   
+  (def cp (cursor-pos props))
+  
   (var current-row 0)  
   (loop [i :range [0 (length rows)]
          :let [r (rows i)]]
-    (when (and (>= (max (dec (length text)) 0) (r :start))
-               (< (max (dec (length text)) 0) (r :stop)))
+    (when (and (>= (max (dec cp) 0) (r :start))
+               (< (max (dec cp) 0) (r :stop)))
       (set current-row i)
       (break))
     
@@ -329,11 +331,14 @@
   
   (put props :non-moved-row current-row)
   
-  (when (= (first "\n") (last text))
+  (when (= (first "\n")
+           (all-text (max (dec cp) 0))
+           #(last text)
+           )
     (+= current-row 1))
   
   (when (and (get-in rows [current-row :word-wrapped])
-             (= (length text) (get-in rows [current-row :stop]))
+             (= cp (get-in rows [current-row :stop]))
              (= (props :stickiness) :down))
     (+= current-row 1))
   
@@ -348,4 +353,3 @@
   [props]
   (re-measure props)
   (put props :caret-pos (get-caret-pos props)))
-
