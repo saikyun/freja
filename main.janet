@@ -48,9 +48,17 @@
             :quit false
             :top-env top-env})
 
+(varfn game-frame
+  [dt]
+  
+  )
+
 (varfn frame
   []
   (handle-mouse mouse-data text-data)
+  
+  
+  (def dt (get-frame-time))
   
   (begin-drawing)
   (clear-background (colors :background))
@@ -60,9 +68,18 @@
   
   (draw-text (conf :text) (data :latest-res) [30 (+ (* (length (text-data :rows)) 40) 16 120)] :blue)
   (draw-text (conf :text) (string (text-data :current-row)) [30 (+ (* (length (text-data :rows)) 40) 16 180)] :blue)
+  
+  (try
+    (game-frame dt)
+    ([err fib]
+     (print "hmm")
+     (print (debug/stacktrace fib err))
+     ))  
+  
   (end-drawing)
   
-  (handle-keyboard data (get-frame-time)))
+  (handle-keyboard data dt)
+  )
 
 (defn loop-it
   []

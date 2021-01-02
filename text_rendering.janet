@@ -362,3 +362,18 @@
   [props]
   (re-measure props)
   (put props :caret-pos (get-caret-pos props)))
+
+(varfn reset-blink
+  [props]
+  (set (props :blink) 0))
+
+(varfn scroll-to-focus
+  [props]
+  (let [curr-y (get ((props :rows) (props :current-row)) :y 0)
+        curr-h (get ((props :rows) (props :current-row)) :h 0)]
+    (when (> (+ curr-y curr-h) (+ (- (props :scroll)) (props :h)))
+      (put props :scroll (- (- (+ curr-y curr-h) (* 0.5 (props :h))))))
+
+    (when (< curr-y (- (props :scroll)))
+      (put props :scroll (- (- curr-y
+                               (* 0.5 (props :h))))))))

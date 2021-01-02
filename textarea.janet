@@ -287,10 +287,16 @@
   
   (let [x 10
         w 500
-        h (+ (* (length rows) 40) 16)
+        h (min (+ (* (length rows) 40) 16)
+               (- (get-screen-height) y 10))
         roundness 0.05
         segments 9
         diff 2]
+
+    (put props :h h)
+    
+    (begin-scissor-mode x y w h)
+    
     (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
     (draw-rectangle-rounded [(+ x diff)
                              (+ y diff)
@@ -303,10 +309,11 @@
   (def selection-end (+ (length text) (length selected)))
   
   (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
-    (draw-rectangle-rec [(+ rx 30)
-                         (+ ry y scroll)
-                         w h]
-                        (colors :selected-text-background)))
+    (let [w (if (= w 0) 5 w)]
+      (draw-rectangle-rec [(+ rx 30)
+                           (+ ry y scroll)
+                           w h]
+                          (colors :selected-text-background))))
   
   (render-rows props)
   
@@ -326,4 +333,6 @@
         (+ (+ y scroll wwy (* 0.15 font-size))
            (* h 0.75))] 1 (colors :caret))))
   
-  (when (> (props :blink) 60) (set (props :blink) 0)))
+  (when (> (props :blink) 60) (set (props :blink) 0))
+  
+  (end-scissor-mode))

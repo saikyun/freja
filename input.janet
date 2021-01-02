@@ -18,10 +18,6 @@
     :selected-pos               nil
     :last-text-pos              nil})
 
-(varfn reset-blink
-  [props]
-  (set (props :blink) 0))
-
 (varfn eval-it
   [data code]
   (print "Eval! " code)
@@ -38,76 +34,6 @@
         (key-down? :right-super))
     (or (key-down? :left-control)
         (key-down? :right-control))))
-
-(defn vertical-move
-  [new-row extreme]
-  (fn [props]
-    (def {:caret-pos caret-pos
-          :text text
-          :full-text full-text
-          :sizes sizes
-          :positions ps
-          :current-row current-row
-          :rows rows
-          :dir dir
-          :position offset}
-      props)  
-    (def [x y] caret-pos)  
-    (def [x-offset y-offset] offset)
-    
-    #(print "current row " current-row)    
-    #(pp caret-pos)
-    
-    (reset-blink props)
-    
-    (def nr (new-row props))
-    
-    (print "new row " nr)
-    
-    (let [{:start start :stop stop} (rows nr)
-          column-i (binary-search-closest (array/slice ps start stop)
-                                          |(compare x ($ :center-x)))]
-      
-      (var pos 0)
-      
-      (if (= nr current-row)
-        (do
-          (print "extreme!")
-          (set pos (extreme props)))
-        (do
-          (set pos (+ start column-i))
-          (let [newline (= (first "\n") (get full-text (dec pos)))
-                wordwrap (and (get-in rows [nr :word-wrapped])
-                              (= pos (get-in rows [nr :stop])))]
-            (print "cp")
-            (pp caret-pos)
-            
-            (cond newline
-                  (when (< 0 (caret-pos 0))
-                    (-= pos 1))
-                  
-                  wordwrap
-                  (if (< 0 (caret-pos 0))
-                    (put props :stickiness :right)
-                    (put props :stickiness :down))))))
-      
-      (print (props :stickiness))
-      
-      (print "going to " pos)
-      
-      (if (or (key-down? :left-shift)
-              (key-down? :right-shift))
-        (do (print "selecting " (length text)  " - " pos)
-            (select-region-append props (cursor-pos props) pos))
-        (move-to-pos props pos))
-      (put props :caret-pos [(caret-pos 0) ((get-caret-pos props) 1)])
-      
-      (when (= nr current-row)
-        (refresh-caret-pos props))
-      
-      (pp (props :caret-pos)))
-    
-    props))
 
 (comment
  
@@ -180,13 +106,13 @@
                         (select-char-after props)
                         
                         (move-char-after props)))
-
+             
              :v (fn [props]
                   (when (meta-down?)
                     (reset-blink props)
                     
                     (paste props)))
-
+             
              :delete (fn [props]
                        (reset-blink props)
                        
@@ -194,8 +120,7 @@
                                  (key-down? :right-alt))
                              (delete-word-after props)
                              
-                             (forward-delete props)))
-             
+                             (forward-delete props))) 
              
              :a (fn [props]
                   (when (meta-down?)
@@ -209,7 +134,7 @@
                   (when (meta-down?)
                     (reset-blink props)
                     
-                    (cut props)))  
+                    (cut props)))
              
              :e (fn [props]
                   (when (meta-down?)
@@ -257,8 +182,8 @@
              
              :down (vertical-move
                     |(min (dec (length ($ :rows)))
-                          (tracev (inc (row-of-pos ($ :rows)
-                                                   (cursor-pos $)))))
+                          (inc (row-of-pos ($ :rows)
+                                           (cursor-pos $))))
                     |(length (content $)))})
 
 (varfn handle-keyboard
@@ -277,6 +202,8 @@
           (insert-char-upper props k)
           
           (insert-char props k))
+
+    (scroll-to-focus props)
     
     (set k (get-key-pressed)))
   
@@ -284,16 +211,20 @@
          :let [left ((update delay-left k - dt) k)]]
     (when (<= left 0)
       ((binds k) props)
-      (put delay-left k repeat-delay)))
+      (put delay-left k repeat-delay)
+      (scroll-to-focus props)))
   
   (loop [k :keys binds]
     (when (key-released? k)
-      (put delay-left k nil))
+      (put delay-left k nil)
+      (scroll-to-focus props))
     
     (when (key-pressed? k)
       (reset-blink props)    
       (put delay-left k initial-delay)
-      ((binds k) props))))
+      ((binds k) props)
+      
+      (scroll-to-focus props))))
 
 
 (varfn handle-mouse
@@ -387,7 +318,8 @@
   (def [x y] pos)
   
   (let [move (get-mouse-wheel-move)]
-    (update props :scroll + move))
+    (update props :scroll |(max (- (or (-?> (props :rows) last (get :y)) 0))
+                                (min 0 (+ $ (* move 10))))))
   
   (def y-offset (+ y-offset (props :scroll)))
   
@@ -417,24 +349,25 @@
     (put mouse-data :recently-triple-clicked nil)
     (put mouse-data :up-pos [x y])
     
-    (put mouse-data :selected-pos [(get-mouse-pos
-                                    (mouse-data :down-pos)
-                                    props                                     
-                                    text                                     
-                                    sizes                                     
-                                    ps                                     
-                                    rows
-                                    x-offset
-                                    y-offset)
-                                   (get-mouse-pos
-                                    pos
-                                    props                                     
-                                    text                                     
-                                    sizes                                     
-                                    ps                                     
-                                    rows                                     
-                                    x-offset                                     
-                                    y-offset)]))  
+    (when (mouse-data :down-pos)
+      (put mouse-data :selected-pos [(get-mouse-pos
+                                      (mouse-data :down-pos)
+                                      props                                     
+                                      text                                     
+                                      sizes                                     
+                                      ps                                     
+                                      rows
+                                      x-offset
+                                      y-offset)
+                                     (get-mouse-pos
+                                      pos
+                                      props                                     
+                                      text                                     
+                                      sizes                                     
+                                      ps                                     
+                                      rows                                     
+                                      x-offset                                     
+                                      y-offset)])))  
   
   (when (mouse-button-pressed? 0)
     (reset-blink props)

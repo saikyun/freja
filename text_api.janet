@@ -1,5 +1,6 @@
 (use jaylib)
 (import ./text_rendering :prefix "")
+(import ./find_row_etc :prefix "")
 
 (varfn dump-state
   [path props]
@@ -454,3 +455,58 @@
           (buffer/push-string text (string/ascii-upper (string k)))
           (put text (length text) k))))
   (refresh-caret-pos props))
+
+(defn vertical-move
+  [new-row extreme]
+  (fn [props]
+    (def {:caret-pos caret-pos
+          :text text
+          :full-text full-text
+          :sizes sizes
+          :positions ps
+          :current-row current-row
+          :rows rows
+          :dir dir
+          :position offset}
+      props)  
+    (def [x y] caret-pos)  
+    (def [x-offset y-offset] offset)
+    
+    (reset-blink props)
+    
+    (def nr (new-row props))
+    
+    (let [{:start start :stop stop} (rows nr)
+          column-i (binary-search-closest (array/slice ps start stop)
+                                          |(compare x ($ :center-x)))]
+      
+      (var pos 0)
+      
+      (if (= nr current-row)
+        (set pos (extreme props))
+        (do
+          (set pos (+ start column-i))
+          (let [newline (= (first "\n") (get full-text (dec pos)))
+                wordwrap (and (get-in rows [nr :word-wrapped])
+                              (= pos (get-in rows [nr :stop])))]
+            
+            (cond newline
+                  (when (< 0 (caret-pos 0))
+                    (-= pos 1))
+                  
+                  wordwrap
+                  (if (< 0 (caret-pos 0))
+                    (put props :stickiness :right)
+                    (put props :stickiness :down))))))
+      
+      (if (or (key-down? :left-shift)
+              (key-down? :right-shift))
+        (select-region-append props (cursor-pos props) pos)
+        (move-to-pos props pos))
+      (put props :caret-pos [(caret-pos 0) ((get-caret-pos props) 1)])
+      
+      (when (= nr current-row)
+        (refresh-caret-pos props)))
+    
+    props))
+
