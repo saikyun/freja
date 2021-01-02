@@ -386,6 +386,11 @@
   (def pos (get-mouse-position))
   (def [x y] pos)
   
+  (let [move (get-mouse-wheel-move)]
+    (update props :scroll + move))
+  
+  (def y-offset (+ y-offset (props :scroll)))
+  
   (comment
    (when (mouse-button-down? 0)
      (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))   

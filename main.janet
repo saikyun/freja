@@ -34,7 +34,8 @@
                  :after @""
                  :dir nil
                  :offset 30
-
+                 :scroll 0
+                 
                  :y 100
                  :caret-pos [0 0]
                  :blink 0

@@ -12,7 +12,8 @@
     :styles styles
     :rows rows
     :full-text text
-    :default-color color}]
+    :default-color color
+    :scroll scroll}]
   (def [x y] pos)
   (def {:spacing spacing} text-conf)
   (var render-x 0)
@@ -30,7 +31,7 @@
       (put char 0 c)
       (when (not= char "\n")
         (draw-text text-conf char 
-                   [(+ x render-x) (+ y (* 40 i))]
+                   [(+ x render-x) (+ y scroll (* 40 i))]
                    
                    (or style-color color)))
       (+= render-x w))
@@ -261,7 +262,12 @@
 
 (varfn render-textarea
   [conf props]
-  (def {:y y :selected selected :text text :after after :conf text-conf} props)
+  (def {:y y
+        :selected selected
+        :text text
+        :after after
+        :conf text-conf
+        :scroll scroll} props)
   
   (def {:spacing spacing
         :size font-size} text-conf)
@@ -298,7 +304,7 @@
   
   (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
     (draw-rectangle-rec [(+ rx 30)
-                         (+ ry y)
+                         (+ ry y scroll)
                          w h]
                         (colors :selected-text-background)))
   
@@ -315,9 +321,9 @@
           h (if (= 0 h) (get-in props [:conf :size]) h)]
       (draw-line-ex
        [(+ 30 wwx)
-        (+ y wwy (* 0.15 font-size))]
+        (+ y scroll wwy (* 0.15 font-size))]
        [(+ 30 wwx)
-        (+ (+ y wwy (* 0.15 font-size))
+        (+ (+ y scroll wwy (* 0.15 font-size))
            (* h 0.75))] 1 (colors :caret))))
   
   (when (> (props :blink) 60) (set (props :blink) 0)))
