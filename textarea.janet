@@ -287,15 +287,15 @@
   
   (let [x 10
         w 500
-        h (min (+ (* (length rows) 40) 16)
-               (- (get-screen-height) y 10))
+        h (min #(+ (* (length rows) 40) 16)
+           (- (get-screen-height) y 10))
         roundness 0.05
         segments 9
         diff 2]
-
-    (put props :h h)
     
-    (begin-scissor-mode x y w h)
+    (begin-scissor-mode 0 -680 (* w 100) (* h 100))
+    
+    (put props :h h)
     
     (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
     (draw-rectangle-rounded [(+ x diff)
@@ -325,14 +325,15 @@
              (empty? selected))
     (let [[wwx wwy] (get-caret-pos props)
           h ((rows current-row) :h)
-          h (if (= 0 h) (get-in props [:conf :size]) h)]
+          h (if (= 0 h) (* (get-in props [:conf :size]) 0.5) h)]
       (draw-line-ex
        [(+ 30 wwx)
-        (+ y scroll wwy (* 0.15 font-size))]
+        (+ y scroll wwy (* 0.15 (* 0.5 font-size)))]
        [(+ 30 wwx)
-        (+ (+ y scroll wwy (* 0.15 font-size))
+        (+ (+ y scroll wwy (* 0.15 (* 0.5 font-size)))
            (* h 0.75))] 1 (colors :caret))))
   
   (when (> (props :blink) 60) (set (props :blink) 0))
-  
-  (end-scissor-mode))
+
+  (end-scissor-mode)
+  )

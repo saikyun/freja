@@ -1,13 +1,15 @@
 (use jaylib)
 #(import ./text_api :prefix "")
 
+(def mult 0.5)
+
 (defn measure-text
   [tc text]
-  (measure-text-ex (tc :font) text (tc :size) (tc :spacing)))
+  (measure-text-ex (tc :font) text (math/floor (* (tc :size) mult)) (tc :spacing)))
 
 (defn draw-text
   [tc text pos color]
-  (draw-text-ex (tc :font) text pos (tc :size) (tc :spacing) color))
+  (draw-text-ex (tc :font) text pos (math/floor (* (tc :size) mult)) (tc :spacing) color))
 
 (varfn get-pos-in-text
   [text-data x]

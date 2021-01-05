@@ -107,12 +107,6 @@
                         
                         (move-char-after props)))
              
-             :v (fn [props]
-                  (when (meta-down?)
-                    (reset-blink props)
-                    
-                    (paste props)))
-             
              :delete (fn [props]
                        (reset-blink props)
                        
@@ -126,15 +120,21 @@
                   (when (meta-down?)
                     (select-all props)))  
              
-             :c (fn [props]
-                  (when (meta-down?)
-                    (copy props)))    
-             
-             :x (fn [props]
+             :b (fn [props]
                   (when (meta-down?)
                     (reset-blink props)
                     
                     (cut props)))
+
+             :i (fn [props]
+                  (when (meta-down?)
+                    (copy props)))
+             
+             :. (fn [props]
+                  (when (meta-down?)
+                    (reset-blink props)
+                    
+                    (paste props)))
              
              :e (fn [props]
                   (when (meta-down?)

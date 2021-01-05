@@ -36,7 +36,7 @@
                  :offset 30
                  :scroll 0
                  
-                 :y 100
+                 :y 10
                  :caret-pos [0 0]
                  :blink 0
                  :position [0 0]})
@@ -50,7 +50,8 @@
 
 (varfn game-frame
   [dt]
-  
+  (let [y (+ (* (length (text-data :rows)) 40) 16 120)]
+    (draw-text (conf :text) (data :latest-res) [30 y] :blue))
   )
 
 (varfn frame
@@ -61,13 +62,16 @@
   (def dt (get-frame-time))
   
   (begin-drawing)
+  
+  (rl-viewport 0 0 (* 2 (get-screen-width))
+               (* 2 (get-screen-height)))
+  
   (clear-background (colors :background))
   
   #(t/render-textfield conf text-data)
   (render-textarea conf text-data)
   
-  (draw-text (conf :text) (data :latest-res) [30 (+ (* (length (text-data :rows)) 40) 16 120)] :blue)
-  (draw-text (conf :text) (string (text-data :current-row)) [30 (+ (* (length (text-data :rows)) 40) 16 180)] :blue)
+  #(draw-text (conf :text) (string (text-data :current-row)) [30 (+ (* (length (text-data :rows)) 40) 16 180)] :blue)
   
   (try
     (game-frame dt)
@@ -105,11 +109,12 @@
   []
   (try
     (let [tc @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
-               :size 40
+               :size 80
                :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
                :spacing 2}]
       (set-config-flags :vsync-hint)
-      (init-window 800 600 "Textfield")
+      (set-config-flags :window-resizable)
+      (init-window 1200 700 "Textfield")
       (set font (load-font-ex (tc :font-path) (tc :size) (tc :glyphs)))
       (put tc :font font)
       
