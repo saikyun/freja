@@ -50,7 +50,10 @@
 
 (varfn game-frame
   [dt]
-  (let [y (+ (* (length (text-data :rows)) 40) 16 120)]
+  (let [y (+ (if-let [{:y y :h h} (last (text-data :rows))]
+               (+ y h)
+               0)
+             16 120)]
     (draw-text (conf :text) (data :latest-res) [30 y] :blue))
   )
 
@@ -70,8 +73,6 @@
   
   #(t/render-textfield conf text-data)
   (render-textarea conf text-data)
-  
-  #(draw-text (conf :text) (string (text-data :current-row)) [30 (+ (* (length (text-data :rows)) 40) 16 180)] :blue)
   
   (try
     (game-frame dt)
@@ -105,23 +106,39 @@
                             (print (debug/stacktrace fib err))
                             (ev/sleep 1))))))))
 
+(defn load-font
+  [text-data opts]
+  (let [font (load-font-ex (opts :font-path) (opts :size) (opts :glyphs))]
+    
+    (put opts :font font)
+    
+    (def t (freeze opts))
+    
+    (put text-data :conf t)
+    
+    {:text   t
+     :colors colors}))
+
+(comment
+ (let [opts @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
+              :size 80
+              :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
+              :spacing 2}]
+   (set conf (load-font text-data opts)))
+ )
+
 (defn start
   []
   (try
     (let [tc @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
-               :size 80
+               :size 40
                :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
                :spacing 2}]
       (set-config-flags :vsync-hint)
       (set-config-flags :window-resizable)
       (init-window 1200 700 "Textfield")
-      (set font (load-font-ex (tc :font-path) (tc :size) (tc :glyphs)))
-      (put tc :font font)
       
-      (set conf {:text   (freeze tc)
-                 :colors colors})
-      
-      (put text-data :conf (conf :text))
+      (set conf (load-font text-data tc))
       
       (set-target-fps 60)
       
@@ -133,7 +150,7 @@
      (let [path "text_experiment_dump"]
        (dump-state path text-data)
        (print "Dumped state to " path))
-
+     
      (close-window))))
 
 (def env (fiber/getenv (fiber/current)))

@@ -21,7 +21,7 @@
   (var active-styles @[])
   
   (loop [i :range [0 (length rows)]
-         :let [{:words words :start start} (rows i)
+         :let [{:words words :start start :y row-y} (rows i)
                s (string/join words "")]]
     (loop [ci :range [0 (length s)]
            :let [c (s ci)
@@ -31,7 +31,7 @@
       (put char 0 c)
       (when (not= char "\n")
         (draw-text text-conf char 
-                   [(+ x render-x) (+ y scroll (* 40 i))]
+                   [(+ x render-x) (+ y scroll row-y)]
                    
                    (or style-color color)))
       (+= render-x w))
@@ -287,8 +287,7 @@
   
   (let [x 10
         w 500
-        h (min #(+ (* (length rows) 40) 16)
-           (- (get-screen-height) y 10))
+        h (- (get-screen-height) y 10)
         roundness 0.05
         segments 9
         diff 2]
