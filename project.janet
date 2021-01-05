@@ -5,7 +5,20 @@
                 "https://github.com/Saikyun/jaylib"
                 "https://github.com/janet-lang/spork"])
 
+(def proj-root
+  (os/cwd))
+
+(def src-root
+  (string proj-root "/src"))
+
+(declare-source
+ :source [(string src-root "/main.janet")])
+
 (declare-executable
  :name "myexec"
- :entry "main.janet")
+ :entry (string src-root "/main.janet"))
 
+(phony "judge" ["build"]
+       (os/execute ["jg-verdict"
+                    "-p" proj-root
+                    "-s" src-root] :p))
