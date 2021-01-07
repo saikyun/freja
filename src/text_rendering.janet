@@ -3,6 +3,11 @@
 
 (def mult 0.5)
 
+(varfn content
+  "Returns a big string of all the pieces in the text data."
+  [{:selected selected :text text :after after}]
+  (string text selected (string/reverse after)))
+
 (defn measure-text
   [tc text]
   (measure-text-ex (tc :font) text (math/floor (* (tc :size) mult)) (tc :spacing)))
@@ -88,7 +93,7 @@
         (update :h max h)))
   size)
 
-(varfn index-before-max-width
+(defn index-before-max-width
   [sizes start stop max-width]
   (var ret start)
   (var acc-w 0)
@@ -141,10 +146,10 @@
                  start (row :stop)]]
       
       (when (not (empty? (row :words)))
+        (put row :word-wrapped true)
         (update state :rows array/push @{:y new-y
                                          :h h
                                          :w 0
-                                         :word-wrapped false
                                          :words @[]
                                          :start start
                                          :stop  start}))
@@ -162,7 +167,7 @@
         new-y (+ (row :y) (row :h))
         start (row :stop)]
     
-    (put row :word-wrapped true)
+    #(put row :word-wrapped true)
     
     (cond (> w max-width)
           (handle-wide-word state word size)
@@ -309,56 +314,58 @@
        (length (props :selected)))
     (length (props :text))))
 
+(varfn weighted-row-of-pos
+  "Calculates the row of the position `cp`.
+Takes stickiness into account,
+e.g. when at the end / right after a word wrapped line."
+  [props cp]
+  (def {:rows rows} props)
+  (def all-text (content props))
+  (when rows
+    (var current-row 0)  
+    (loop [i :range [0 (length rows)]
+           :let [r (rows i)]]
+      (when (and (>= (max (dec cp) 0) (r :start))
+                 (< (max (dec cp) 0) (r :stop)))
+        (set current-row i)
+        (break))
+      
+      ## it's the last, empty row
+      (set current-row i))  
+    
+    (when (and (not (empty? all-text))
+               (= (first "\n")
+                  (all-text (max (dec cp) 0))
+                  #(last text)
+                  ))
+      (+= current-row 1))  
+    
+    (when (and (get-in rows [current-row :word-wrapped])
+               (= cp (get-in rows [current-row :stop]))
+               (= (props :stickiness) :down))
+      (+= current-row 1))
+    
+    current-row))
+
 (varfn re-measure
   [props]
   (def {:text text :selected selected :after after :conf conf} props)
-  (def all-text (let [v (buffer text selected (string/reverse after))]
-                  (if (empty? v)   ## `(peg/match ... (buffer @""))` breaks for some reason
-                    @""
-                    v)))
+  (def all-text (content props))
   
   #(def rows (break-up-words text-conf all-text 0 280 (dec (length text))))
   
   (def sizes (measure-each-char conf all-text))
   #(size-between sizes 0 5)
   (def words (split-words all-text))  
-  (def rows (wordwrap sizes words 450))  
+  (def rows (wordwrap sizes words (- (props :w) (props :offset) 10)))
   
   (def ps (char-positions sizes rows))  
   
-  (def cp (cursor-pos props))
-  
-  (var current-row 0)
-  (loop [i :range [0 (length rows)]
-         :let [r (rows i)]]
-    (when (and (>= (max (dec cp) 0) (r :start))
-               (< (max (dec cp) 0) (r :stop)))
-      (set current-row i)
-      (break))
-    
-    ## it's the last, empty row
-    (set current-row i))
-  
-  (put props :non-moved-row current-row)
-  
-  (when (and (not (empty? all-text))
-             (= (first "\n")
-                (all-text (max (dec cp) 0))
-                #(last text)
-                ))
-    (+= current-row 1))
-  
-  (when (and (get-in rows [current-row :word-wrapped])
-             (= cp (get-in rows [current-row :stop]))
-             (= (props :stickiness) :down))
-    (+= current-row 1))
-  
-  (put props :current-row current-row)  
+  (put props :current-row (weighted-row-of-pos props (cursor-pos props)))
   (put props :full-text all-text)       
   (put props :sizes sizes)  
   (put props :positions ps)  
-  (put props :rows rows)  
-  (put props :position [30 (props :y)]))
+  (put props :rows rows))
 
 (varfn refresh-caret-pos
   [props]

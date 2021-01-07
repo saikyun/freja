@@ -8,6 +8,7 @@
 (varfn render-rows
   [{:conf text-conf
     :position pos
+    :offset offset
     :sizes sizes
     :styles styles
     :rows rows
@@ -31,7 +32,7 @@
       (put char 0 c)
       (when (not= char "\n")
         (draw-text text-conf char 
-                   [(+ x render-x) (+ y scroll row-y)]
+                   [(+ offset x render-x) (+ y scroll row-y)]
                    
                    (or style-color color)))
       (+= render-x w))
@@ -262,12 +263,15 @@
 
 (varfn render-textarea
   [conf props]
-  (def {:y y
+  (def {:position pos
+        :offset offset
+        :w w
         :selected selected
         :text text
         :after after
         :conf text-conf
         :scroll scroll} props)
+  (def [x y] pos)
   
   (def {:spacing spacing
         :size font-size} text-conf)
@@ -285,14 +289,13 @@
         :sizes sizes
         :current-row current-row} props)
   
-  (let [x 10
-        w 500
-        h (- (get-screen-height) y 10)
-        roundness 0.05
+  (let [h (- (get-screen-height) y 5)
+        roundness 0.015
         segments 9
         diff 2]
     
-    (begin-scissor-mode 0 -680 (* w 100) (* h 100))
+    (begin-scissor-mode 0 -690 (* w 100) (* h 100))
+    #(begin-scissor-mode 0 0 (* w 100) (* h 100))
     
     (put props :h h)
     
@@ -302,14 +305,14 @@
                              (- w (* 2 diff))
                              (- h (* 2 diff))]
                             roundness
-                            segments (colors :background)))  
+                            segments (colors :textarea)))
   
   (def selection-start (length text))
   (def selection-end (+ (length text) (length selected)))
   
   (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
     (let [w (if (= w 0) 5 w)]
-      (draw-rectangle-rec [(+ rx 30)
+      (draw-rectangle-rec [(+ rx x offset)
                            (+ ry y scroll)
                            w h]
                           (colors :selected-text-background))))
@@ -326,13 +329,13 @@
           h ((rows current-row) :h)
           h (if (= 0 h) (* (get-in props [:conf :size]) 0.5) h)]
       (draw-line-ex
-       [(+ 30 wwx)
+       [(+ offset x wwx)
         (+ y scroll wwy (* 0.15 (* 0.5 font-size)))]
-       [(+ 30 wwx)
+       [(+ offset x wwx)
         (+ (+ y scroll wwy (* 0.15 (* 0.5 font-size)))
            (* h 0.75))] 1 (colors :caret))))
   
   (when (> (props :blink) 60) (set (props :blink) 0))
-
+  
   (end-scissor-mode)
   )
