@@ -67,31 +67,6 @@
             :quit false
             :top-env top-env})
 
-(varfn game-frame
-  [dt]
-  (let [y (+ (if-let [{:y y :h h} (last (text-data :rows))]
-               (+ y h)
-               0)
-             16 120)]
-    (draw-text (conf :text) (data :latest-res) [30 y] :blue))
-  
-  (let [x (+ 600 5)
-        y 5
-        w 590
-        h (- (get-screen-height) y 5)
-        roundness 0.015
-        segments 9
-        diff 2]
-    
-    (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
-    (draw-rectangle-rounded [(+ x diff)
-                             (+ y diff)
-                             (- w (* 2 diff))
-                             (- h (* 2 diff))]
-                            roundness
-                            segments
-                            (colors :game-bg))))
-
 (defn select-keys
   [t ks]
   (def nt (table/new (length ks)))
@@ -114,8 +89,59 @@
   nt)
 
 (varfn frame
+  [dt]
+  (let [y (+ (if-let [{:y y :h h} (last (text-data :rows))]
+               (+ y h)
+               0)
+             16 120)]
+    (draw-text (conf :text) (data :latest-res) [30 y] :blue))
+  
+  (put text-data2 :text
+     (string/format "%.5m" (remove-keys text-data
+                                        (dumb-set
+                                         :text
+                                           :after
+                                           
+                                           :full-text
+                                           :styles
+                                           :positions
+                                           :conf
+                                           :data
+                                           :sizes))))  
+  
+  (render-textarea conf2
+                   text-data2
+                   )
+  
+  (let [x (+ 600 5)
+        y 5
+        w 590
+        h (- (get-screen-height) y 5)
+        roundness 0.015
+        segments 9
+        diff 2]
+    
+    (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
+    (draw-rectangle-rounded [(+ x diff)
+                             (+ y diff)
+                             (- w (* 2 diff))
+                             (- h (* 2 diff))]
+                            roundness
+                            segments
+                            (colors :game-bg))))
+
+(varfn frame
+  [dt]
+  (let [y (+ (if-let [{:y y :h h} (last (text-data :rows))]
+               (+ y h)
+               0)
+             16 120)]
+    (draw-text (conf :text) (data :latest-res) [30 y] :blue)))
+
+(varfn internal-frame
   []
   (handle-mouse mouse-data text-data)
+  (handle-scroll text-data)
   (handle-scroll text-data2)
   
   (def dt (get-frame-time))
@@ -131,7 +157,7 @@
   (render-textarea conf text-data)
   
   (try
-    (game-frame dt)
+    (frame dt)
     ([err fib]
      (print "hmm")
      (put data :latest-res (string "Error: " err))
@@ -139,23 +165,8 @@
      ))
   
   
-  (draw-text (text-data :conf) (string (text-data :current-row)) [615 10] :white)
+  #(draw-text (text-data :conf) (string (text-data :current-row)) [615 10] :white)
   
-  (put text-data2 :text
-     (string/format "%.5m" (remove-keys text-data
-                                        (dumb-set
-                                         :text
-                                           :after
-                                           
-                                           :full-text
-                                           :styles
-                                           :positions
-                                           :conf
-                                           :data
-                                           :sizes))))
-  (render-textarea conf2
-                   text-data2
-                   )
   (comment
    (draw-text 
     conf
@@ -185,7 +196,7 @@
                            (error "QUIT!"))
                          
                          (try
-                           (do (frame)
+                           (do (internal-frame)
                                (ev/sleep 0.01))
                            ([err fib]
                             (let [path "text_experiment_dump"]

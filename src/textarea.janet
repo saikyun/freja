@@ -326,7 +326,7 @@
   (when (and (< (props :blink) 30)
              (empty? selected))
     (let [[wwx wwy] (get-caret-pos props)
-          h ((rows current-row) :h)
+          h (get-in rows [current-row :h] 0)
           h (if (= 0 h) (* (get-in props [:conf :size]) 0.5) h)]
       (draw-line-ex
        [(+ offset x wwx)

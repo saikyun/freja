@@ -250,12 +250,14 @@
         :sizes sizes
         :positions ps
         :rows rows
-        :position offset} props)
-  (def [x-offset y-offset] offset)
+        :offset offset
+        :position position} props)
+  (def [x-pos y-pos] position)
   (def pos (get-mouse-position))
   (def [x y] pos)
   
-  (def y-offset (+ y-offset (props :scroll)))
+  (def y-offset (+ y-pos (props :scroll)))
+  (def x-offset (+ x-pos offset))
   
   (comment
    (when (mouse-button-down? 0)
