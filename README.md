@@ -2,6 +2,21 @@
 
 Textarea for Janet.
 
+## try it
+
+### prerequisites
+
+Janet -- https://janet-lang.org/
+
+### steps
+
+```
+git clone https://github.com/Saikyun/text-experiment
+cd text-experiment
+jpm deps
+janet src/main.janet
+```
+
 ## License
 
 Copyright 2020 Jona Ekenberg
