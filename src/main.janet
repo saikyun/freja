@@ -88,47 +88,56 @@
     (put nt k v))
   nt)
 
+(varfn debug-view
+  []
+  (put text-data2 :text (string/format "%.2m" (data :latest-res)))  
+  
+  (render-textarea conf2 text-data2))
+
 (varfn frame
   [dt]
   (let [y (+ (if-let [{:y y :h h} (last (text-data :rows))]
                (+ y h)
                0)
              16 120)]
-    (draw-text (conf :text) (data :latest-res) [30 y] :blue))
+    (draw-text (conf :text) (string (data :latest-res)) [30 y] :blue)
+    )
   
-  (put text-data2 :text
-     (string/format "%.5m" (remove-keys text-data
-                                        (dumb-set
-                                         :text
-                                           :after
-                                           
-                                           :full-text
-                                           :styles
-                                           :positions
-                                           :conf
-                                           :data
-                                           :sizes))))  
   
-  (render-textarea conf2
-                   text-data2
-                   )
+  (comment
+   (put text-data2 :text
+      (string/format "%.5m" (remove-keys text-data
+                                         (dumb-set
+                                          :text
+                                            :after
+                                            
+                                            :full-text
+                                            :styles
+                                            :positions
+                                            :conf
+                                            :data
+                                            :sizes)))))  
+  (comment
+   (let [x (+ 600 5)
+         y 5
+         w 590
+         h (- (get-screen-height) y 5)
+         roundness 0.015
+         segments 9
+         diff 2]
+     
+     (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
+     (draw-rectangle-rounded [(+ x diff)
+                              (+ y diff)
+                              (- w (* 2 diff))
+                              (- h (* 2 diff))]
+                             roundness
+                             segments
+                             (colors :game-bg))))
   
-  (let [x (+ 600 5)
-        y 5
-        w 590
-        h (- (get-screen-height) y 5)
-        roundness 0.015
-        segments 9
-        diff 2]
-    
-    (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
-    (draw-rectangle-rounded [(+ x diff)
-                             (+ y diff)
-                             (- w (* 2 diff))
-                             (- h (* 2 diff))]
-                            roundness
-                            segments
-                            (colors :game-bg))))
+  
+  
+  )
 
 (varfn frame
   [dt]
@@ -137,6 +146,12 @@
                0)
              16 120)]
     (draw-text (conf :text) (data :latest-res) [30 y] :blue)))
+
+(varfn frame
+  [dt]
+  
+  )
+
 
 (varfn internal-frame
   []
@@ -231,7 +246,7 @@
   []
   (try
     (let [tc @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
-               :size 80
+               :size 52
                :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
                :spacing 2}
           

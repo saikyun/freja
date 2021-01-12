@@ -151,7 +151,7 @@
  )
 
 (varfn move-to-pos
-  "Selects text between index start and index end."
+  "Moves the cursor to position `pos`."
   [props pos]
   (select-region props pos pos))
 

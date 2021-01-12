@@ -1,5 +1,6 @@
 (use jaylib)
 (import ./text_api :prefix "")
+(import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
 (import ./highlight :prefix "")
 (import ./find_row_etc :prefix "")
@@ -22,9 +23,9 @@
   [data code]
   (print "Eval! " code)
   (try (do (fiber/setenv (fiber/current) (data :top-env))
-           (put data :latest-res (string (eval-string code))))
+           (put data :latest-res (eval-string code)))
        ([err fib]
-        (put data :latest-res (string "Error: " err))))
+        (put data :latest-res err)))
   (pp (data :latest-res)))
 
 (varfn meta-down?
@@ -136,6 +137,14 @@
                     
                     (paste props)))
              
+             :f (fn [props]
+                  (when (meta-down?)
+                    (reset-blink props)
+                    
+                    (print "formatting!")
+                    
+                    (format-code props)))
+             
              :e (fn [props]
                   (when (meta-down?)
                     (eval-it (props :data) (last (peg/match sexp-grammar (props :text))))))   
@@ -152,7 +161,7 @@
                   (when (or (key-down? :left-control)
                             (key-down? :right-control))
                     (put (props :data) :quit true)))
-
+             
              
              :home (fn [props]
                      (reset-blink props)
@@ -184,6 +193,8 @@
                           (inc (weighted-row-of-pos $
                                                     (cursor-pos $))))
                     |(length (content $)))})
+
+(def game-binds @{})
 
 (varfn handle-keyboard
   [data dt]
@@ -223,7 +234,11 @@
       (put delay-left k initial-delay)
       ((binds k) props)
       
-      (scroll-to-focus props))))
+      (scroll-to-focus props)))
+
+  (loop [k :keys game-binds]
+    (when (key-down? k)
+      ((game-binds k) props))))
 
 
 (varfn get-mouse-pos
