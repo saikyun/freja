@@ -36,7 +36,7 @@
                   :caret-pos [0 0]
                   :blink 0})
  
- (dump-state "text_experiment_dump" text-data)
+ (dump-state "text_experiment_dump2" text-data)
  
  (merge-into text-data (load-state "text_experiment_dump"))
  

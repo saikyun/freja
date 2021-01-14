@@ -294,7 +294,15 @@
         segments 9
         diff 2]
     
-    (begin-scissor-mode 0 -690 (* w 100) (* h 100))
+    (rlgl-draw)
+    (rl-enable-scissor-test)
+    (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
+      (rl-scissor (* x-scale x)
+                  (* y-scale (- (get-screen-height) (+ y h)))
+                  (* x-scale w) (* y-scale h)))
+    
+    
+    #(begin-scissor-mode 0 -690 (* w 100) (* h 100))
     #(begin-scissor-mode 0 0 (* w 100) (* h 100))
     
     (put props :h h)

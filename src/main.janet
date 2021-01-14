@@ -141,17 +141,9 @@
 
 (varfn frame
   [dt]
-  (let [y (+ (if-let [{:y y :h h} (last (text-data :rows))]
-               (+ y h)
-               0)
-             16 120)]
-    (draw-text (conf :text) (data :latest-res) [30 y] :blue)))
-
-(varfn frame
-  [dt]
   
+  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
   )
-
 
 (varfn internal-frame
   []
