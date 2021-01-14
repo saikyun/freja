@@ -195,6 +195,7 @@
                     |(length (content $)))})
 
 (def game-binds @{})
+(def pressed-game-binds @{})
 
 (varfn handle-keyboard
   [data dt]
@@ -235,10 +236,17 @@
       ((binds k) props)
       
       (scroll-to-focus props)))
-
+  
   (loop [k :keys game-binds]
     (when (key-down? k)
-      ((game-binds k) props))))
+      (print "wat?")
+      ((game-binds k))))
+  
+  
+  (loop [k :keys pressed-game-binds]
+    (when (key-pressed? k)
+      (print "wat 2?")
+      ((pressed-game-binds k)))))
 
 
 (varfn get-mouse-pos
