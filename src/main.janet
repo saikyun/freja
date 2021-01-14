@@ -155,8 +155,10 @@
   
   (begin-drawing)
   
-  (rl-viewport 0 0 (* 2 (get-screen-width))
-               (* 2 (get-screen-height)))
+  (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
+    (rl-viewport 0 0 (* x-scale (get-screen-width))
+                 (* y-scale (get-screen-height))))
+
   
   (clear-background (colors :background))
   

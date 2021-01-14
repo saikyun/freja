@@ -344,6 +344,5 @@
            (* h 0.75))] 1 (colors :caret))))
   
   (when (> (props :blink) 60) (set (props :blink) 0))
-  
   (end-scissor-mode)
   )
