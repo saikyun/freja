@@ -60,6 +60,12 @@
 ## delay of each repetition thereafter
 (var repeat-delay 0.03)
 
+(def kw->f {:paste (fn [props]
+                     (when (meta-down?)
+                       (reset-blink props)
+                       
+                       (paste props)))})
+
 ## bindings from key to function
 (def binds @{:end (fn [props]
                     (if (or (key-down? :left-shift)
@@ -131,11 +137,7 @@
                   (when (meta-down?)
                     (copy props)))
              
-             :. (fn [props]
-                  (when (meta-down?)
-                    (reset-blink props)
-                    
-                    (paste props)))
+             :. (kw->f :paste)
              
              :f (fn [props]
                   (when (meta-down?)
@@ -193,6 +195,19 @@
                           (inc (weighted-row-of-pos $
                                                     (cursor-pos $))))
                     |(length (content $)))})
+
+(defn add-bind
+  ``
+  Take a button kw, and a function or a key in `kw->f`. Adds that key and function to the global bindings.
+  
+  Examples:
+  `(add-bind :b :paste)`
+  `(add-bind :c (fn [props] (pp props)))`
+  `(add-bind :c (fn [props] (when (meta-down?) (print "meta-c!"))))`
+  ``
+  [button f-or-kw]
+  (def f (if (keyword? f-or-kw) (kw->f f-or-kw) f-or-kw))
+  (put binds button f))
 
 (def game-binds @{})
 (def pressed-game-binds @{})

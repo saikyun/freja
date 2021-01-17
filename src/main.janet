@@ -255,6 +255,18 @@
    (set conf (load-font text-data opts)))
  )
 
+(defn run-init-file
+  []
+  (def f (file/open "./init.janet" :r))
+  (when f
+    (def res (file/read f :all))
+    (file/close f)
+    (try
+      (do (fiber/setenv (fiber/current) (data :top-env))
+          (eval-string res))
+      ([err fib]
+       (put data :latest-res err)))))
+
 (defn start
   []
   (try
@@ -276,6 +288,8 @@
       (set conf2 (load-font text-data2 tc2))
       
       (set-target-fps 60)
+      
+      (run-init-file)
       
       (loop-it))
     ([err fib]
