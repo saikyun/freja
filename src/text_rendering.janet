@@ -173,14 +173,15 @@
           (handle-wide-word state word size)
           
           (not (empty? (row :words)))
-          (-> state
-              (update :rows array/push @{:y new-y
-                                         :h h
-                                         :w 0
-                                         :words @[]
-                                         :start start
-                                         :stop  start})
-              (add-word word))
+          (do (put row :word-wrapped true)
+              (-> state
+                  (update :rows array/push @{:y new-y
+                                             :h h
+                                             :w 0
+                                             :words @[]
+                                             :start start
+                                             :stop  start})
+                  (add-word word)))
           
           (add-word state word))))
 
