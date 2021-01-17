@@ -90,9 +90,28 @@
 
 (varfn debug-view
   []
-  (put text-data2 :text (string/format "%.2m" (data :latest-res)))  
+  (put text-data2 :text (string/format "%.3m" #(data :latest-res)
+                                       text-data
+                                       ))
+  
+  (put text-data2 :text
+     (string/format "%.5m" (remove-keys text-data
+                                        (dumb-set
+                                         :text
+                                           :after
+                                           
+                                           :full-text
+                                           :styles
+                                           :positions
+                                           :conf
+                                           :data
+                                           :sizes))))
   
   (render-textarea conf2 text-data2))
+
+(varfn frame
+  [dt]
+  (debug-view))
 
 (varfn frame
   [dt]

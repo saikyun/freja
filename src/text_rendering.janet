@@ -335,7 +335,7 @@ e.g. when at the end / right after a word wrapped line."
     
     (when (and (not (empty? all-text))
                (= (first "\n")
-                  (all-text (max (dec cp) 0))
+                  (get all-text (dec cp))
                   #(last text)
                   ))
       (+= current-row 1))  
