@@ -1,5 +1,5 @@
 (use jaylib)
-#(import ./text_api :prefix "")
+(import ./find_row_etc :prefix "")
 
 (varfn content
   "Returns a big string of all the pieces in the text data."
@@ -302,9 +302,10 @@
                                  {:x 0 :y 0})]
       (let [s (get sizes (dec (length text)))
             w (if (or newline word-wrapped-down) 0 (get s 0 0))]
-        [(- (+ cx w) (* spacing 0.5)) cy]))))
+        [(- (+ cx w) (* spacing 1.25)) cy]))))
 
 (varfn row-of-pos
+  "Row of logical character index."
   [rows pos]
   (var current-row 0)
   (loop [i :range [0 (length rows)]
@@ -394,9 +395,15 @@ e.g. when at the end / right after a word wrapped line."
   [props]
   (let [curr-y (get ((props :rows) (props :current-row)) :y 0)
         curr-h (get ((props :rows) (props :current-row)) :h 0)]
-    (when (> (+ curr-y curr-h) (+ (- (props :scroll)) (props :h)))
+    # cursor too far down
+    (when (> (+ curr-y (* 2 curr-h))
+             (+ (- (props :scroll)) (props :h)))
       (put props :scroll (- (- (+ curr-y curr-h) (* 0.5 (props :h))))))
     
+    # cursor too far up
     (when (< curr-y (- (props :scroll)))
-      (put props :scroll (- (- curr-y
-                               (* 0.5 (props :h))))))))
+      (put props :scroll (- (- curr-y (* 0.5 (props :h))))))))
+
+(varfn y->row
+  [{:rows rows :offset offset} y]
+  (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) (offset 0)))))

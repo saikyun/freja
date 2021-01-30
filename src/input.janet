@@ -1,5 +1,6 @@
 (use jaylib)
 (import ./text_api :prefix "")
+(import ./file_handling :prefix "")
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
 (import ./highlight :prefix "")
@@ -72,6 +73,10 @@
                             (key-down? :right-shift))
                       (select-until-end-of-line props)
                       (move-to-end-of-line props)))
+             
+             :s (fn [props]
+                  (when (meta-down?)
+                    (load-file props "src/main.janet")))
              
              :left (fn [props]
                      (reset-blink props)
@@ -187,14 +192,18 @@
                         
                         (insert-char props (first "\n"))))
              
-             :up (vertical-move |(max 0 (dec (weighted-row-of-pos $ (cursor-pos $))))
-                                (fn [_] 0))
+             :up (vertical-move previous-row (fn [_] 0))
              
              :down (vertical-move
-                    |(min (dec (length ($ :rows)))
-                          (inc (weighted-row-of-pos $
-                                                    (cursor-pos $))))
-                    |(length (content $)))})
+                    next-row
+                    |(length (content $)))
+             
+             
+             :page-up (fn [props]
+                        (page-up props))             
+             
+             :page-down (fn [props]
+                          (page-down props))})
 
 (defn add-bind
   ``
@@ -271,10 +280,6 @@
         column-i (binary-search-closest (array/slice ps start stop)
                                         |(compare x (+ ($ :center-x) x-offset)))]      
     (+ start column-i)))
-
-(varfn get-mouse-row
-  [[_ y] rows y-offset]
-  (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))
 
 (varfn handle-scroll
   [props]
@@ -413,11 +418,11 @@
               
               (if (and single
                        newline
-                       (= rp (get-mouse-row pos rows y-offset)))
+                       (= rp (y->row props (pos :y))))
                 (select-region props (dec start) (dec end))
                 (do
                   (if (= (row-of-pos (props :rows) (get-in mouse-data [:selected-pos 1]))
-                         (get-mouse-row pos rows y-offset))
+                         (y->row props (pos :y)))
                     (put props :stickiness :down)
                     (put props :stickiness :right))
                   

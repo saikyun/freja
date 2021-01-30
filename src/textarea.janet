@@ -323,8 +323,11 @@
   (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
     (let [w (if (= w 0) 5 w)]
       (draw-rectangle-rec [(+ rx x ox)
-                           (+ ry y oy scroll)
-                           w h]
+                           (+ ry y 
+                              (- (* h 1 (dec (text-conf :line-height)))) # compensate for line height
+                              oy scroll)
+                           w
+                           (* h (+ 1 (* 1 (dec (text-conf :line-height)))))]
                           (colors :selected-text-background))))
   
   (render-rows props)
@@ -341,7 +344,7 @@
       (draw-line-ex
        [(+ ox x wwx)
         (+ oy y scroll wwy
-           (- (* h 0.5 (dec (text-conf :line-height)))))]
+           (- (* h 1 (dec (text-conf :line-height)))))]
        [(+ ox x wwx)
         (+ (+ oy y scroll wwy)
            (* h (+ 1 (* 0.5 (dec (text-conf :line-height))))))] 1 (colors :caret))))

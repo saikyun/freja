@@ -45,6 +45,15 @@
  text-data
  )
 
+(varfn replace-content
+  "Remove current content and loads new content."
+  [props new]
+  (def {:selected selected :text text :after after} props)
+  (buffer/clear text)
+  (buffer/clear selected)
+  (buffer/clear after)
+  (buffer/push-string after (string/reverse new)))
+
 (varfn content
   "Returns a big string of all the pieces in the text data."
   [{:selected selected :text text :after after}]
@@ -501,7 +510,9 @@
   
   (reset-blink props)
   
-  (def nr (new-row props))
+  (def nr (-> (new-row props)
+              (min (dec (length rows)))
+              (max 0)))
   
   (put props :newest-row nr)
   
@@ -543,4 +554,33 @@
   [new-row extreme]
   (fn [props]
     (vertical-move-inner props new-row extreme)))
+
+(varfn previous-row
+  [props]
+  (max 0 (dec (weighted-row-of-pos props (cursor-pos props)))))
+
+(varfn next-row
+  [props]
+  (min (dec (length (props :rows)))
+       (inc (weighted-row-of-pos props (cursor-pos props)))))
+
+(varfn page-up
+  [props]
+  
+  (let [curr-y (get ((props :rows) (props :current-row)) :y 0)
+        new-y (- curr-y (* 0.9 (props :h)))
+        row (y->row props new-y)]
+    
+    (vertical-move-inner props (fn [_] row) (fn [_] 0))))
+
+(varfn page-down
+  [props]
+  
+  (let [curr-y (get ((props :rows) (props :current-row)) :y 0)
+        new-y (+ curr-y (* 0.9 (props :h)))
+        row (y->row props new-y)]
+    
+    (vertical-move-inner props (fn [_] row) |(length (content $)))
+    (refresh-caret-pos props)))
+
 

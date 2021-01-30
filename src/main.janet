@@ -4,6 +4,7 @@
 (import ./text_rendering :prefix "")
 (import ./text_api :prefix "")
 (import ./input :prefix "")
+(import ./file_handling :prefix "")
 (import ./find_row_etc :prefix "")
 (import ./highlight :prefix "")
 (import spork/netrepl)
@@ -170,6 +171,8 @@
 
 (varfn frame
   [dt]
+  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
+
   (comment (debug-view (remove-keys text-data
                                     (dumb-set
                                      :text
