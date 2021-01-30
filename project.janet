@@ -2,7 +2,8 @@
  :name "th"
  :author "saikyun"
  :dependencies [## using my own fork due to problem with latest raylib release
-                "https://github.com/Saikyun/jaylib"
+                ## "https://github.com/Saikyun/jaylib"
+                "file:////Users/test/programmering/janet/my-jaylib"
                 "https://github.com/janet-lang/spork"])
 
 (def proj-root

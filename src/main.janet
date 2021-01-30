@@ -8,6 +8,12 @@
 (import ./highlight :prefix "")
 (import spork/netrepl)
 
+(defmacro defonce
+  "Define a value once."
+  [name & more]
+  (when (nil? (dyn name))
+    ~(def ,name ,;more)))
+
 (comment
  (top-env 'ta/split-words)
  )
@@ -40,7 +46,7 @@
                  
                  :position [5 5]
                  :w 590
-                 :offset 10
+                 :offset [10 10]
                  
                  :caret-pos [0 0]
                  :blink 0})
@@ -53,7 +59,7 @@
                   
                   :position [605 5]
                   :w 590
-                  :offset 10
+                  :offset [10 10]
                   
                   :caret-pos [0 0]
                   :blink 0})
@@ -89,29 +95,27 @@
   nt)
 
 (varfn debug-view
-  []
-  (put text-data2 :text (string/format "%.3m" #(data :latest-res)
-                                       text-data
+  [data]
+  (put text-data2 :text (string/format "%.5m" #(data :latest-res)
+                                       
+                                       #text-data
+                                       data
                                        ))
   
-  (put text-data2 :text
-     (string/format "%.5m" (remove-keys text-data
-                                        (dumb-set
-                                         :text
-                                           :after
-                                           
-                                           :full-text
-                                           :styles
-                                           :positions
-                                           :conf
-                                           :data
-                                           :sizes))))
+  (comment  (put text-data2 :text
+               (string/format "%.5m" (remove-keys text-data
+                                                  (dumb-set
+                                                   :text
+                                                     :after
+                                                     
+                                                     :full-text
+                                                     :styles
+                                                     :positions
+                                                     :conf
+                                                     :data
+                                                     :sizes)))))
   
   (render-textarea conf2 text-data2))
-
-(varfn frame
-  [dt]
-  (debug-view))
 
 (varfn frame
   [dt]
@@ -164,6 +168,21 @@
   (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
   )
 
+(varfn frame
+  [dt]
+  (comment (debug-view (remove-keys text-data
+                                    (dumb-set
+                                     :text
+                                       :after
+                                       
+                                       :full-text
+                                       :styles
+                                       :positions
+                                       :conf
+                                       :data
+                                       :sizes))))
+  )
+
 (varfn internal-frame
   []
   (handle-mouse mouse-data text-data)
@@ -172,12 +191,27 @@
   
   (def dt (get-frame-time))
   
+  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
+  
+  
+  (def w (* x-scale (get-screen-width)))  
+  (def h (* y-scale (get-screen-height)))  
+  
+  (rl-viewport 0 0 w h)  
+  
+  (rl-matrix-mode :rl-projection)  
+  (rl-load-identity)  
+  (rl-ortho 0 w h 0 0 1)         # Recalculate internal projection matrix  
+  (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix  
+  (rl-load-identity)             # Reset internal modelview matrix  
+  
   (begin-drawing)
   
-  (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
-    (rl-viewport 0 0 (* x-scale (get-screen-width))
-                 (* y-scale (get-screen-height))))
-
+  (comment
+   (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
+     (rl-viewport 0 0 (* x-scale (get-screen-width))
+                  (* y-scale (get-screen-height)))))
+  
   
   (clear-background (colors :background))
   
@@ -270,28 +304,34 @@
 (defn start
   []
   (try
-    (let [tc @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
-               :size 52
-               :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
-               :spacing 2}
+    (do (set-config-flags :vsync-hint)
+        (set-config-flags :window-resizable)      
+        
+        (init-window 1200 700
+                     "Textfield")
+        
+        (let [[x-scale _ _ _ _ y-scale] (get-screen-scale) # must be run after `init-window`
+              tc @{:font-path "./assets/fonts/Monaco.ttf"
+                   :size (* 14 x-scale)
+                   :line-height 1.2
+                   :mult (/ 1 x-scale)
+                   :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
+                   :spacing 0.5}
+              
+              tc2 @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
+                    :line-height 1.1
+                    :size (* 20 x-scale)
+                    :mult (/ 1 x-scale)
+                    :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
+                    :spacing 2}]
+          (set conf (load-font text-data tc))
+          (set conf2 (load-font text-data2 tc2))
           
-          tc2 @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
-                :size 40
-                :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
-                :spacing 2}]
-      (set-config-flags :vsync-hint)
-      (set-config-flags :window-resizable)
-      (init-window 1200 700
-                   "Textfield")
-      
-      (set conf (load-font text-data tc))
-      (set conf2 (load-font text-data2 tc2))
-      
-      (set-target-fps 60)
-      
-      (run-init-file)
-      
-      (loop-it))
+          (set-target-fps 60)
+          
+          (run-init-file)
+          
+          (loop-it)))
     ([err fib]
      (print "error! " err)
      (debug/stacktrace fib err)

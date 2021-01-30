@@ -16,6 +16,7 @@
     :default-color color
     :scroll scroll}]
   (def [x y] pos)
+  (def [ox oy] offset)
   (def {:spacing spacing} text-conf)
   (var render-x 0)
   (var char @"a")
@@ -32,7 +33,7 @@
       (put char 0 c)
       (when (not= char "\n")
         (draw-text text-conf char 
-                   [(+ offset x render-x) (+ y scroll row-y)]
+                   [(+ ox x render-x) (+ y oy scroll row-y)]
                    
                    (or style-color color)))
       (+= render-x w))
@@ -272,6 +273,7 @@
         :conf text-conf
         :scroll scroll} props)
   (def [x y] pos)
+  (def [ox oy] offset)
   
   (def {:spacing spacing
         :size font-size} text-conf)
@@ -320,8 +322,8 @@
   
   (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
     (let [w (if (= w 0) 5 w)]
-      (draw-rectangle-rec [(+ rx x offset)
-                           (+ ry y scroll)
+      (draw-rectangle-rec [(+ rx x ox)
+                           (+ ry y oy scroll)
                            w h]
                           (colors :selected-text-background))))
   
@@ -337,12 +339,14 @@
           h (get-in rows [current-row :h] 0)
           h (if (= 0 h) (* (get-in props [:conf :size]) 0.5) h)]
       (draw-line-ex
-       [(+ offset x wwx)
-        (+ y scroll wwy (* 0.15 (* 0.5 font-size)))]
-       [(+ offset x wwx)
-        (+ (+ y scroll wwy (* 0.15 (* 0.5 font-size)))
-           (* h 0.75))] 1 (colors :caret))))
+       [(+ ox x wwx)
+        (+ oy y scroll wwy
+           (- (* h 0.5 (dec (text-conf :line-height)))))]
+       [(+ ox x wwx)
+        (+ (+ oy y scroll wwy)
+           (* h (+ 1 (* 0.5 (dec (text-conf :line-height))))))] 1 (colors :caret))))
   
   (when (> (props :blink) 60) (set (props :blink) 0))
+  
   (end-scissor-mode)
   )

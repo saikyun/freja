@@ -1,3 +1,4 @@
+``
 * maybe effective
 * definitely not efficient
 * no file handling
@@ -5,8 +6,38 @@
 
 * ascii only
 
+
+
+
+
+
+
+
+
+
 * navigation
 * selection
 * deletion
 * copy / paste
 * syntax highlighting
+``
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(defn get-and-add-ten
+  "Fetches a value from a map, then adds 10 to it."
+  [map k]
+  (+ (get map k) 10))
+
+(get-and-add-ten {:a 20} :a)

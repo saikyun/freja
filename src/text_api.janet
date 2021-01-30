@@ -39,6 +39,8 @@
  (dump-state "text_experiment_dump2" text-data)
  
  (merge-into text-data (load-state "text_experiment_dump"))
+
+ (merge-into text-data (load-state "dddump"))
  
  text-data
  )

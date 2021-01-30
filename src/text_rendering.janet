@@ -1,8 +1,6 @@
 (use jaylib)
 #(import ./text_api :prefix "")
 
-(def mult 0.5)
-
 (varfn content
   "Returns a big string of all the pieces in the text data."
   [{:selected selected :text text :after after}]
@@ -10,11 +8,19 @@
 
 (defn measure-text
   [tc text]
-  (measure-text-ex (tc :font) text (math/floor (* (tc :size) mult)) (tc :spacing)))
+  (measure-text-ex (tc :font) 
+                   text
+                   (math/floor (* (tc :mult) (tc :size)))
+                   (* (tc :mult) (tc :spacing))))
 
 (defn draw-text
   [tc text pos color]
-  (draw-text-ex (tc :font) text pos (math/floor (* (tc :size) mult)) (tc :spacing) color))
+  (draw-text-ex (tc :font)
+                text
+                pos
+                (math/floor (* (tc :mult) (tc :size)))
+                (* (tc :mult) (tc :spacing))
+                color))
 
 (varfn get-pos-in-text
   [text-data x]
@@ -82,7 +88,7 @@
          (let [[x y] (measure-text conf " ")]
            [0 y])
          (let [[x y] (measure-text conf arr)]
-           [(+ x 2) y]))))
+           [(+ x (* (conf :mult) spacing)) y]))))
 
 (varfn size-between
   [sizes start stop]
@@ -118,7 +124,7 @@
   (let [row    (last (state :rows))
         start  (row :stop)
         stop   (+ start (length word))
-        new-y  (+ (row :y) (row :h))]
+        new-y  (+ (row :y) (* (row :h) (get-in state [:conf :line-height])))]
     
     (array/push (row :words) word)
     (put row :stop stop)
@@ -142,7 +148,7 @@
     
     (loop [word :in [(string/slice word 0 p) (string/slice word p)]
            :let [row (last (state :rows))
-                 new-y (+ (row :y) (row :h))
+                 new-y (+ (row :y) (* (row :h) (get-in state [:conf :line-height])))
                  start (row :stop)]]
       
       (when (not (empty? (row :words)))
@@ -164,7 +170,7 @@
         {:rows rows 
          :max-width max-width} state
         row (last rows)
-        new-y (+ (row :y) (row :h))
+        new-y (+ (row :y) (* (row :h) (get-in state [:conf :line-height])))
         start (row :stop)]
     
     #(put row :word-wrapped true)
@@ -210,7 +216,7 @@
           (regular-word state word size))))
 
 (varfn wordwrap
-  [sizes words max-width]
+  [conf sizes words max-width]
   (var rows @[@{:y 0
                 :h 0
                 :w 0
@@ -218,7 +224,8 @@
                 :start 0
                 :stop 0}])
   
-  (def state @{:max-width max-width
+  (def state @{:conf conf
+               :max-width max-width
                :sizes sizes
                :rows rows})
   
@@ -259,12 +266,14 @@
 
 (varfn get-caret-pos
   [{:current-row current-row
+    :offset offset
     :rows rows
     :positions ps
     :sizes sizes
     :conf text-conf
     :text text
     :stickiness stickiness}]
+  (def [ox oy] offset)
   (def {:size font-size
         :spacing spacing} text-conf)
   
@@ -277,11 +286,13 @@
                                 (= (length text) (get-in rows [current-row :stop])))]
     (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
                                    (cond newline
-                                         (let [h ((get rows current-row) :h)]
+                                         (let [h (* ((get rows current-row) :h)
+                                                    (text-conf :line-height))]
                                            {:x 0 :y (+ (pos :y) h)})
                                          
                                          word-wrapped-down
-                                         (let [h ((get rows current-row) :h)]
+                                         (let [h (* ((get rows current-row) :h)
+                                                    (text-conf :line-height))]
                                            {:x 0 :y (+ (pos :y) h)})
                                          
                                          word-wrapped-right
@@ -350,7 +361,8 @@ e.g. when at the end / right after a word wrapped line."
 
 (varfn re-measure
   [props]
-  (def {:text text :selected selected :after after :conf conf} props)
+  (def {:text text :selected selected :after after :conf conf :offset offset} props)
+  (def [ox oy] offset)
   (def all-text (content props))
   
   #(def rows (break-up-words text-conf all-text 0 280 (dec (length text))))
@@ -358,7 +370,8 @@ e.g. when at the end / right after a word wrapped line."
   (def sizes (measure-each-char conf all-text))
   #(size-between sizes 0 5)
   (def words (split-words all-text))  
-  (def rows (wordwrap sizes words (- (props :w) (props :offset) 10)))
+  
+  (def rows (wordwrap conf sizes words (- (props :w) ox 10)))
   
   (def ps (char-positions sizes rows))  
   
@@ -383,7 +396,7 @@ e.g. when at the end / right after a word wrapped line."
         curr-h (get ((props :rows) (props :current-row)) :h 0)]
     (when (> (+ curr-y curr-h) (+ (- (props :scroll)) (props :h)))
       (put props :scroll (- (- (+ curr-y curr-h) (* 0.5 (props :h))))))
-
+    
     (when (< curr-y (- (props :scroll)))
       (put props :scroll (- (- curr-y
                                (* 0.5 (props :h))))))))

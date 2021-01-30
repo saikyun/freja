@@ -291,11 +291,12 @@
         :offset offset
         :position position} props)
   (def [x-pos y-pos] position)
+  (def [ox oy] offset)
   (def pos (get-mouse-position))
   (def [x y] pos)
   
-  (def y-offset (+ y-pos (props :scroll)))
-  (def x-offset (+ x-pos offset))
+  (def y-offset (+ y-pos oy (props :scroll)))
+  (def x-offset (+ x-pos ox))
   
   (comment
    (when (mouse-button-down? 0)
