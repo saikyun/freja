@@ -267,6 +267,7 @@
   (def {:position pos
         :offset offset
         :w w
+        :h h
         :selected selected
         :text text
         :after after
@@ -291,7 +292,8 @@
         :sizes sizes
         :current-row current-row} props)
   
-  (let [h (- (get-screen-height) y 5)
+  (let [h (or (-?> h (- 5 y))
+              (- (get-screen-height) y 5))
         roundness 0.015
         segments 9
         diff 2]
@@ -307,7 +309,7 @@
     #(begin-scissor-mode 0 -690 (* w 100) (* h 100))
     #(begin-scissor-mode 0 0 (* w 100) (* h 100))
     
-    (put props :h h)
+    (put props :calculated-h h)
     
     (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
     (draw-rectangle-rounded [(+ x diff)

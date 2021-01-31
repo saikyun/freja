@@ -39,18 +39,43 @@
    :keyword    (map |(/ $ 255) [38 138 210])
   })
 
+(var focus :filepath)
+
 (var text-data @{:selected @""
                  :text @""
                  :after @""
                  :dir nil
                  :scroll 0
                  
-                 :position [5 5]
+                 :position [5 50]
                  :w 590
                  :offset [10 10]
                  
+                 :binds textarea-binds
+                 
+                 :open-file (fn [_] (set focus :filepath))
+                 
                  :caret-pos [0 0]
                  :blink 0})
+
+(var filepath-data @{:selected @""
+                     :text @""
+                     :after @""
+                     :dir nil
+                     :scroll 0
+                     
+                     :position [5 5]
+                     :w 590
+                     :h 50
+                     :offset [10 10]
+                     
+                     :binds filepath-binds
+                     :callback (fn [props]
+                                 (load-file text-data (content props))
+                                 (set focus :main))
+                     
+                     :caret-pos [0 0]
+                     :blink 0})
 
 (var text-data2 @{:selected @""
                   :text @""
@@ -189,6 +214,7 @@
 (varfn internal-frame
   []
   (handle-mouse mouse-data text-data)
+  (handle-mouse mouse-data filepath-data)
   (handle-scroll text-data)
   (handle-scroll text-data2)
   
@@ -220,6 +246,7 @@
   
   #(t/render-textfield conf text-data)
   (render-textarea conf text-data)
+  (render-textarea conf filepath-data)
   
   (try
     (frame dt)
@@ -248,7 +275,10 @@
   
   (end-drawing)
   
-  (handle-keyboard data dt)
+  
+  (if (= focus :filepath)
+    (handle-keyboard data filepath-data dt)
+    (handle-keyboard data text-data dt))
   )
 
 (defn loop-it
@@ -327,6 +357,7 @@
                     :mult (/ 1 x-scale)
                     :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
                     :spacing 2}]
+          (load-font filepath-data tc)
           (set conf (load-font text-data tc))
           (set conf2 (load-font text-data2 tc2))
           

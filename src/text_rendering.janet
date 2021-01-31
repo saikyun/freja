@@ -397,12 +397,12 @@ e.g. when at the end / right after a word wrapped line."
         curr-h (get ((props :rows) (props :current-row)) :h 0)]
     # cursor too far down
     (when (> (+ curr-y (* 2 curr-h))
-             (+ (- (props :scroll)) (props :h)))
-      (put props :scroll (- (- (+ curr-y curr-h) (* 0.5 (props :h))))))
+             (+ (- (props :scroll)) (props :calculated-h)))
+      (put props :scroll (- (- (+ curr-y curr-h) (* 0.5 (props :calculated-h))))))
     
     # cursor too far up
     (when (< curr-y (- (props :scroll)))
-      (put props :scroll (- (- curr-y (* 0.5 (props :h))))))))
+      (put props :scroll (- (- curr-y (* 0.5 (props :calculated-h))))))))
 
 (varfn y->row
   [{:rows rows :offset offset} y]
