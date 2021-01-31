@@ -316,6 +316,13 @@
                                
                                ((props :callback) props))
                       
+                      :u (fn [props]
+                           (reset-blink props)
+                           
+                           (when (or (key-down? :left-control)
+                                     (key-down? :right-control))
+                             ((props :cancel) props)))
+                      
                       :up (vertical-move previous-row (fn [_] 0))
                       
                       :down (vertical-move

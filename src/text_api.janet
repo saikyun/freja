@@ -9,8 +9,14 @@
     (put props :conf (table ;(reduce array/concat @[] (pairs (props :conf)))))
     (put props :conf nil)
     (put props :data nil)
+    (put props :context nil)
+    (put props :binds nil)
     
-    (file/write f (marshal props))
+    (try
+      (file/write f (marshal props))
+      ([err fib]
+       (print "Tried to dump:")
+       (pp (string/format "%.5m" props))))
     (file/flush f)
     (file/close f)))
 

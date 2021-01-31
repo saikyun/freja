@@ -5,17 +5,19 @@
   [{:selected selected :text text :after after}]
   (string text selected (string/reverse after)))
 
-(defn read-file
+(varfn read-file
   [path]
-  (with [f (file/open path)]
+  (def f (file/open path))
+  (when (not f) (error (string "File " path " not found.")))
+  (with [f f]
         (def text (file/read f :all))
         text))
 
-(defn load-file
+(varfn load-file
   [props path]
   (replace-content props (read-file path)))
 
-(defn save-file
+(varfn save-file
   [props path]
   (with [f (file/open path :w)]
         (file/write f (content props))

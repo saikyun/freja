@@ -262,9 +262,14 @@
   (put props :styles styles)
   (put props :default-color (colors :text)))
 
+(varfn focused?
+  [{:context context :id id}]
+  (= (context :focus) id))
+
 (varfn render-textarea
   [conf props]
   (def {:position pos
+        :context context
         :offset offset
         :w w
         :h h
@@ -339,7 +344,8 @@
   (+= (props :blink) 1.1)
   
   (when (and (< (props :blink) 30)
-             (empty? selected))
+             (empty? selected)
+             (focused? props))
     (let [[wwx wwy] (get-caret-pos props)
           h (get-in rows [current-row :h] 0)
           h (if (= 0 h) (* (get-in props [:conf :size]) 0.5) h)]
@@ -353,5 +359,4 @@
   
   (when (> (props :blink) 60) (set (props :blink) 0))
   
-  (end-scissor-mode)
-  )
+  (end-scissor-mode))

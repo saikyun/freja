@@ -39,7 +39,15 @@
    :keyword    (map |(/ $ 255) [38 138 210])
   })
 
-(var focus :filepath)
+(varfn focus
+  [{:id id :context context}]
+  (set delay-left @{})
+  (put context :focus id))
+
+(varfn focus-other
+  [{:context context} id]
+  (set delay-left @{})
+  (put context :focus id))
 
 (var text-data @{:selected @""
                  :text @""
@@ -51,9 +59,12 @@
                  :w 590
                  :offset [10 10]
                  
-                 :binds textarea-binds
+                 :id :main
+                   :binds textarea-binds
                  
-                 :open-file (fn [_] (set focus :filepath))
+                 :open-file (fn [props]
+                              (put props :position [5 50])
+                              (focus-other props :filepath))
                  
                  :caret-pos [0 0]
                  :blink 0})
@@ -69,10 +80,17 @@
                      :h 50
                      :offset [10 10]
                      
-                     :binds filepath-binds
+                     :id :filepath
+                       :binds filepath-binds
+                     
                      :callback (fn [props]
                                  (load-file text-data (content props))
-                                 (set focus :main))
+                                 (put text-data :position [5 5])
+                                 (focus-other props :main))
+                     
+                     :cancel (fn [props]
+                               (put text-data :position [5 5])
+                               (focus-other props :main))
                      
                      :caret-pos [0 0]
                      :blink 0})
@@ -95,7 +113,8 @@
 (var conf2 nil)
 
 (var data @{:latest-res @""
-            :text-data text-data
+            :focus :main
+              :text-data text-data
             :quit false
             :top-env top-env})
 
@@ -197,7 +216,7 @@
 (varfn frame
   [dt]
   (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
-
+  
   (comment (debug-view (remove-keys text-data
                                     (dumb-set
                                      :text
@@ -213,8 +232,10 @@
 
 (varfn internal-frame
   []
-  (handle-mouse mouse-data text-data)
-  (handle-mouse mouse-data filepath-data)
+  (if (= (data :focus) :filepath)
+    (handle-mouse mouse-data filepath-data)
+    (handle-mouse mouse-data text-data))
+  
   (handle-scroll text-data)
   (handle-scroll text-data2)
   
@@ -245,8 +266,10 @@
   (clear-background (colors :background))
   
   #(t/render-textfield conf text-data)
+  (when (= (data :focus) :filepath)
+    (render-textarea conf filepath-data))
+  
   (render-textarea conf text-data)
-  (render-textarea conf filepath-data)
   
   (try
     (frame dt)
@@ -275,10 +298,15 @@
   
   (end-drawing)
   
-  
-  (if (= focus :filepath)
-    (handle-keyboard data filepath-data dt)
-    (handle-keyboard data text-data dt))
+  (try
+    (if (= (data :focus) :filepath)
+      (handle-keyboard data filepath-data dt)
+      (handle-keyboard data text-data dt))
+    ([err fib]
+     (print "kbd")
+     (put data :latest-res (string "Error: " err))
+     (print (debug/stacktrace fib err))
+     ))
   )
 
 (defn loop-it
@@ -357,9 +385,14 @@
                     :mult (/ 1 x-scale)
                     :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓ\nÔÕÖ×ØÙÚÛÜÝÞßàáâãäååæçèéêëìíîïðñòóôõö÷\nøùúûüýþÿ")
                     :spacing 2}]
+          
           (load-font filepath-data tc)
           (set conf (load-font text-data tc))
           (set conf2 (load-font text-data2 tc2))
+          
+          (put filepath-data :context data)
+          (put text-data :context data)
+          (put text-data2 :context data)
           
           (set-target-fps 60)
           
