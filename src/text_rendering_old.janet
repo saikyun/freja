@@ -1,38 +1,11 @@
 (use jaylib)
 (import spork/test)
-(import ./text_rendering_old :as old)
 (import ./find_row_etc :prefix "")
 
 (def weird-str
   ``
   aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
   ``)
-
-
-(def org-str @``hello there mr arnold 
-  how are you doing? 
-  I hope you're doing okay 
-  I know I'm not 
-  You know... 
-  My wife... 
-  She.. 
-  She... 
-  She's inhaled snow. 
-  Multiple times. 
-  I just don't know what to do. 
-  It feels like my life is over. 
-  It will never end, this feeling of misery, the feeling of helplesness. The reason being that I'm simply not good enough for her. I probably never were. 
-  And now snow is all she wants.``) 
-
-(def s100 (string/repeat
-           org-str
-           100)) 
-
-(def s1000 (string/repeat
-            org-str
-            1000)) 
-
-
 
 (varfn content
   "Returns a big string of all the pieces in the text data."
@@ -131,21 +104,20 @@
            [(+ x (* (conf :mult) spacing)) y]))))
 
 (varfn size-between
-  [sizes word]
+  [sizes start stop]
   (var size @{:w 0 :h 0})
-  (loop [c :in word
-         :let [[w h] (sizes c)]]
+  (loop [i :range [start stop]
+         :let [[w h] (sizes i)]]
     (-> (update size :w + w)
         (update :h max h)))
   size)
 
 (defn index-before-max-width
-  [chars sizes start stop max-width]
+  [sizes start stop max-width]
   (var ret start)
   (var acc-w 0)
   (loop [i :range [start stop]
-         :let [c (chars i)
-               [w h] (sizes c)]]
+         :let [[w h] (sizes i)]]
     (+= acc-w w)
     (when (> acc-w max-width)
       (set ret i)
@@ -184,7 +156,7 @@
   (let [row   (last (state :rows))
         start (row :stop)
         stop  (+ start (length word))
-        i (index-before-max-width word (state :sizes) start stop (state :max-width))
+        i (index-before-max-width (state :sizes) start stop (state :max-width))
         p (- i start)]
     
     (loop [word :in [(string/slice word 0 p) (string/slice word p)]
@@ -217,12 +189,7 @@
     #(put row :word-wrapped true)
     
     (cond (> w max-width)
-          (do
-            ## TODO: Handle wide word
-
-            :ok
-             #(handle-wide-word state word size)
-            )
+          (handle-wide-word state word size)
           
           (not (empty? (row :words)))
           (do (put row :word-wrapped true)
@@ -246,14 +213,17 @@
         start (row :stop)
         
         stop  (+ start (length word))
-        size  (size-between (state :sizes) word)
+        size  (size-between (state :sizes) start stop)
         
         {:w w :h h} size
         curr-w (+ (row :w) w)]
     
     (update row :h max h)
     
-    (cond (> curr-w max-width)
+    (cond (= word "\n")
+          (handle-newline state word size)
+          
+          (> curr-w max-width)
           (handle-wide-line state word size)
           
           (regular-word state word size))))
@@ -296,15 +266,14 @@
               (> (state :y) top-y))
     (def c (chars (state :i)))
     (case c
-      newline (do (array/push (state :words) (string/reverse (state :word)))
+      newline (do (array/push (state :words) (state :word))
                   (put state :word @"")
                   (push-line state true))
-      space   (do (array/push (state :words) (string/reverse (state :word)))
+      space   (do (array/push (state :words) (state :word))
                   (put state :word @""))
-      (do (def new-x (- (state :x) (or (first (sizes c)) 20))) ## TODO: 20 is random number
+      (do (def new-x (- (state :x) (first (sizes c))))
           (if (neg? new-x)
             (do (update state :y - ((sizes (first "a")) 1))
-                (put (state :line) :needs-wrapping true)
                 (put state :x (state :width)))
             (put state :x new-x))
           
@@ -335,13 +304,28 @@
     (update state :i dec))
   
   (when (not (empty? (state :word)))
-    (array/push (state :words) (string/reverse (state :word)))
+    (array/push (state :words) (state :word))
     (push-line state false))
   
   state
   
   #(pp state)
   )
+
+(varfn split-words2
+  [chars]
+  (var words @[])
+  (var word @"")
+  
+  (loop [c :in chars]
+    (case c
+      newline (do (array/push words word)
+                  (set word @""))
+      space   (do (array/push words word)
+                  (set word @""))
+      (buffer/push word c)))
+  
+  words)
 
 (varfn wordwrap2
   [conf sizes words max-width]
@@ -364,72 +348,24 @@
 
 (comment
  
+ (test/timeit (split-words2 org-str))
+ (test/timeit (split-words org-str))
  
- (test/timeit (split-words2 org-str))     
- (test/timeit (split-words org-str))     
+ (def got-state (words-before-cursor-until-invisible
+                 sizes
+                 100
+                 -500
+                 300
+                 0
+                 ``
+                 a
+                 htsneh oastnhe oashhhhhhhhhhhhhhhhhhh hhhhhhhhhhhhhhhh hhhhhhhhhhhhhhh hhhhhhhhhhh
+                 b
+                 c
+                 ``))
  
- 
- (def glyphs ((text-data :conf) :glyphs)) 
- (def sizes
-   (table ;(interleave
-            glyphs
-            (measure-each-char (text-data :conf) glyphs))))
+ (got-state :lines)
 
- (test/timeit (split-words org-str))      
- 
- (def string-thing ``
-   a
-   htsneh oastnhe oastohaens etnsoa esnhtoa snheao hhhhhhhhhhhhhhhhhhh hhhhhhhhhhhhhhhh hhhhhhhhhhhhhhh hhhhhhhhhhh
-   b
-   c
-   ``)
- 
- (def string-thing s100)
- 
- (test/timeit (do
-                (def got-state (words-before-cursor-until-invisible
-                                sizes
-                                100
-                                -500
-                                300
-                                0
-                                string-thing))
-                
-                (def huh (do (def lines @[])
-                             (loop [l :in (drop 1 (got-state :lines))]
-                               (if (l :needs-wrapping)
-                                 (array/concat lines
-                                               (wordwrap2
-                                                (text-data :conf)
-                                                sizes
-                                                (l :words)
-                                                100))
-                                 (array/push lines l)))
-                             lines))))
- 
- (def old-sizes (measure-each-char (text-data :conf) string-thing))
- 
- (test/timeit (old/wordwrap
-               (text-data :conf)
-               old-sizes
-               (split-words string-thing)
-               100))
- 
- 
- ((first huh) :words)
- 
- (huh 1)
- 
- (map |($ :words) huh)
- 
- (array/concat @[1] 
-               
-               (wordwrap2
-                (text-data :conf)
-                sizes
-                ((first (filter |($ :needs-wrapping) (drop 1 (got-state :lines)))) :words)
-                100))
- 
  (length (test/timeit
           (split-words (buffer/slice
                         s1000
@@ -451,7 +387,7 @@
                300
                0
                s1000))
- 
+
  (test/timeit (words-before-cursor-until-invisible
                sizes
                300
@@ -460,11 +396,41 @@
                0
                org-str))
  
+ (def glyphs ((text-data :conf) :glyphs))
+ (def sizes
+   (table ;(interleave
+            glyphs
+            (measure-each-char (text-data :conf) glyphs))))
+ 
  (map identity @``b
       a``)
  
  (map identity @"b
 a")
+ 
+ (def org-str @``hello there mr arnold 
+   how are you doing? 
+   I hope you're doing okay 
+   I know I'm not 
+   You know... 
+   My wife... 
+   She.. 
+   She... 
+   She's inhaled snow. 
+   Multiple times. 
+   I just don't know what to do. 
+   It feels like my life is over. 
+   It will never end, this feeling of misery, the feeling of helplesness. The reason being that I'm simply not good enough for her. I probably never were. 
+   And now snow is all she wants.``)
+ 
+ (def s100 (string/repeat
+            org-str
+            100))
+ 
+ (def s1000 (string/repeat
+             org-str
+             1000))
+ 
  
  (test/timeit (words-before-cursor-until-invisible
                sizes

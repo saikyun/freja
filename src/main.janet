@@ -1,4 +1,5 @@
 (use jaylib)
+(import spork/test)
 (import ./textfield :as t)
 (import ./textarea :prefix "" :fresh true)
 (import ./text_rendering :prefix "")
@@ -55,7 +56,9 @@
                  :dir nil
                  :scroll 0
                  
-                 :position [5 50]
+                 :changed true
+                 
+                 :position [5 5]
                  :w 590
                  :offset [10 10]
                  
@@ -74,6 +77,8 @@
                      :after @""
                      :dir nil
                      :scroll 0
+                     
+                     :changed true
                      
                      :position [5 5]
                      :w 590
@@ -100,6 +105,8 @@
                   :after @""
                   :dir nil
                   :scroll 0
+                  
+                  :changed true
                   
                   :position [605 5]
                   :w 590
@@ -217,16 +224,23 @@
   [dt]
   (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
   
+  (put text-data :debug false)
+  (put text-data2 :changed true)
+  
+  (comment
+   (debug-view (take 200 (text-data :positions))))
+  
   (comment (debug-view (remove-keys text-data
                                     (dumb-set
-                                     :text
-                                       :after
-                                       
+                                     #:text
+                                     # :after
+                                     :context
                                        :full-text
                                        :styles
                                        :positions
                                        :conf
                                        :data
+                                       :binds
                                        :sizes))))
   )
 
@@ -319,8 +333,8 @@
                            (error "QUIT!"))
                          
                          (try
-                           (do (internal-frame)
-                               (ev/sleep 0.01))
+                           (do #(internal-frame)
+                             (ev/sleep 0.01))
                            ([err fib]
                             (let [path "text_experiment_dump"]
                               (print "Error!")
@@ -414,8 +428,6 @@
 (var server nil)
 
 (defn main [& args]
-  (if (= (get args 1) "connect")
-    (netrepl/client "127.0.0.1" "9365" "bob")
-    (do (set server (netrepl/server "127.0.0.1" "9365" env))
-        (start))))
+  (do (set server (netrepl/server "127.0.0.1" "9365" env))
+      (start)))
 

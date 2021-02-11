@@ -129,6 +129,10 @@
   If text is selected deletes the selection instead."
   [text-data]
   (def {:selected selected :text text :after after} text-data)
+  ## TODO: Try putting the exact position modified into changed instead
+  ## In order to only rerender a single line
+  (put text-data :changed true)
+  
   (when (not (delete-selected text-data))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
       (buffer/popn text l))))
@@ -138,6 +142,7 @@
   If text is selected deletes the selection instead."
   [text-data]
   (def {:selected selected :text text :after after} text-data)
+  (put text-data :changed true)
   (when (not (delete-selected text-data))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse after)))]
       (buffer/popn after l))))
@@ -147,6 +152,7 @@
   If text is selected deletes the selection instead."
   [text-data]
   (def {:selected selected :text text :after after} text-data)
+  (put text-data :changed true)
   (when (not (delete-selected text-data))
     (buffer/popn text 1)))
 
@@ -155,6 +161,7 @@
   If text is selected deletes the selection instead."
   [text-data]
   (def {:selected selected :text text :after after} text-data)
+  (put text-data :changed true)
   (when (not (delete-selected text-data))
     (buffer/popn after 1)))
 

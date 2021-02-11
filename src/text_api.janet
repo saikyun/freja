@@ -55,6 +55,7 @@
   "Remove current content and loads new content."
   [props new]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (buffer/clear text)
   (buffer/clear selected)
   (buffer/clear after)
@@ -100,7 +101,7 @@
     
     (buffer/clear after)
     (buffer/push-string after (string/reverse (buffer/slice both end)))
-
+    
     props))
 
 (varfn select-region-append
@@ -257,10 +258,9 @@
   Returns `nil` if no text was selected."
   [props]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (def old selected)
   (put props :selected @"")
-  
-  (refresh-caret-pos props)
   
   (when (not (empty? old))
     old))
@@ -269,15 +269,17 @@
   "Cuts selected text into clipboard."
   [props]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (set-clipboard-text (string selected))
   (delete-selected props)
-
+  
   (refresh-caret-pos props))
 
 (varfn paste
   "Pastes from clipboard."
   [props]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (delete-selected props)
   (buffer/push-string text (get-clipboard-text))
   
@@ -324,6 +326,7 @@
   If text is selected deletes the selection instead."
   [props]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (when (not (delete-selected props))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse text)))]
       (buffer/popn text l)))
@@ -334,6 +337,7 @@
   If text is selected deletes the selection instead."
   [props]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (when (not (delete-selected props))
     (when-let [l (first (peg/match '(* (any :s) (any :S) ($)) (string/reverse after)))]
       (buffer/popn after l)))
@@ -343,9 +347,12 @@
   "Removes a single character before the cursor.
   If text is selected deletes the selection instead."
   [props]
-  (def {:selected selected :text text :after after} props)
-  (when (not (delete-selected props))
-    (buffer/popn text 1))
+  (def {:selected selected :text text :after after :debug debug} props)
+  (when debug (print "backspace!"))
+  (if (not (delete-selected props))
+    (do (put props :changed [(length text) (dec (length text))])
+        (buffer/popn text 1))
+    (put props :changed true))
   (refresh-caret-pos props))
 
 (varfn forward-delete
@@ -353,6 +360,7 @@
   If text is selected deletes the selection instead."
   [props]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (when (not (delete-selected props))
     (buffer/popn after 1))
   (refresh-caret-pos props))
@@ -473,6 +481,7 @@
   "Inserts a single char."
   [props k]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (case k
     :space (buffer/push-string text " ")
     :grave (buffer/push-string text "`")
@@ -488,6 +497,7 @@
   "Inserts a single uppercase char."
   [props k]
   (def {:selected selected :text text :after after} props)
+  (put props :changed true)
   (case k
     :space (buffer/push-string text " ")
     :grave (buffer/push-string text "`")

@@ -1,4 +1,5 @@
 (use jaylib)
+(import spork/test)
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
 (import ./text_api :prefix "")
@@ -6,21 +7,33 @@
 (import ./highlight :prefix "")
 
 (varfn render-rows
-  [{:conf text-conf
-    :position pos
-    :offset offset
-    :sizes sizes
-    :styles styles
-    :rows rows
-    :full-text text
-    :default-color color
-    :scroll scroll}]
+  [props]
+  (def {:conf text-conf
+        :debug debug
+        :position pos
+        :offset offset
+        :sizes sizes
+        :styles styles
+        :rows rows
+        :full-text text
+        :default-color color
+        :scroll scroll
+        :no-render-since-change no-render-since-change}
+    props)
   (def [x y] pos)
   (def [ox oy] offset)
   (def {:spacing spacing} text-conf)
   (var render-x 0)
   (var char @"a")
   (var active-styles @[])
+  
+  (def sh (get-screen-height))
+  
+  
+  (when debug
+    (when no-render-since-change
+      (print "rendering rows"))
+    )
   
   (loop [i :range [0 (length rows)]
          :let [{:words words :start start :y row-y} (rows i)
@@ -29,15 +42,23 @@
            :let [c (s ci)
                  abs-i (+ start ci)
                  [w h] (sizes abs-i)
-                 {:color style-color} (get styles abs-i (comptime {}))]]
+                 {:color style-color} (get styles abs-i (comptime {}))
+                 render-y (+ y oy scroll row-y)]
+           :when (pos? (+ render-y h))]
+      (when (> render-y sh)
+        (break))
       (put char 0 c)
       (when (not= char "\n")
         (draw-text text-conf char 
-                   [(+ ox x render-x) (+ y oy scroll row-y)]
+                   [(+ ox x render-x) render-y]
                    
                    (or style-color color)))
       (+= render-x w))
-    (set render-x 0)))
+    (set render-x 0))
+
+  (put props :no-render-since-change false)
+
+  )
 
 (var hm nil)
 
@@ -45,7 +66,7 @@
  (defn handle-mouse
    [mouse-data text-data]
    (def [x y] (get-mouse-position))
-
+   
    (put mouse-data :just-double-clicked false)  
    (put mouse-data :just-triple-clicked false)  
 
@@ -129,18 +150,6 @@
   (def [x-offset y-offset] offset)
   (def pos (get-mouse-position))
   (def [x y] pos)
-  
-  (comment
-   (when (mouse-button-down? 0)
-     (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))   
-     (def {:start start :stop stop} (rows (min row-i (dec (length rows)))))      
-     (def column-i (binary-search-closest (array/slice ps start stop)
-                                          |(compare x (+ ($ :center-x) x-offset))))      
-     
-     (def pos (+ start column-i))      
-     
-     (move-to-pos props pos))
-   ) 
   
   ## (def [x y] (get-mouse-position))
   
@@ -269,10 +278,12 @@
 (varfn render-textarea
   [conf props]
   (def {:position pos
+        :changed changed
         :context context
         :offset offset
         :w w
         :h h
+        :debug debug
         :selected selected
         :text text
         :after after
@@ -286,9 +297,17 @@
   
   (def {:colors colors} conf)
   
-  (re-measure props)
+  (def maybe-time (if debug test/timeit identity))
   
-  (stylize conf props)
+  (when debug
+    (print "re-measure"))
+  (maybe-time
+   (re-measure props))
+  
+  (when debug
+    (print "stylize"))
+  (maybe-time
+   (stylize conf props))
   
   #(textarea-handle-mouse md props)
   
@@ -296,67 +315,82 @@
         :positions ps 
         :sizes sizes
         :current-row current-row} props)
+  (when debug
+    (print "beginning"))
+  (maybe-time
+   (let [h (or (-?> h (- 5 y))
+               (- (get-screen-height) y 5))
+         roundness 0.015
+         segments 9
+         diff 2]
+     
+     (rlgl-draw)
+     (rl-enable-scissor-test)
+     (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
+       (rl-scissor (* x-scale x)
+                   (* y-scale (- (get-screen-height) (+ y h)))
+                   (* x-scale w) (* y-scale h)))
+     
+     
+     #(begin-scissor-mode 0 -690 (* w 100) (* h 100))
+     #(begin-scissor-mode 0 0 (* w 100) (* h 100))
+     
+     (put props :calculated-h h)
+     
+     (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
+     (draw-rectangle-rounded [(+ x diff)
+                              (+ y diff)
+                              (- w (* 2 diff))
+                              (- h (* 2 diff))]
+                             roundness
+                             segments (colors :textarea))))
   
-  (let [h (or (-?> h (- 5 y))
-              (- (get-screen-height) y 5))
-        roundness 0.015
-        segments 9
-        diff 2]
-    
-    (rlgl-draw)
-    (rl-enable-scissor-test)
-    (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
-      (rl-scissor (* x-scale x)
-                  (* y-scale (- (get-screen-height) (+ y h)))
-                  (* x-scale w) (* y-scale h)))
-    
-    
-    #(begin-scissor-mode 0 -690 (* w 100) (* h 100))
-    #(begin-scissor-mode 0 0 (* w 100) (* h 100))
-    
-    (put props :calculated-h h)
-    
-    (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
-    (draw-rectangle-rounded [(+ x diff)
-                             (+ y diff)
-                             (- w (* 2 diff))
-                             (- h (* 2 diff))]
-                            roundness
-                            segments (colors :textarea)))
-  
+  (when debug
+    (print "selection"))
   (def selection-start (length text))
   (def selection-end (+ (length text) (length selected)))
   
-  (each {:x rx :y ry :w w :h h} (range->rects ps sizes selection-start selection-end)
-    (let [w (if (= w 0) 5 w)]
-      (draw-rectangle-rec [(+ rx x ox)
-                           (+ ry y 
-                              (- (* h 1 (dec (text-conf :line-height)))) # compensate for line height
-                              oy scroll)
-                           w
-                           (* h (+ 1 (* 1 (dec (text-conf :line-height)))))]
-                          (colors :selected-text-background))))
+  (maybe-time
+   (each {:x rx :y ry :w w :h h} (range->rects props selection-start selection-end)
+     (let [w (if (= w 0) 5 w)]
+       (draw-rectangle-rec [(+ rx x ox)
+                            (+ ry y 
+                               (- (* h 1 (dec (text-conf :line-height)))) # compensate for line height
+                               oy scroll)
+                            w
+                            (* h (+ 1 (* 1 (dec (text-conf :line-height)))))]
+                           (colors :selected-text-background)))))
   
-  (render-rows props)
+  (when debug
+    (print "render-rows"))
+  (maybe-time
+   (render-rows props))
   
   ##(pp rows)
   
+  (when debug
+    (print "caret"))
   (+= (props :blink) 1.1)
   
-  (when (and (< (props :blink) 30)
-             (empty? selected)
-             (focused? props))
-    (let [[wwx wwy] (get-caret-pos props)
-          h (get-in rows [current-row :h] 0)
-          h (if (= 0 h) (* (get-in props [:conf :size]) 0.5) h)]
-      (draw-line-ex
-       [(+ ox x wwx)
-        (+ oy y scroll wwy
-           (- (* h 1 (dec (text-conf :line-height)))))]
-       [(+ ox x wwx)
-        (+ (+ oy y scroll wwy)
-           (* h (+ 1 (* 0.5 (dec (text-conf :line-height))))))] 1 (colors :caret))))
+  (maybe-time
+   (when (and (< (props :blink) 30)
+              (empty? selected)
+              (focused? props))
+     (let [[wwx wwy] (get-caret-pos props)
+           h (get-in rows [current-row :h] 0)
+           h (if (= 0 h) (* (get-in props [:conf :size]) 0.5) h)]
+       (draw-line-ex
+        [(+ ox x wwx)
+         (+ oy
+            y
+            scroll
+            wwy
+            (- (* h 1 (dec (text-conf :line-height)))))]
+        [(+ ox x wwx)
+         (+ (+ oy y scroll wwy)
+            (* h (+ 1 (* 0.5 (dec (text-conf :line-height))))))] 1 (colors :caret)))))
   
   (when (> (props :blink) 60) (set (props :blink) 0))
   
-  (end-scissor-mode))
+  (end-scissor-mode)
+  )

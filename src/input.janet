@@ -24,7 +24,8 @@
   [data code]
   (print "Eval! " code)
   (try (do (fiber/setenv (fiber/current) (data :top-env))
-           (put data :latest-res (eval-string code)))
+           (def res (eval-string code))
+           (put data :latest-res (string/format "%.4m" res)))
        ([err fib]
         (put data :latest-res err)))
   (pp (data :latest-res)))
@@ -434,18 +435,6 @@
   
   (def y-offset (+ y-pos oy (props :scroll)))
   (def x-offset (+ x-pos ox))
-  
-  (comment
-   (when (mouse-button-down? 0)
-     (def row-i (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) y-offset))))   
-     (def {:start start :stop stop} (rows (min row-i (dec (length rows)))))      
-     (def column-i (binary-search-closest (array/slice ps start stop)
-                                          |(compare x (+ ($ :center-x) x-offset))))      
-     
-     (def pos (+ start column-i))      
-     
-     (move-to-pos props pos))
-   ) 
   
   ## (def [x y] (get-mouse-position))
   
