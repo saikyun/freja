@@ -220,7 +220,7 @@
     
     (update row :h max h)
     
-    (cond (= word "\n")
+    (cond (= word "\n") 
           (handle-newline state word size)
           
           (> curr-w max-width)

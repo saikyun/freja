@@ -3,6 +3,7 @@
 (import ./textfield :as t)
 (import ./textarea :prefix "" :fresh true)
 (import ./text_rendering :prefix "")
+(import ./text_rendering_ints :prefix "" :fresh true)
 (import ./text_api :prefix "")
 (import ./input :prefix "")
 (import ./file_handling :prefix "")
@@ -271,6 +272,12 @@
   
   (begin-drawing)
   
+  #(test/timeit (new-render-experiment text-data))
+  #(new-render-experiment text-data)
+  
+  (render-text text-data)
+  
+  
   (comment
    (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
      (rl-viewport 0 0 (* x-scale (get-screen-width))
@@ -280,35 +287,37 @@
   (clear-background (colors :background))
   
   #(t/render-textfield conf text-data)
-  (when (= (data :focus) :filepath)
-    (render-textarea conf filepath-data))
-  
-  (render-textarea conf text-data)
-  
-  (try
-    (frame dt)
-    ([err fib]
-     (print "hmm")
-     (put data :latest-res (string "Error: " err))
-     (print (debug/stacktrace fib err))
-     ))
-  
-  
-  #(draw-text (text-data :conf) (string (text-data :current-row)) [615 10] :white)
-  
   (comment
-   (draw-text 
-    conf
-    (string/format "%m" (remove-keys text-data
-                                     (dumb-set :styles
-                                        :positions
-                                        :conf
-                                        :data
-                                        :sizes)))
-    [615 40]
-    :white))
-  
-  #(pp (keys text-data))
+   (when (= (data :focus) :filepath)
+     (render-textarea conf filepath-data))
+   
+   (render-textarea conf text-data)
+   
+   (try
+     (frame dt)
+     ([err fib]
+      (print "hmm")
+      (put data :latest-res (string "Error: " err))
+      (print (debug/stacktrace fib err))
+      ))
+   
+   
+   #(draw-text (text-data :conf) (string (text-data :current-row)) [615 10] :white)
+   
+   (comment
+    (draw-text 
+     conf
+     (string/format "%m" (remove-keys text-data
+                                      (dumb-set :styles
+                                         :positions
+                                         :conf
+                                         :data
+                                         :sizes)))
+     [615 40]
+     :white))
+   
+   #(pp (keys text-data))
+   )
   
   (end-drawing)
   
@@ -333,8 +342,8 @@
                            (error "QUIT!"))
                          
                          (try
-                           (do #(internal-frame)
-                             (ev/sleep 0.01))
+                           (do (internal-frame)
+                               (ev/sleep 0.01))
                            ([err fib]
                             (let [path "text_experiment_dump"]
                               (print "Error!")
@@ -352,6 +361,7 @@
     (def t (freeze opts))
     
     (put text-data :conf t)
+    (put text-data :sizes (glyphs->size-struct t (t :glyphs)))
     
     {:text   t
      :colors colors}))

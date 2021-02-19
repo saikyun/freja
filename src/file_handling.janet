@@ -17,6 +17,12 @@
   [props path]
   (replace-content props (read-file path)))
 
+(comment
+ (let [_ (load-file text-data "src/main.janet")]
+   :ok)
+ (put text-data :text (buffer (text-data :after)))
+ )
+
 (varfn save-file
   [props path]
   (with [f (file/open path :w)]

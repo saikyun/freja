@@ -6,6 +6,10 @@
                 "file:////Users/test/programmering/janet/my-jaylib"
                 "https://github.com/janet-lang/spork"])
 
+(declare-native
+ :name "text-rendering"
+ :source @["src/text_rendering.c"])
+
 (def proj-root
   (os/cwd))
 
