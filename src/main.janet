@@ -416,6 +416,7 @@
           
           (put filepath-data :context data)
           (put text-data :context data)
+          (put text-data :colors colors)
           (put text-data2 :context data)
           
           (set-target-fps 60)

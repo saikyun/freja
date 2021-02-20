@@ -1,3 +1,4 @@
+(use jaylib)
 (import ../build/text-rendering :as tr)
 (import ./text_rendering :prefix "")
 
@@ -120,6 +121,29 @@
   
   lines)
 
+(defn index-before-max-width
+  [chars sizes start stop max-width]
+  (var ret nil)
+  (var acc-w 0)
+  (loop [i :range [start stop]
+         :let [c (chars i)
+               [w h] (sizes c)]]
+    (+= acc-w w)
+    (when (> acc-w max-width)
+      (set ret i)
+      (break)))
+  ret)
+
+(comment
+ 
+ (var i 0)
+ (while i
+   (print (set i (index-before-max-width "01234567890" sizes i 10 40))))
+ 
+ (let [i ]
+   (index-before-max-width "01234567890" sizes i 10 40))
+ )
+
 (varfn word-wrap
   [lines chars start stop width h y y-limit]
   (array/clear lines)
@@ -129,32 +153,67 @@
   (var w 0)
   
   (var s (buffer/new 1))
+  (var beginning-of-word-i 0)
   
   (loop [i :range [start stop]
-         :let [c (chars i)
-               new-w (+ w (first (sizes c)))
-               new-x (+ x new-w)]
+         :let [c (chars i)]
          :while (< y y-limit)]
     (case c newline
           (do (array/push lines i)
               (+= y h)
-              (set x 0))
+              (set x 0)
+              (set beginning-of-word-i i))
           
           space
-          (do (set x new-x)
-              (set w 0)
-              (when (> new-x width) ## TODO: need to handle "space end of line"
-                (array/push lines i)
-                (+= y h)
-                (set x 0)))
+          (let [new-w (+ w (first (sizes c)))
+                new-x (+ x new-w)]
+            (set x new-x)
+            (set w 0)
+            ## TODO: need to handle "space end of line"
+            (when (> new-x width) ## we went outside the max width
+              ## so rowbreak before the word
+              (array/push lines beginning-of-word-i)
+              (+= y h)
+              (set x new-w)
+              
+              (when (> new-w width) ## is the word longer than the line?
+                ## then we need to break up the word
+                (var break-i (index-before-max-width chars sizes beginning-of-word-i i width))
+                (while break-i
+                  (array/push lines break-i)
+                  (set break-i (index-before-max-width chars sizes break-i i width)))))
+            
+            (set beginning-of-word-i i))
           
-          (set w new-w)))
+          (let [new-w (+ w (first (sizes c)))]
+            (set w new-w))))
+  
+  (set w 0)
+  (when (> x width) ## TODO: need to handle "space end of line"
+    (array/push lines beginning-of-word-i)
+    (+= y h)
+    (set x 0))
   
   (when (< y y-limit)
     (array/push lines stop)
     )
   
   lines)
+
+(comment
+ (do (def lines2 @[])
+     (def str "hej\nja gi ktatheechoralehcorlaheorlhcrleahcrleao mehhehehe a")
+     (word-wrap lines2 str
+                0 (length str)
+                50
+                14
+                0
+                500
+                )
+     
+     (render-lines (text-data :conf) str lines2 0 0 14))
+ 
+ )
 
 (var debug nil)
 (set debug false)
@@ -181,9 +240,13 @@
                :let [c (chars i)
                      [w h] (sizes c)]]
           (put s 0 c)
+          (when debug
+            (prin s))
           (draw-text conf s [x y] :black)
           (+= x w)))
     (+= y h)
+    (when debug
+      (print))
     (set last l))
   
   x)
@@ -256,6 +319,7 @@
         :text text
         :after after
         :conf conf
+        :colors colors
         :scroll scroll} props)
   
   (def lines @[])
@@ -308,11 +372,20 @@
                            (+= y h))
                          
                          (-= i 1))
-
+                       
                        #(print y)
                        )
                      
                      (-= y h) ## move back one line since otherwise we end up below the current line
+                     
+                     (+= (props :blink) 1.1)
+                     (when (< (props :blink) 30)
+                       (draw-line-ex
+                        [x y]
+                        [x (+ y h)]
+                        1
+                        (colors :caret)))
+                     (when (> (props :blink) 60) (set (props :blink) 0))
                      
                      (when (< y y-limit)
                        (let [wrapped-lines @[]]
