@@ -19,9 +19,10 @@
 (declare-source
  :source [(string src-root "/main.janet")])
 
-(declare-executable
- :name "myexec"
- :entry (string src-root "/main.janet"))
+(comment
+ (declare-executable
+  :name "myexec"
+  :entry (string src-root "/main.janet")))
 
 (phony "judge" ["build"]
        (os/execute ["jg-verdict"

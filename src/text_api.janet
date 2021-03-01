@@ -15,8 +15,8 @@
     (try
       (file/write f (marshal props))
       ([err fib]
-       (print "Tried to dump:")
-       (pp (string/format "%.5m" props))))
+        (print "Tried to dump:")
+        (pp (string/format "%.5m" props))))
     (file/flush f)
     (file/close f)))
 
@@ -29,27 +29,27 @@
     res))
 
 (comment
- (def text-data @{:selected @""
-                  :text @""
-                  :after @""
-                  :dir nil
-                  :scroll 0
-                  
-                  :position [5 5]
-                  :w 590
-                  :offset 10
-                  
-                  :caret-pos [0 0]
-                  :blink 0})
- 
- (dump-state "text_experiment_dump2" text-data)
- 
- (merge-into text-data (load-state "text_experiment_dump"))
+  (def text-data @{:selected @""
+                   :text @""
+                   :after @""
+                   :dir nil
+                   :scroll 0
+                   
+                   :position [5 5]
+                   :w 590
+                   :offset 10
+                   
+                   :caret-pos [0 0]
+                   :blink 0})
+  
+  (dump-state "text_experiment_dump2" text-data)
+  
+  (merge-into text-data (load-state "text_experiment_dump"))
 
- (merge-into text-data (load-state "dddump"))
- 
- text-data
- )
+  (merge-into text-data (load-state "dddump"))
+  
+  text-data
+  )
 
 (varfn replace-content
   "Remove current content and loads new content."
@@ -92,9 +92,9 @@
         both (content props)
         [start end] (if (> start end)
                       (do (put props :dir :left)
-                          [end start])
+                        [end start])
                       (do (put props :dir :right)
-                          [start end]))]
+                        [start end]))]
     
     (put props :text (buffer/slice both 0 start))
     (put props :selected (buffer/slice both start end))
@@ -111,18 +111,18 @@
         both (content props)
         
         start (cond (empty? selected)
-                    start
-                    
-                    (= (props :dir) :left)
-                    (+ (length text) (length selected))
-                    
-                    (length text))
+                start
+                
+                (= (props :dir) :left)
+                (+ (length text) (length selected))
+                
+                (length text))
         
         [start end] (if (> start end)
                       (do (put props :dir :left)
-                          [end start])
+                        [end start])
                       (do (put props :dir :right)
-                          [start end]))]
+                        [start end]))]
     
     (put props :text (buffer/slice both 0 start))
     (put props :selected (buffer/slice both start end))
@@ -133,40 +133,40 @@
     props))
 
 (comment
- (def text-data @{:selected @"ghikjlmonp"
-                  :text @"abcdef"
-                  :after @"qrstuv"
-                  :dir nil
-                  :scroll 0
-                  
-                  :position [5 5]
-                  :w 590
-                  :offset 10
-                  
-                  :caret-pos [0 0]
-                  :blink 0})
- 
- (def stuff @{:text (buffer (text-data :text))
-              :selected (buffer (text-data :selected))
-              :after (buffer (text-data :after))
-              :dir (text-data :dir)})
- 
- (select-region-append stuff 20 (dec (length (content stuff))))
- 
- 
- (-> (select-region-append @{:text @"a" :selected @"b" :after @"c" :dir :left} 1 0)
-     (get :selected)
-     string
-     (compare= "ab"))
- #=> true
- 
- (-> (select-region-append @{:text @"a" :selected @"b" :after @"c" :dir :left} 1 2)
-     (get :selected)
-     string
-     (compare= ""))
- #=> true
- 
- )
+  (def text-data @{:selected @"ghikjlmonp"
+                   :text @"abcdef"
+                   :after @"qrstuv"
+                   :dir nil
+                   :scroll 0
+                   
+                   :position [5 5]
+                   :w 590
+                   :offset 10
+                   
+                   :caret-pos [0 0]
+                   :blink 0})
+  
+  (def stuff @{:text (buffer (text-data :text))
+               :selected (buffer (text-data :selected))
+               :after (buffer (text-data :after))
+               :dir (text-data :dir)})
+  
+  (select-region-append stuff 20 (dec (length (content stuff))))
+  
+  
+  (-> (select-region-append @{:text @"a" :selected @"b" :after @"c" :dir :left} 1 0)
+      (get :selected)
+      string
+      (compare= "ab"))
+  #=> true
+  
+  (-> (select-region-append @{:text @"a" :selected @"b" :after @"c" :dir :left} 1 2)
+      (get :selected)
+      string
+      (compare= ""))
+  #=> true
+  
+  )
 
 (varfn move-to-pos
   "Moves the cursor to position `pos`."
@@ -351,7 +351,7 @@
   (when debug (print "backspace!"))
   (if (not (delete-selected props))
     (do (put props :changed [(length text) (dec (length text))])
-        (buffer/popn text 1))
+      (buffer/popn text 1))
     (put props :changed true))
   (refresh-caret-pos props))
 
@@ -426,7 +426,7 @@
   (if (and (= dir :right)
            (not (empty? selected)))
     (do (put after (length after) (last selected))
-        (buffer/popn selected 1))
+      (buffer/popn selected 1))
     (when (not (empty? text))
       (put props :dir :left)
       (let [o selected]
@@ -443,7 +443,7 @@
   (if (and (= dir :left)
            (not (empty? selected)))
     (do (put text (length text) (first selected))
-        (put props :selected (buffer/slice selected 1)))
+      (put props :selected (buffer/slice selected 1)))
     (when (not (empty? after))
       (put props :dir :right)
       (put selected (length selected) (last after))
@@ -456,7 +456,7 @@
   (def {:selected selected :text text :after after} props)
   (if (not (empty? selected))
     (do (buffer/push-string after (string/reverse selected))
-        (buffer/clear selected))
+      (buffer/clear selected))
     (when (not (empty? text))
       (put after (length after) (last text))
       (buffer/popn text 1)))
@@ -468,7 +468,7 @@
   (def {:selected selected :text text :after after} props)
   (if (not (empty? selected))
     (do (buffer/push-string text selected)
-        (buffer/clear selected))
+      (buffer/clear selected))
     (when (not (empty? after))
       (put text (length text) (last after))
       (buffer/popn after 1)))
@@ -488,9 +488,9 @@
     :left-bracket (buffer/push-string text "[")
     :right-bracket (buffer/push-string text "]")
     (do (buffer/clear selected)
-        (if (keyword? k)
-          (buffer/push-string text (string k))
-          (put text (length text) k))))
+      (if (keyword? k)
+        (buffer/push-string text (string k))
+        (put text (length text) k))))
   (refresh-caret-pos props))
 
 (varfn insert-char-upper
@@ -504,9 +504,9 @@
     :left-bracket (buffer/push-string text "[")
     :right-bracket (buffer/push-string text "]")
     (do (buffer/clear selected)
-        (if (keyword? k)
-          (buffer/push-string text (string/ascii-upper (string k)))
-          (put text (length text) k))))
+      (if (keyword? k)
+        (buffer/push-string text (string/ascii-upper (string k)))
+        (put text (length text) k))))
   (refresh-caret-pos props))
 
 (varfn vertical-move-inner
@@ -547,13 +547,13 @@
                             (= pos (get-in rows [nr :stop])))]
           
           (cond newline
-                (when (< 0 (caret-pos 0))
-                  (-= pos 1))
-                
-                wordwrap
-                (if (< 0 (caret-pos 0))
-                  (put props :stickiness :right)
-                  (put props :stickiness :down))))))
+            (when (< 0 (caret-pos 0))
+              (-= pos 1))
+            
+            wordwrap
+            (if (< 0 (caret-pos 0))
+              (put props :stickiness :right)
+              (put props :stickiness :down))))))
     
     (if (or (key-down? :left-shift)
             (key-down? :right-shift))

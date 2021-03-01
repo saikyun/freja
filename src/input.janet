@@ -1,5 +1,6 @@
 (use jaylib)
 (import ./text_api :prefix "")
+(import ./new_gap_buffer :prefix "")
 (import ./file_handling :prefix "")
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
@@ -70,6 +71,143 @@
 
 ## bindings from key to function
 (def textarea-binds @{:end (fn [props]
+                             (if (or (key-down? :left-shift)
+                                     (key-down? :right-shift))
+                               (select-until-end-of-line props)
+                               (move-to-end-of-line props)))
+                      
+                      :s (fn [props]
+                           (when (meta-down?)
+                             ((props :open-file) props)))
+                      
+                      :left (fn [props]
+                              (reset-blink props)
+                              
+                              (cond
+                                ## select whole words
+                                (and (or (key-down? :left-alt)
+                                         (key-down? :right-alt))
+                                     (or (key-down? :left-shift)
+                                         (key-down? :right-shift)))
+                                (select-word-before props)
+                                
+                                (or (key-down? :left-alt)
+                                    (key-down? :right-alt)) 
+                                (move-word-before props)
+                                
+                                (or (key-down? :left-shift)
+                                    (key-down? :right-shift))
+                                (select-char-before props)
+                                
+                                (move-char-before props)))
+                      
+                      :right (fn [props]
+                               (reset-blink props)
+                               
+                               (cond 
+                                 (and (or (key-down? :left-alt)
+                                          (key-down? :right-alt))
+                                      (or (key-down? :left-shift)
+                                          (key-down? :right-shift)))
+                                 (select-word-after props)
+                                 
+                                 (or (key-down? :left-alt)
+                                     (key-down? :right-alt))
+                                 (move-word-after props)
+                                 
+                                 (or (key-down? :left-shift)
+                                     (key-down? :right-shift))
+                                 (select-char-after props)
+                                 
+                                 (move-char-after props)))
+                      
+                      :delete (fn [props]
+                                (reset-blink props)
+                                
+                                (cond (or (key-down? :left-alt)
+                                          (key-down? :right-alt))
+                                      (delete-word-after props)
+                                      
+                                      (forward-delete props))) 
+                      
+                      :a (fn [props]
+                           (when (meta-down?)
+                             (select-all props)))  
+                      
+                      :b (fn [props]
+                           (when (meta-down?)
+                             (reset-blink props)
+                             
+                             (cut props)))
+
+                      :i (fn [props]
+                           (when (meta-down?)
+                             (copy props)))
+                      
+                      :. (kw->f :paste)
+                      
+                      :f (fn [props]
+                           (when (meta-down?)
+                             (reset-blink props)
+                             
+                             (print "formatting!")
+                             
+                             (format-code props)))
+                      
+                      :e (fn [props]
+                           (when (meta-down?)
+                             (eval-it (props :data) (last (peg/match sexp-grammar (props :text))))))   
+                      
+                      :backspace (fn [props] (reset-blink props)
+                                   
+                                   (cond (or (key-down? :left-alt)
+                                             (key-down? :right-alt))
+                                         (delete-word-before props)
+                                         
+                                         (backspace props)))
+                      
+                      :q (fn [props]
+                           (when (or (key-down? :left-control)
+                                     (key-down? :right-control))
+                             (put (props :data) :quit true)))
+                      
+                      
+                      :home (fn [props]
+                              (reset-blink props)
+                              
+                              (if (or (key-down? :left-shift)
+                                      (key-down? :right-shift))
+                                (select-until-beginning-of-line props)
+                                (move-to-beginning-of-line props)))
+                      
+                      :enter (fn [props]
+                               (reset-blink props)
+                               
+                               (cond
+                                 (or (key-down? :left-control)
+                                     (key-down? :right-control))    
+                                 (do (def code (string
+                                                (props :text)
+                                                (props :selected)
+                                                (string/reverse (props :after))))
+                                     (eval-it (props :data) code))
+                                 
+                                 (insert-char props (first "\n"))))
+                      
+                      :up (vertical-move previous-row (fn [_] 0))
+                      
+                      :down (vertical-move
+                             next-row
+                             |(length (content $)))
+                      
+                      
+                      :page-up (fn [props]
+                                 (page-up props))             
+                      
+                      :page-down (fn [props]
+                                   (page-down props))})
+
+(def gb-binds @{:end (fn [props]
                              (if (or (key-down? :left-shift)
                                      (key-down? :right-shift))
                                (select-until-end-of-line props)

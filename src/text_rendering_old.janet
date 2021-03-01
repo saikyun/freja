@@ -75,7 +75,7 @@
           
           (if (not= i (dec (length both)))
             (set total-w (+ total-w spacing))))
-        res)))
+      res)))
 
 (varfn split-words
   [t]
@@ -84,11 +84,11 @@
                       (capture "\n"))) t))
 
 (comment
- (test/timeit (split-words s1000))
- (test/timeit (split-words s100))
+  (test/timeit (split-words s1000))
+  (test/timeit (split-words s100))
 
- (test/timeit (split-words org-str))
- )
+  (test/timeit (split-words org-str))
+  )
 
 (varfn measure-each-char
   [conf whole-text]
@@ -96,12 +96,12 @@
   (var arr (buffer/new 1))
   (seq [i :range [0 (length whole-text)]
         :let [c (whole-text i)]]
-       (put arr 0 c)
-       (if (= c (first "\n"))
-         (let [[x y] (measure-text conf " ")]
-           [0 y])
-         (let [[x y] (measure-text conf arr)]
-           [(+ x (* (conf :mult) spacing)) y]))))
+    (put arr 0 c)
+    (if (= c (first "\n"))
+      (let [[x y] (measure-text conf " ")]
+        [0 y])
+      (let [[x y] (measure-text conf arr)]
+        [(+ x (* (conf :mult) spacing)) y]))))
 
 (varfn size-between
   [sizes start stop]
@@ -189,20 +189,20 @@
     #(put row :word-wrapped true)
     
     (cond (> w max-width)
-          (handle-wide-word state word size)
-          
-          (not (empty? (row :words)))
-          (do (put row :word-wrapped true)
-              (-> state
-                  (update :rows array/push @{:y new-y
-                                             :h h
-                                             :w 0
-                                             :words @[]
-                                             :start start
-                                             :stop  start})
-                  (add-word word)))
-          
-          (add-word state word))))
+      (handle-wide-word state word size)
+      
+      (not (empty? (row :words)))
+      (do (put row :word-wrapped true)
+        (-> state
+            (update :rows array/push @{:y new-y
+                                       :h h
+                                       :w 0
+                                       :words @[]
+                                       :start start
+                                       :stop  start})
+            (add-word word)))
+      
+      (add-word state word))))
 
 (varfn add-word [state word]
   (let [{:rows rows
@@ -221,12 +221,12 @@
     (update row :h max h)
     
     (cond (= word "\n") 
-          (handle-newline state word size)
-          
-          (> curr-w max-width)
-          (handle-wide-line state word size)
-          
-          (regular-word state word size))))
+      (handle-newline state word size)
+      
+      (> curr-w max-width)
+      (handle-wide-line state word size)
+      
+      (regular-word state word size))))
 
 (def newline (first "\n"))
 (def space (first " "))
@@ -267,18 +267,18 @@
     (def c (chars (state :i)))
     (case c
       newline (do (array/push (state :words) (state :word))
-                  (put state :word @"")
-                  (push-line state true))
+                (put state :word @"")
+                (push-line state true))
       space   (do (array/push (state :words) (state :word))
-                  (put state :word @""))
+                (put state :word @""))
       (do (def new-x (- (state :x) (first (sizes c))))
-          (if (neg? new-x)
-            (do (update state :y - ((sizes (first "a")) 1))
-                (put state :x (state :width)))
-            (put state :x new-x))
-          
-          (update-in state [:line :height] max ((sizes c) 1))
-          (buffer/push (state :word) c)))
+        (if (neg? new-x)
+          (do (update state :y - ((sizes (first "a")) 1))
+            (put state :x (state :width)))
+          (put state :x new-x))
+        
+        (update-in state [:line :height] max ((sizes c) 1))
+        (buffer/push (state :word) c)))
     (update state :i dec))
   
   ### we need to keep going for a bit
@@ -294,13 +294,13 @@
       newline (set found-real-newline true)
       space   (update state :x (first (sizes c)))
       (do (def new-x (- (state :x) (first (sizes c))))
-          (if (neg? new-x)
-            (do (+= limit-lines 1)
-                (push-line state false))
-            (put state :x new-x))
-          
-          (update-in state [:line :height] max ((sizes c) 1))
-          (buffer/push (state :word) c)))
+        (if (neg? new-x)
+          (do (+= limit-lines 1)
+            (push-line state false))
+          (put state :x new-x))
+        
+        (update-in state [:line :height] max ((sizes c) 1))
+        (buffer/push (state :word) c)))
     (update state :i dec))
   
   (when (not (empty? (state :word)))
@@ -320,9 +320,9 @@
   (loop [c :in chars]
     (case c
       newline (do (array/push words word)
-                  (set word @""))
+                (set word @""))
       space   (do (array/push words word)
-                  (set word @""))
+                (set word @""))
       (buffer/push word c)))
   
   words)
@@ -347,100 +347,100 @@
   rows)
 
 (comment
- 
- (test/timeit (split-words2 org-str))
- (test/timeit (split-words org-str))
- 
- (def got-state (words-before-cursor-until-invisible
-                 sizes
-                 100
-                 -500
-                 300
-                 0
-                 ``
+  
+  (test/timeit (split-words2 org-str))
+  (test/timeit (split-words org-str))
+  
+  (def got-state (words-before-cursor-until-invisible
+                   sizes
+                   100
+                   -500
+                   300
+                   0
+                   ``
                  a
                  htsneh oastnhe oashhhhhhhhhhhhhhhhhhh hhhhhhhhhhhhhhhh hhhhhhhhhhhhhhh hhhhhhhhhhh
                  b
                  c
                  ``))
- 
- (got-state :lines)
+  
+  (got-state :lines)
 
- (length (test/timeit
-          (split-words (buffer/slice
-                        s1000
-                        ((words-before-cursor-until-invisible
-                          sizes
-                          300
-                          -500
-                          300
-                          0
-                          s1000) :i)
-                        
-                        (length s1000)))))
- 
- # Elapsed time: 0.00181174 seconds
- (test/timeit (words-before-cursor-until-invisible
-               sizes
-               300
-               -500
-               300
-               0
-               s1000))
+  (length (test/timeit
+            (split-words (buffer/slice
+                           s1000
+                           ((words-before-cursor-until-invisible
+                              sizes
+                              300
+                              -500
+                              300
+                              0
+                              s1000) :i)
+                           
+                           (length s1000)))))
+  
+  # Elapsed time: 0.00181174 seconds
+  (test/timeit (words-before-cursor-until-invisible
+                 sizes
+                 300
+                 -500
+                 300
+                 0
+                 s1000))
 
- (test/timeit (words-before-cursor-until-invisible
-               sizes
-               300
-               -500
-               300
-               0
-               org-str))
- 
- (def glyphs ((text-data :conf) :glyphs))
- (def sizes
-   (table ;(interleave
-            glyphs
-            (measure-each-char (text-data :conf) glyphs))))
- 
- (map identity @``b
-      a``)
- 
- (map identity @"b
-a")
- 
- (def org-str @``hello there mr arnold 
-   how are you doing? 
-   I hope you're doing okay 
-   I know I'm not 
-   You know... 
-   My wife... 
-   She.. 
-   She... 
-   She's inhaled snow. 
-   Multiple times. 
-   I just don't know what to do. 
-   It feels like my life is over. 
-   It will never end, this feeling of misery, the feeling of helplesness. The reason being that I'm simply not good enough for her. I probably never were. 
-   And now snow is all she wants.``)
- 
- (def s100 (string/repeat
-            org-str
-            100))
- 
- (def s1000 (string/repeat
-             org-str
-             1000))
- 
- 
- (test/timeit (words-before-cursor-until-invisible
-               sizes
-               300
-               -500
-               300
-               0
-               s100))
- 
- )
+  (test/timeit (words-before-cursor-until-invisible
+                 sizes
+                 300
+                 -500
+                 300
+                 0
+                 org-str))
+  
+  (def glyphs ((text-data :conf) :glyphs))
+  (def sizes
+    (table ;(interleave
+              glyphs
+              (measure-each-char (text-data :conf) glyphs))))
+  
+  (map identity @``b
+       a``)
+  
+  (map identity @"b
+       a")
+  
+  (def org-str @``hello there mr arnold 
+    how are you doing? 
+    I hope you're doing okay 
+    I know I'm not 
+    You know... 
+    My wife... 
+    She.. 
+    She... 
+    She's inhaled snow. 
+    Multiple times. 
+    I just don't know what to do. 
+    It feels like my life is over. 
+    It will never end, this feeling of misery, the feeling of helplesness. The reason being that I'm simply not good enough for her. I probably never were. 
+    And now snow is all she wants.``)
+  
+  (def s100 (string/repeat
+              org-str
+              100))
+  
+  (def s1000 (string/repeat
+               org-str
+               1000))
+  
+  
+  (test/timeit (words-before-cursor-until-invisible
+                 sizes
+                 300
+                 -500
+                 300
+                 0
+                 s100))
+  
+  )
 
 (varfn wordwrap
   [conf sizes words max-width]
@@ -487,21 +487,21 @@ a")
   [{:rows rows :offset offset} pos]
   (rows (binary-search-closest rows (fn [{:start start :stop stop}]
                                       (cond (> start pos) # pos too small
-                                            -1
-                                            
-                                            (<= stop pos) # pos too big
-                                            1
-                                            
-                                            0)))))            # pos between start and stop :)
+                                        -1
+                                        
+                                        (<= stop pos) # pos too big
+                                        1
+                                        
+                                        0)))))            # pos between start and stop :)
 
 (comment
- 
- (pp (text-data :rows))
- 
- (pos->row text-data 0)
- (pos->row text-data 4)
- ((pos->row text-data 0) :y)
- )
+  
+  (pp (text-data :rows))
+  
+  (pos->row text-data 0)
+  (pos->row text-data 4)
+  ((pos->row text-data 0) :y)
+  )
 
 (varfn range->rects
   [props start stop]
@@ -521,13 +521,13 @@ a")
   rects)
 
 (comment
- (range->rects
-  (text-data :positions)
-  (text-data :sizes)
-  0
-  5
+  (range->rects
+    (text-data :positions)
+    (text-data :sizes)
+    0
+    5
+    )
   )
- )
 
 (varfn get-caret-pos
   [{:current-row current-row
@@ -553,19 +553,19 @@ a")
     #(print "curre " current-row " - y " y)
     (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
                                    (cond newline
-                                         (let [h (* ((get rows current-row) :h)
-                                                    (text-conf :line-height))]
-                                           {:x 0 :y (+ y h)})
-                                         
-                                         word-wrapped-down
-                                         (let [h (* ((get rows current-row) :h)
-                                                    (text-conf :line-height))]
-                                           {:x 0 :y (+ y h)})
-                                         
-                                         word-wrapped-right
-                                         {:x (pos :x) :y y}
-                                         
-                                         {:x (pos :x) :y y}))
+                                     (let [h (* ((get rows current-row) :h)
+                                                (text-conf :line-height))]
+                                       {:x 0 :y (+ y h)})
+                                     
+                                     word-wrapped-down
+                                     (let [h (* ((get rows current-row) :h)
+                                                (text-conf :line-height))]
+                                       {:x 0 :y (+ y h)})
+                                     
+                                     word-wrapped-right
+                                     {:x (pos :x) :y y}
+                                     
+                                     {:x (pos :x) :y y}))
                                  {:x 0 :y 0})]
       (let [s (get sizes (dec (length text)))
             w (if (or newline word-wrapped-down) 0 (get s 0 0))]
@@ -629,53 +629,59 @@ e.g. when at the end / right after a word wrapped line."
 
 (varfn re-measure
   [props]
-  (def {:text text :debug debug :changed changed :selected selected :after after :conf conf :offset offset} props)
+  (def {:text text
+        :debug debug
+        :changed changed
+        :selected selected
+        :after after
+        :conf conf
+        :offset offset} props)
   (when (or true changed)
     
     (def maybe-time (if debug test/timeit identity))
     
     (maybe-time
-     (do (when debug (print "re-measure"))
-         
-         
-         (when debug
-           (print "changed!")
-           (print text))
-         (put props :last-changed changed)
-         (put props :changed false)
-         (put props :no-render-since-change true)
-         (def [ox oy] offset)
-         (def all-text (content props))
-         
-         #(def rows (break-up-words text-conf all-text 0 280 (dec (length text))))
-         
-         (when debug
-           (print "sizes"))
-         (def sizes (maybe-time
+      (do (when debug (print "re-measure"))
+        
+        
+        (when debug
+          (print "changed!")
+          (print text))
+        (put props :last-changed changed)
+        (put props :changed false)
+        (put props :no-render-since-change true)
+        (def [ox oy] offset)
+        (def all-text (content props))
+        
+        #(def rows (break-up-words text-conf all-text 0 280 (dec (length text))))
+        
+        (when debug
+          (print "sizes"))
+        (def sizes (maybe-time
                      (or                #(props :sizes)
-                       (do              #(print "measuring")
-                         (measure-each-char conf all-text)))
+                                        (do              #(print "measuring")
+                                          (measure-each-char conf all-text)))
                      ))
-         #(size-between sizes 0 5)
-         
-         (when debug
-           (print "words"))
-         (def words (maybe-time
+        #(size-between sizes 0 5)
+        
+        (when debug
+          (print "words"))
+        (def words (maybe-time
                      (or                #(props :words)
-                       (do              # (print "splitting words")
-                         (split-words all-text)))))  
-         
-         (when debug
-           (print "rows"))
-         (def rows (maybe-time
+                                        (do              # (print "splitting words")
+                                          (split-words all-text)))))  
+        
+        (when debug
+          (print "rows"))
+        (def rows (maybe-time
                     # second worst I think
                     (or         #(props :rows)
-                      (do               #(print "wordwrapping")
-                        (wordwrap conf sizes words (- (props :w) ox 10))))))
-         
-         (when debug
-           (print "positions"))
-         (def ps (maybe-time
+                                (do               #(print "wordwrapping")
+                                  (wordwrap conf sizes words (- (props :w) ox 10))))))
+        
+        (when debug
+          (print "positions"))
+        (def ps (maybe-time
                   # the worst
                   (if (tuple? changed)
                     (do
@@ -689,14 +695,14 @@ e.g. when at the end / right after a word wrapped line."
                       (char-positions sizes rrr))
                     
                     (char-positions sizes rows))))  
-         
-         (put props :full-text all-text)       
-         (put props :sizes sizes)
-         (put props :words words)
-         (put props :positions ps)  
-         (put props :rows rows)
-         
-         (put props :current-row (weighted-row-of-pos props (cursor-pos props)))))))
+        
+        (put props :full-text all-text)       
+        (put props :sizes sizes)
+        (put props :words words)
+        (put props :positions ps)  
+        (put props :rows rows)
+        
+        (put props :current-row (weighted-row-of-pos props (cursor-pos props)))))))
 
 (varfn refresh-caret-pos
   [props]

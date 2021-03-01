@@ -10,7 +10,7 @@ static Janet cfun_backward_lines_until_limit(int32_t argc, Janet *argv) {
   int32_t y = janet_getinteger(argv, 5);
   JanetBuffer *chars = janet_getbuffer(argv, 6);
 
-  janet_array_push(lines, janet_wrap_integer(chars->count));
+  //janet_array_push(lines, janet_wrap_integer(chars->count));
 
   int should_be_wrapped = 0;
 
@@ -18,11 +18,13 @@ static Janet cfun_backward_lines_until_limit(int32_t argc, Janet *argv) {
 
   int32_t h = janet_unwrap_integer(janet_unwrap_tuple(janet_table_get(sizes, janet_wrap_integer('a')))[1]);
 
-  for (int i = chars->count - 1; i >= 0; i--) {
+  int i = chars->count - 1;
+  
+  for (; i >= 0; i--) {
     uint8_t c = chars->data[i];
     if ('\n' == c) {
       y -= h;
-      
+
       if (y < top_y) {
 	break;
       }
@@ -42,6 +44,7 @@ static Janet cfun_backward_lines_until_limit(int32_t argc, Janet *argv) {
       
       const Janet *t = janet_unwrap_tuple(v);
       int32_t new_x = x - janet_unwrap_integer(t[0]);
+      
       if (new_x <= 0) {
 	y -= h;
 	should_be_wrapped = 1;
@@ -50,6 +53,16 @@ static Janet cfun_backward_lines_until_limit(int32_t argc, Janet *argv) {
 	x = new_x;
       }
     }
+  }
+
+  if (should_be_wrapped == 1) {
+    janet_array_push(lines, janet_wrap_integer(needs_wrapping));
+    should_be_wrapped = 0;
+  }
+
+  
+  if (i == -1) {
+    janet_array_push(lines, janet_wrap_integer(0));
   }
   
   return janet_wrap_array(lines);
