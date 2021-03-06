@@ -4,3 +4,5 @@
 /text_experiment_dump
 
 .DS_Store
+/.janet-usages
+/.judge
