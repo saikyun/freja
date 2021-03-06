@@ -1,5 +1,6 @@
 (use jaylib)
 (import spork/test)
+(import ./code_api :prefix "")
 (import ./textfield :as t)
 (import ./textarea :prefix "" :fresh true)
 (import ./text_rendering :prefix "")
@@ -58,6 +59,13 @@
                :gap-start 0
                :gap-stop 0
                :gap @""
+
+               :position [0 0]
+               :offset [0 0]
+               
+               :changed true
+               :scroll 0
+               :blink 0
                
                :binds gb-binds})
 
@@ -266,6 +274,10 @@
     (handle-scroll text-data)
     (handle-scroll text-data2))
   
+  (gb-handle-mouse mouse-data gb-data)
+  
+  (gb-handle-scroll gb-data)
+  
   (def dt (get-frame-time))
   
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
@@ -274,24 +286,24 @@
   (def w (* x-scale (get-screen-width)))  
   (def h (* y-scale (get-screen-height)))  
   
-  (rl-viewport 0 0 w h)  
   
+  (begin-drawing)
+  
+  (rl-viewport 0 0 w h)  
   (rl-matrix-mode :rl-projection)  
   (rl-load-identity)  
   (rl-ortho 0 w h 0 0 1)         # Recalculate internal projection matrix  
   (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix  
   (rl-load-identity)             # Reset internal modelview matrix  
   
-  (begin-drawing)
-  
   #(test/timeit (new-render-experiment text-data))
   #(new-render-experiment text-data)
-
+  
   (comment
     (test/timeit (render-text text-data))
     (print "rendered text")  
     (print))
-
+  
   (gb-render-text gb-data)
   
   (comment  (test/timeit (gb-render-text gb-data))
@@ -416,14 +428,14 @@
             tc @{:font-path "./assets/fonts/Monaco.ttf"
                  :size (* 14 x-scale)
                  :line-height 1.2
-                 :mult (/ 1 x-scale)
+                 :mult 1 #(/ 1 x-scale)
                  :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
                  :spacing 0.5}
             
             tc2 @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
                   :line-height 1.1
                   :size (* 20 x-scale)
-                  :mult (/ 1 x-scale)
+                  :mult 1 #(/ 1 x-scale)
                   :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
                   :spacing 2}]
         

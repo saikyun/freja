@@ -112,18 +112,18 @@
          :while (> y top-y)]
     (if (= newline c)
       (do (-= y h)
-          (when should-be-wrapped
-            (array/push lines needs-wrapping)
-            (set should-be-wrapped false))
-          (set x width)
-          (array/push lines i))
+        (when should-be-wrapped
+          (array/push lines needs-wrapping)
+          (set should-be-wrapped false))
+        (set x width)
+        (array/push lines i))
       
       (do (def new-x (- x (first (sizes c))))
-          (if (neg? new-x)
-            (do (-= y h)
-                (set should-be-wrapped true)
-                (set x width))
-            (set x new-x)))))
+        (if (neg? new-x)
+          (do (-= y h)
+            (set should-be-wrapped true)
+            (set x width))
+          (set x new-x)))))
   
   lines)
 
@@ -143,13 +143,13 @@ Returns `nil` if the max width is never exceeded."
   ret)
 
 (comment
- (var i 0) 
- (while i
-   (print (set i (index-passing-max-width sizes "01234567890" i 10 40))))
- 
- (let [i ]
-   (index-passing-max-width sizes "01234567890" i 10 40))
- )
+  (var i 0) 
+  (while i
+    (print (set i (index-passing-max-width sizes "01234567890" i 10 40))))
+  
+  (let [i ]
+    (index-passing-max-width sizes "01234567890" i 10 40))
+  )
 
 (varfn word-wrap
   [sizes lines chars start stop width h y y-limit]
@@ -166,63 +166,63 @@ Returns `nil` if the max width is never exceeded."
          :let [c (chars i)]
          :while (< y y-limit)]
     (case c newline
-          (do (array/push lines (inc i))
-              (+= y h)
-              (set x 0)
-              (set beginning-of-word-i (inc i)))
-          
-          space
-          (let [old-w w]
-            (set w 0)
+      (do (array/push lines (inc i))
+        (+= y h)
+        (set x 0)
+        (set beginning-of-word-i (inc i)))
+      
+      space
+      (let [old-w w]
+        (set w 0)
+        
+        ## TODO: need to handle "space end of line"
+        (if (> (+ x old-w) width) ## we went outside the max width
+          (do ## so rowbreak before the word
+            (print "first word wrap")
             
-            ## TODO: need to handle "space end of line"
-            (if (> (+ x old-w) width) ## we went outside the max width
-              (do ## so rowbreak before the word
-                (print "first word wrap")
-                
-                (array/push lines beginning-of-word-i)
-                (+= y h)
-                (set x old-w)
-                
-                ## is the word also longer than the line?
-                (when (> (+ x old-w) width)
-                  ## then we need to break up the word
-                  (var break-i beginning-of-word-i)
-                  (while (set break-i (index-passing-max-width
-                                       sizes
-                                       chars
-                                       break-i
-                                       i
-                                       width))
-                    (array/push lines break-i))))
-              
-              (+= x (+ old-w (first (sizes c)))))
+            (array/push lines beginning-of-word-i)
+            (+= y h)
+            (set x old-w)
             
-            (set beginning-of-word-i (inc i)))
+            ## is the word also longer than the line?
+            (when (> (+ x old-w) width)
+              ## then we need to break up the word
+              (var break-i beginning-of-word-i)
+              (while (set break-i (index-passing-max-width
+                                    sizes
+                                    chars
+                                    break-i
+                                    i
+                                    width))
+                (array/push lines break-i))))
           
-          (let [new-w (+ w (first (sizes c)))]
-            (set w new-w))))
+          (+= x (+ old-w (first (sizes c)))))
+        
+        (set beginning-of-word-i (inc i)))
+      
+      (let [new-w (+ w (first (sizes c)))]
+        (set w new-w))))
   
   lines)
 
 (comment
- (do (def lines2 @[])
-     (def str "hej ye\ncool my due wahat u uuu")
-     (word-wrap lines2 str
-                0 (length str)
-                50
-                14
-                0
-                500
-                )
-     (render-lines (text-data :conf) str lines2 0 0 14)
-     
-     (let [leftovers-start (or (last lines2) 0)
-           leftovers-end (length str)]
-       (buffer/slice str leftovers-start leftovers-end)
-       ))
- 
- )
+  (do (def lines2 @[])
+    (def str "hej ye\ncool my due wahat u uuu")
+    (word-wrap lines2 str
+               0 (length str)
+               50
+               14
+               0
+               500
+               )
+    (render-lines (text-data :conf) str lines2 0 0 14)
+    
+    (let [leftovers-start (or (last lines2) 0)
+          leftovers-end (length str)]
+      (buffer/slice str leftovers-start leftovers-end)
+      ))
+  
+  )
 
 (var debug nil)
 (set debug false)
@@ -245,14 +245,14 @@ Returns `nil` if the max width is never exceeded."
   
   (loop [l :in lines]
     (do (set x 0) 
-        (loop [i :range [last l]
-               :let [c (chars i)
-                     [w h] (sizes c)]]
-          (put s 0 c)
-          (when debug
-            (prin s))
-          (draw-text conf s [x y] :black)
-          (+= x w)))
+      (loop [i :range [last l]
+             :let [c (chars i)
+                   [w h] (sizes c)]]
+        (put s 0 c)
+        (when debug
+          (prin s))
+        (draw-text conf s [x y] :black)
+        (+= x w)))
     (+= y h)
     (when debug
       (print))
@@ -338,43 +338,43 @@ Returns `nil` if the max width is never exceeded."
          :let [c (joined-nth leftover-chars chars i)]
          :while (< y y-limit)]
     (case c newline
-          (do (array/push lines (inc i))
-              (+= y h)
-              (set x 0)
-              (set beginning-of-word-i (inc i)))
-          
-          space
-          (let [old-w w]
-            (set w 0)
-            
-            ## TODO: need to handle "space end of line"
-            (if (> (+ x old-w) width) ## we went outside the max width
-              (do ## so rowbreak before the word
-                (print "second word wrap")
+      (do (array/push lines (inc i))
+        (+= y h)
+        (set x 0)
+        (set beginning-of-word-i (inc i)))
+      
+      space
+      (let [old-w w]
+        (set w 0)
+        
+        ## TODO: need to handle "space end of line"
+        (if (> (+ x old-w) width) ## we went outside the max width
+          (do ## so rowbreak before the word
+            (print "second word wrap")
 
-                (array/push lines beginning-of-word-i)
-                (+= y h)
-                (set x old-w)
-                
-                ## is the word also longer than the line?
-                (when (> (+ x old-w) width)
-                  ## then we need to break up the word
-                  (var break-i beginning-of-word-i)
-                  (while (set break-i (index-passing-max-width-joined
-                                       leftover-chars
-                                       chars
-                                       sizes
-                                       break-i
-                                       i
-                                       width))
-                    (array/push lines break-i))))
-              
-              (+= x (+ old-w (first (sizes c)))))
+            (array/push lines beginning-of-word-i)
+            (+= y h)
+            (set x old-w)
             
-            (set beginning-of-word-i (inc i)))
+            ## is the word also longer than the line?
+            (when (> (+ x old-w) width)
+              ## then we need to break up the word
+              (var break-i beginning-of-word-i)
+              (while (set break-i (index-passing-max-width-joined
+                                    leftover-chars
+                                    chars
+                                    sizes
+                                    break-i
+                                    i
+                                    width))
+                (array/push lines break-i))))
           
-          (let [new-w (+ w (first (sizes c)))]
-            (set w new-w))))
+          (+= x (+ old-w (first (sizes c)))))
+        
+        (set beginning-of-word-i (inc i)))
+      
+      (let [new-w (+ w (first (sizes c)))]
+        (set w new-w))))
   
   (if (and (not (joined-empty? leftover-chars chars))
            (not= space (joined-nth leftover-chars chars (dec joined-stop)))
@@ -387,55 +387,55 @@ Returns `nil` if the max width is never exceeded."
       (if (> (+ w x) width)
         ## then we need to break up the word
         (do (var break-i beginning-of-word-i)
-            (while (set break-i (index-passing-max-width-joined
-                                 leftover-chars
-                                 chars
-                                 sizes
-                                 break-i
-                                 joined-stop
-                                 width))
-              (array/push lines break-i)))
+          (while (set break-i (index-passing-max-width-joined
+                                leftover-chars
+                                chars
+                                sizes
+                                break-i
+                                joined-stop
+                                width))
+            (array/push lines break-i)))
         
         (set x (+ x w)))))
   
   (array/push lines joined-stop)
   
   (comment
-   (set w 0)
-   (when (> x width) ## TODO: need to handle "space end of line"
-     (array/push lines beginning-of-word-i)
-     (+= y h)
-     (set x 0))
-   
-   (when (< y y-limit)
-     (array/push lines stop)
-     ))
+    (set w 0)
+    (when (> x width) ## TODO: need to handle "space end of line"
+      (array/push lines beginning-of-word-i)
+      (+= y h)
+      (set x 0))
+    
+    (when (< y y-limit)
+      (array/push lines stop)
+      ))
   
   lines)
 
 (comment
- 
- (def ls @[])
- 
- (def s1 "ab c")
- (def s2 " 6 54 ")
- 
- (do
-   (def b @"")
-   
-   (loop [i :range [0 (joined-length s1 s2)]]
-     (buffer/push b (joined-nth s1 s2 i)))
-   
-   b)
- 
- 
- 
- (do (def s1 "ab c") 
-     (def s2 " 6 54 ")
-     
-     (print (string s1 (string/reverse s2)))
-     
-     (word-wrap-backwards 
+  
+  (def ls @[])
+  
+  (def s1 "ab c")
+  (def s2 " 6 54 ")
+  
+  (do
+    (def b @"")
+    
+    (loop [i :range [0 (joined-length s1 s2)]]
+      (buffer/push b (joined-nth s1 s2 i)))
+    
+    b)
+  
+  
+  
+  (do (def s1 "ab c") 
+    (def s2 " 6 54 ")
+    
+    (print (string s1 (string/reverse s2)))
+    
+    (word-wrap-backwards 
       ls
       
       s1
@@ -451,8 +451,8 @@ Returns `nil` if the max width is never exceeded."
       0
       0
       300)
-     
-     (render-lines-backwards 
+    
+    (render-lines-backwards 
       (text-data :conf)
       
       s2
@@ -464,52 +464,52 @@ Returns `nil` if the max width is never exceeded."
       ls
       (dec (length s2))
       0 0 14)
-     
-     
-     
-     
-     
-     )
- 
- (word-wrap-backwards 
-  ls
+    
+    
+    
+    
+    
+    )
   
-  "jag gillar att"
-  0
-  13
+  (word-wrap-backwards 
+    ls
+    
+    "jag gillar att"
+    0
+    13
+    
+    "klappa katter massor"
+    0
+    19
+    
+    20 #w
+    14
+    0
+    0
+    300)
   
-  "klappa katter massor"
-  0
-  19
   
-  20 #w
-  14
-  0
-  0
-  300)
- 
- 
- 
- 
- 
- 
- "hej" "gid åp"
- #012   012345
- 
- (def last (+ start # 5
-              (- leftover-stop leftover-start)))
- (def ls @[0])
- 
- )
+  
+  
+  
+  
+  "hej" "gid åp"
+  #012   012345
+  
+  (def last (+ start # 5
+               (- leftover-stop leftover-start)))
+  (def ls @[0])
+  
+  )
 
 (varfn render-caret
   [props x y h]
   (when (< (props :blink) 30)
     (draw-line-ex
-     [x y]
-     [x (+ y h)]
-     1
-     (get-in props [:colors :caret]))))
+      [x y]
+      [x (+ y h)]
+      1
+      (get-in props [:colors :caret]))))
 
 (varfn refresh-caret
   [props]
@@ -602,8 +602,8 @@ Returns `nil` if the max width is never exceeded."
     
     (comment
       (when (not (empty? lines))
-	(while (neg? (lines end))
-	  (+= end 1))))
+        (while (neg? (lines end))
+          (+= end 1))))
     
     (def h ((sizes (first "a")) 1))
     (var x 0)
@@ -615,51 +615,51 @@ Returns `nil` if the max width is never exceeded."
     
     
     (while (and (<= end i)
-		(< y y-limit))
+                (< y y-limit))
       (let [l (lines i)
-	    prev (when (< i (- (length lines) 1))
-		   (lines (inc i)))]
-	
-	(if (= l needs-wrapping)
-	  (when (= i 0) ## last line
-	    (let [wrapped-lines @[]]
-	      (word-wrap sizes wrapped-lines text last (length text) w h y y-limit)
-	      (array/pop wrapped-lines)
-	      (set x (render-lines sizes conf text wrapped-lines last y h))
-	      (when (not (empty? wrapped-lines))
-		(set end-i (wrapped-lines
-			     (dec (length wrapped-lines)))))
-	      
-	      (+= y (* h (length wrapped-lines)))
-	      #(pp wrapped-lines)
-	      (-= i 1)))                              
-	  
-	  (do (cond (= prev needs-wrapping)
-		(let [wrapped-lines @[]]
-		  (word-wrap sizes wrapped-lines text last l w h y y-limit)
-		  (set x (render-lines sizes conf text wrapped-lines last y h))
-		  (+= y (* h (dec (length wrapped-lines))))
-		  (-= i 1)) ## skip the needs-wrapping value
-		
-		# else
-		(do (set x 0)
-		  (loop [i :range [last l]
-			 :let [c (text i)
-			       [w h] (sizes c)]]
-		    (put s 0 c)
-		    (draw-text conf s [x y] :black)
-		    (+= x w)))
-		
-		#(pp r)
-		
-		#(print (buffer/slice text last l))
-		)
-	    
-	    (set last l)
-	    (set end-i l)
-	    (+= y h)))
-	
-	(-= i 1))
+            prev (when (< i (- (length lines) 1))
+                   (lines (inc i)))]
+        
+        (if (= l needs-wrapping)
+          (when (= i 0) ## last line
+            (let [wrapped-lines @[]]
+              (word-wrap sizes wrapped-lines text last (length text) w h y y-limit)
+              (array/pop wrapped-lines)
+              (set x (render-lines sizes conf text wrapped-lines last y h))
+              (when (not (empty? wrapped-lines))
+                (set end-i (wrapped-lines
+                             (dec (length wrapped-lines)))))
+              
+              (+= y (* h (length wrapped-lines)))
+              #(pp wrapped-lines)
+              (-= i 1)))                              
+          
+          (do (cond (= prev needs-wrapping)
+                (let [wrapped-lines @[]]
+                  (word-wrap sizes wrapped-lines text last l w h y y-limit)
+                  (set x (render-lines sizes conf text wrapped-lines last y h))
+                  (+= y (* h (dec (length wrapped-lines))))
+                  (-= i 1)) ## skip the needs-wrapping value
+                
+                # else
+                (do (set x 0)
+                  (loop [i :range [last l]
+                         :let [c (text i)
+                               [w h] (sizes c)]]
+                    (put s 0 c)
+                    (draw-text conf s [x y] :black)
+                    (+= x w)))
+                
+                #(pp r)
+                
+                #(print (buffer/slice text last l))
+                )
+            
+            (set last l)
+            (set end-i l)
+            (+= y h)))
+        
+        (-= i 1))
       
       #(print y)
       )
@@ -671,82 +671,82 @@ Returns `nil` if the max width is never exceeded."
     (print "second part")
     (when (< y y-limit)
       (let [wrapped-lines @[]]
-	(word-wrap-backwards
-	  sizes
-	  wrapped-lines
-	  
-	  text
-	  (if (empty? lines)
-	    0
-	    end-i)
-	  (length text)
-	  
-	  after
-	  0
-	  (length after)
-	  w
-	  h
-	  x
-	  y
-	  (+ y y-limit))
+        (word-wrap-backwards
+          sizes
+          wrapped-lines
+          
+          text
+          (if (empty? lines)
+            0
+            end-i)
+          (length text)
+          
+          after
+          0
+          (length after)
+          w
+          h
+          x
+          y
+          (+ y y-limit))
 
-	(print "rendering123")
-	(test/timeit
-	  (render-lines-backwards
-	    props
-	    sizes
-	    conf
-	    after
-	    
-	    text
-	    end-i
-	    (length text)
-	    
-	    wrapped-lines
-	    (if (empty? after)
-	      nil
-	      (dec (length after)))
-	    x
-	    y
-	    h))
-	(+= y (* h (length wrapped-lines)))
-	#(pp wrapped-lines)
-	(-= i 1)))
+        (print "rendering123")
+        (test/timeit
+          (render-lines-backwards
+            props
+            sizes
+            conf
+            after
+            
+            text
+            end-i
+            (length text)
+            
+            wrapped-lines
+            (if (empty? after)
+              nil
+              (dec (length after)))
+            x
+            y
+            h))
+        (+= y (* h (length wrapped-lines)))
+        #(pp wrapped-lines)
+        (-= i 1)))
     
     #(print (buffer/slice text last (length text)))
     ))
 
 (comment
- 
- (do (def new-str
-       @``
-       hello
-       there
-       i wonder what has happened it was such a long time ago    i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago
-       ``)
-     
-     
-     (def width 1920)
-     (def lines @[])
-     
-     
-     (array/clear lines)
-     (backward-lines-until-limit lines sizes width -1080 width 0 new-str))
- 
- (do
-   (def width 1920)
-   (def lines @[])
-   
-   
-   (def new-str (buffer (string/repeat org-str 100)))
-   
-   (test/timeit (do
-                  (print "heh")
-                  (backward-lines-until-limit lines sizes width -1080 width 0 new-str)
-                  
-                  (print "2")
-                  (test/timeit
-                   (do (def h ((sizes (first "a")) 1))
+  
+  (do (def new-str
+        @``
+        hello
+        there
+        i wonder what has happened it was such a long time ago    i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago   i wonder what has happened it was such a long time ago
+        ``)
+    
+    
+    (def width 1920)
+    (def lines @[])
+    
+    
+    (array/clear lines)
+    (backward-lines-until-limit lines sizes width -1080 width 0 new-str))
+  
+  (do
+    (def width 1920)
+    (def lines @[])
+    
+    
+    (def new-str (buffer (string/repeat org-str 100)))
+    
+    (test/timeit (do
+                   (print "heh")
+                   (backward-lines-until-limit lines sizes width -1080 width 0 new-str)
+                   
+                   (print "2")
+                   (test/timeit
+                     (do (def h ((sizes (first "a")) 1))
                        (var y 0)
                        (var i (dec (length lines)))
                        (var last (last lines))
@@ -779,21 +779,21 @@ Returns `nil` if the max width is never exceeded."
                        (print (buffer/slice new-str last (length new-str)))
                        )))))
 
- (do
-   (def width 1920)
-   (def lines @[])
-   
-   
-   (def new-str (buffer (string/repeat org-str 100)))
-   
-   (test/timeit (do
-                  (print "heh")
-                  (test/timeit
-                   (backward-lines-until-limit lines sizes width -1080 width 0 new-str))
-                  
-                  (print "2")
-                  (test/timeit
-                   (do (def h ((sizes (first "a")) 1))
+  (do
+    (def width 1920)
+    (def lines @[])
+    
+    
+    (def new-str (buffer (string/repeat org-str 100)))
+    
+    (test/timeit (do
+                   (print "heh")
+                   (test/timeit
+                     (backward-lines-until-limit lines sizes width -1080 width 0 new-str))
+                   
+                   (print "2")
+                   (test/timeit
+                     (do (def h ((sizes (first "a")) 1))
                        (var y 0)
                        (var i (dec (length lines)))
                        (var last (last lines))
@@ -825,21 +825,21 @@ Returns `nil` if the max width is never exceeded."
                        
                        #(print (buffer/slice new-str last (length new-str)))
                        )))))
- 
- (do
-   (def width 1920)
-   (def lines @[])
-   
-   (def new-str (buffer (string/repeat org-str 100)))
-   
-   (test/timeit (do
-                  (print "heh")
-                  (test/timeit
-                   (backward-lines-until-limit lines sizes width -1080 width 0 new-str))
-                  
-                  (print "2")
-                  (test/timeit
-                   (do (def h ((sizes (first "a")) 1))
+  
+  (do
+    (def width 1920)
+    (def lines @[])
+    
+    (def new-str (buffer (string/repeat org-str 100)))
+    
+    (test/timeit (do
+                   (print "heh")
+                   (test/timeit
+                     (backward-lines-until-limit lines sizes width -1080 width 0 new-str))
+                   
+                   (print "2")
+                   (test/timeit
+                     (do (def h ((sizes (first "a")) 1))
                        (var y 0)
                        (var i (dec (length lines)))
                        (var last (last lines))
@@ -871,8 +871,8 @@ Returns `nil` if the max width is never exceeded."
                        
                        #(print (buffer/slice new-str last (length new-str)))
                        )))))
- 
- )
+  
+  )
 
 
 
@@ -885,17 +885,17 @@ Returns `nil` if the max width is never exceeded."
 
 
 (comment
- 
- (let [_ (update text-data :text |(string/repeat $ 100))]
-   :ok)
- 
- (let [_ (update text-data :after |(string/repeat $ 100))]
-   :ok)
- 
- (let [_ (test/timeit
-          (content text-data))]
-   123)
- 
- 
- 
- )
+  
+  (let [_ (update text-data :text |(string/repeat $ 100))]
+    :ok)
+  
+  (let [_ (update text-data :after |(string/repeat $ 100))]
+    :ok)
+  
+  (let [_ (test/timeit
+            (content text-data))]
+    123)
+  
+  
+  
+  )

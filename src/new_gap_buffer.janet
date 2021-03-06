@@ -15,6 +15,10 @@ The other functions are O(1) or O(n) where n is the length of the gap, which is 
      (- gap-stop gap-start)))
 
 (comment
+  (gb-length gb-data)
+
+  (length (gb-data :text))
+  
   (gb-length {:text @""
               :gap-start 0
               :gap-stop 0
@@ -124,6 +128,21 @@ Does bounds check as well."
         (put :gap-start new-pos)
         (put :gap-stop new-pos))))
 
+(varfn put-gap-pos!
+  "Commits then puts `pos` into :gap-start & :gap-stop.
+Does bounds check as well."
+  [gb pos]
+  (def {:gap-start gap-start
+        :gap-stop gap-stop}
+    (commit! gb))
+  
+  (def new-pos (bounds-check gb pos))
+  
+  (-> gb
+      (put :changed-nav true)
+      (put :gap-start new-pos)
+      (put :gap-stop new-pos)))
+
 (varfn update-gap-pos!
   "Commits then puts `(f (gb :gap-start))` into :gap-start & :gap-stop.
 Does bounds check as well."
@@ -135,6 +154,7 @@ Does bounds check as well."
   (def new-pos (bounds-check gb (f gap-start)))
   
   (-> gb
+      (put :changed-nav true)
       (put :gap-start new-pos)
       (put :gap-stop new-pos)))
 
@@ -158,6 +178,7 @@ Does bounds check as well."
   (-> gb
       (update :gap buffer/clear)
       (update :text (comp |(buffer/push-string $ text) buffer/clear))
+      (put :changed true)
       (put :gap-start 0)
       (put :gap-stop 0)))
 
@@ -168,14 +189,18 @@ Does bounds check as well."
             :grave (chr "`")
             :left-bracket (chr "[")
             :right-bracket (chr "]")
-            k)]
+            (if (keyword? k)
+              (first k)
+              k))]
     (comment
       (do (buffer/clear selected)
         (if (keyword? k)
           (buffer/push-string text (string k))
           (put text (length text) k)))
       )
-    (update gb :gap buffer/push-byte k)))
+    (update gb :gap buffer/push-byte k))
+
+  (put gb :changed true))
 
 (defn ascii-upper-chr
   [c]
@@ -195,7 +220,9 @@ Does bounds check as well."
               (ascii-upper-chr (first k))
               k))]
     
-    (update gb :gap buffer/push-byte k)))
+    (update gb :gap buffer/push-byte k))
+  
+  (put gb :changed true))
 
 (comment
   (insert-char @{:text @""
@@ -218,7 +245,8 @@ Does bounds check as well."
   [gb]
   (if (empty? (gb :gap))
     (update gb :gap-start |(max 0 (dec $)))
-    (update gb :gap buffer/popn 1)))
+    (update gb :gap buffer/popn 1))
+  (put gb :changed true))
 
 (comment
   (backspace @{:text @""
@@ -341,31 +369,31 @@ Does bounds check as well."
   #=> @{:gap-start 2 :gap-stop 2 :text @"b0" :gap @""}
   )
 
-(varfn backward-char
+(varfn backward-char!
   [gb]
   (update-gap-pos! gb dec))
 
 (comment
-  (backward-char @{:text @"a"
-                   :gap-start 1
-                   :gap-stop 1
-                   :gap @""})  
+  (backward-char! @{:text @"a"
+                    :gap-start 1
+                    :gap-stop 1
+                    :gap @""})  
   #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @""}
 
   (-> @{:text @"ab"
         :gap-start 2
         :gap-stop 2
         :gap @""}
-      backward-char
-      backward-char)
+      backward-char!
+      backward-char!)
   #=> @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @""}
   
   (-> @{:text @"ab"
         :gap-start 1
         :gap-stop 1
         :gap @""}
-      backward-char
-      backward-char)
+      backward-char!
+      backward-char!)
   #=>  @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @""}
   )
 
@@ -381,35 +409,56 @@ Does bounds check as well."
 ## move-cursor-to
 ## get-current-cursor-pos
 
-(varfn backward-word
+(varfn backward-word!
   [gb]
   (def {:gap gap
         :gap-start gap-start
         :gap-stop gap-stop
         :text text} gb)
-  (if (empty? (gb :gap))
-    (do (var i gap-start)
-      (while (and (pos? i)
-                  (not (word-delimiter? (gb-nth gb i))))
-        (-= i 1))
-      (-> gb
-          (put :gap-start i)
-          (put :gap-stop i)))
-    (print "FIX BACKWARD-WORD WHEN GAP NOT EMPTY"))
+  
+  (commit! gb)
+  
+  (var i (dec gap-start))
+  (while (and (pos? i)
+              (not (word-delimiter? (gb-nth gb (dec i)))))
+    (-= i 1))
+  
+  (put-gap-pos! gb i)
+  
   gb)
 
 (comment
-  (backward-word @{:text @"abc"
-                   :gap-start 2
-                   :gap-stop 2
-                   :gap @""})
+  (backward-word! @{:text @"abc"
+                    :gap-start 2
+                    :gap-stop 2
+                    :gap @""})
   
   (let [t "abc def"]
-    (backward-word @{:text t
-                     :gap-start (length t)
-                     :gap-stop (length t)
-                     :gap @""}))
+    (backward-word! @{:text t
+                      :gap-start (length t)
+                      :gap-stop (length t)
+                      :gap @""}))
   )
+
+(varfn forward-word!
+  [gb]
+  (def {:gap gap
+        :gap-start gap-start
+        :gap-stop gap-stop
+        :text text} gb)
+  
+  (commit! gb)
+  
+  (var i (inc gap-start))
+  (def len (gb-length gb))
+  
+  (while (and (< i len)
+              (not (word-delimiter? (gb-nth gb i))))
+    (+= i 1))
+  
+  (put-gap-pos! gb i)
+  
+  gb)
 
 (varfn text-iterator
   "Returns a function which returns one character at the time from the gap buffer."
