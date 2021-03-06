@@ -51,14 +51,15 @@
                      (when (meta-down?)
                        (reset-blink props)
                        
-                       (paste props)))})
+                       #(paste props)
+                       ))})
 
 ## bindings from key to function
-(def gb-binds @{:end (fn [props]
-                       (if (or (key-down? :left-shift)
-                               (key-down? :right-shift))
-                         (select-until-end-of-line props)
-                         (move-to-end-of-line props)))
+(def gb-binds @{:end (comment (fn [props]
+                                (if (or (key-down? :left-shift)
+                                        (key-down? :right-shift))
+                                  (select-until-end-of-line props)
+                                  (move-to-end-of-line props))))
                 
                 :s (fn [props]
                      (when (meta-down?)
@@ -73,7 +74,7 @@
                                    (key-down? :right-alt))
                                (or (key-down? :left-shift)
                                    (key-down? :right-shift)))
-                          (select-word-before props)
+                          (comment (select-word-before props))
                           
                           (or (key-down? :left-alt)
                               (key-down? :right-alt)) 
@@ -81,7 +82,7 @@
                           
                           (or (key-down? :left-shift)
                               (key-down? :right-shift))
-                          (select-char-before props)
+                          (comment (select-char-before props))
                           
                           (backward-char! props)))
                 
@@ -93,7 +94,7 @@
                                     (key-down? :right-alt))
                                 (or (key-down? :left-shift)
                                     (key-down? :right-shift)))
-                           (select-word-after props)
+                           (comment (select-word-after props))
                            
                            (or (key-down? :left-alt)
                                (key-down? :right-alt))
@@ -101,7 +102,7 @@
                            
                            (or (key-down? :left-shift)
                                (key-down? :right-shift))
-                           (select-char-after props)
+                           (comment (select-char-after props))
                            
                            (forward-char! props)))
                 
@@ -110,23 +111,26 @@
                           
                           (cond (or (key-down? :left-alt)
                                     (key-down? :right-alt))
-                            (delete-word-after props)
+                            (comment (delete-word-after props))
                             
-                            (forward-delete props))) 
+                            (comment (forward-delete props)))) 
                 
                 :a (fn [props]
                      (when (meta-down?)
-                       (select-all props)))  
+                       #(select-all props)
+                       ))  
                 
                 :b (fn [props]
                      (when (meta-down?)
                        (reset-blink props)
                        
-                       (cut props)))
+                       #(cut props)
+                       ))
 
                 :i (fn [props]
                      (when (meta-down?)
-                       (copy props)))
+                       #(copy props)
+                       ))
                 
                 :. (kw->f :paste)
                 
@@ -146,7 +150,7 @@
                              
                              (cond (or (key-down? :left-alt)
                                        (key-down? :right-alt))
-                               (delete-word-before props)
+                               (comment (delete-word-before props))
                                
                                (backspace props)))
                 
@@ -159,10 +163,12 @@
                 :home (fn [props]
                         (reset-blink props)
                         
-                        (if (or (key-down? :left-shift)
-                                (key-down? :right-shift))
-                          (select-until-beginning-of-line props)
-                          (move-to-beginning-of-line props)))
+                        # (if (or (key-down? :left-shift)
+                        #         (key-down? :right-shift))
+                        #   (select-until-beginning-of-line props)
+                        #   (move-to-beginning-of-line props))
+                        
+                        )
                 
                 :enter (fn [props]
                          (reset-blink props)
@@ -178,18 +184,20 @@
                            
                            (insert-char props (first "\n"))))
                 
-                :up (vertical-move previous-row (fn [_] 0))
+                #:up (vertical-move previous-row (fn [_] 0))
                 
-                :down (vertical-move
-                        next-row
-                        |(length (content $)))
+                # :down (vertical-move
+                #         next-row
+                #         |(length (content $)))
                 
                 
                 :page-up (fn [props]
-                           (page-up props))             
+                           #(page-up props)
+                           )             
                 
                 :page-down (fn [props]
-                             (page-down props))})
+                             #(page-down props)
+                             )})
 
 (comment
   (put gb-data :binds gb-binds)

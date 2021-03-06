@@ -2,7 +2,6 @@
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./textfield :as t)
-(import ./textarea :prefix "" :fresh true)
 (import ./text_rendering :prefix "")
 (import ./text_rendering_ints :prefix "" :fresh true)
 (import ../build/text-rendering :prefix "")
@@ -69,71 +68,6 @@
                
                :binds gb-binds})
 
-(var text-data @{:selected @""
-                 :text @""
-                 :after @""
-                 :dir nil
-                 :scroll 0
-                 
-                 :changed true
-                 
-                 :position [5 5]
-                 :w 590
-                 :offset [10 10]
-                 
-                 :id :main
-                 :binds textarea-binds
-                 
-                 :open-file (fn [props]
-                              (put props :position [5 50])
-                              (focus-other props :filepath))
-                 
-                 :caret-pos [0 0]
-                 :blink 0})
-
-(var filepath-data @{:selected @""
-                     :text @""
-                     :after @""
-                     :dir nil
-                     :scroll 0
-                     
-                     :changed true
-                     
-                     :position [5 5]
-                     :w 590
-                     :h 50
-                     :offset [10 10]
-                     
-                     :id :filepath
-                     :binds filepath-binds
-                     
-                     :callback (fn [props]
-                                 (load-file text-data (content props))
-                                 (put text-data :position [5 5])
-                                 (focus-other props :main))
-                     
-                     :cancel (fn [props]
-                               (put text-data :position [5 5])
-                               (focus-other props :main))
-                     
-                     :caret-pos [0 0]
-                     :blink 0})
-
-(var text-data2 @{:selected @""
-                  :text @""
-                  :after @""
-                  :dir nil
-                  :scroll 0
-                  
-                  :changed true
-                  
-                  :position [605 5]
-                  :w 590
-                  :offset [10 10]
-                  
-                  :caret-pos [0 0]
-                  :blink 0})
-
 (var mouse-data (new-mouse-data))
 (var conf nil)
 (var conf2 nil)
@@ -141,7 +75,6 @@
 
 (var data @{:latest-res @""
             :focus :main
-            :text-data text-data
             :quit false
             :top-env top-env})
 
@@ -166,102 +99,10 @@
     (put nt k v))
   nt)
 
-(varfn debug-view
-  [data]
-  (put text-data2 :text (string/format "%.5m" #(data :latest-res)
-                                       
-                                       #text-data
-                                       data
-                                       ))
-  
-  (comment  (put text-data2 :text
-                 (string/format "%.5m" (remove-keys text-data
-                                                    (dumb-set
-                                                      :text
-                                                      :after
-                                                      
-                                                      :full-text
-                                                      :styles
-                                                      :positions
-                                                      :conf
-                                                      :data
-                                                      :sizes)))))
-  
-  (render-textarea conf2 text-data2))
-
-(varfn frame
-  [dt]
-  (let [y (+ (if-let [{:y y :h h} (last (text-data :rows))]
-               (+ y h)
-               0)
-             16 120)]
-    (draw-text (conf :text) (string (data :latest-res)) [30 y] :blue)
-    )
-  
-  
-  (comment
-    (put text-data2 :text
-         (string/format "%.5m" (remove-keys text-data
-                                            (dumb-set
-                                              :text
-                                              :after
-                                              
-                                              :full-text
-                                              :styles
-                                              :positions
-                                              :conf
-                                              :data
-                                              :sizes)))))  
-  (comment
-    (let [x (+ 600 5)
-          y 5
-          w 590
-          h (- (get-screen-height) y 5)
-          roundness 0.015
-          segments 9
-          diff 2]
-      
-      (draw-rectangle-rounded [x y w h] roundness segments (colors :border))
-      (draw-rectangle-rounded [(+ x diff)
-                               (+ y diff)
-                               (- w (* 2 diff))
-                               (- h (* 2 diff))]
-                              roundness
-                              segments
-                              (colors :game-bg))))
-  
-  
-  
-  )
-
-(varfn frame
-  [dt]
-  
-  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
-  )
-
 (varfn frame
   [dt]
   (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
   
-  (put text-data :debug false)
-  (put text-data2 :changed true)
-  
-  (comment
-    (debug-view (take 200 (text-data :positions))))
-  
-  (comment (debug-view (remove-keys text-data
-                                    (dumb-set
-                                      #:text
-                                      # :after
-                                      :context
-                                      :full-text
-                                      :styles
-                                      :positions
-                                      :conf
-                                      :data
-                                      :binds
-                                      :sizes))))
   )
 
 (varfn internal-frame
@@ -326,7 +167,7 @@
                            ([err fib]
                              (let [path "text_experiment_dump"]
                                (debug/stacktrace fib err)
-                               (dump-state path text-data)
+                               (dump-state path gb-data)
                                (print "Dumped state to " path))
                              (print (debug/stacktrace fib err))
                              (ev/sleep 1))))))))
@@ -381,17 +222,10 @@
                   :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
                   :spacing 2}]
         
-        (load-font filepath-data tc)
         (set conf (load-font gb-data tc))
-        (set conf2 (load-font text-data2 tc2))
-        (set conf3 (load-font text-data tc))
         
-        (put filepath-data :context data)
         (put gb-data :context data)
         (put gb-data :colors colors)
-        (put text-data :context data)
-        (put text-data :colors colors)
-        (put text-data2 :context data)
         
         (set-target-fps 60)
         
@@ -403,7 +237,7 @@
       (debug/stacktrace fib err)
       
       (let [path "text_experiment_dump"]
-        (dump-state path text-data)
+        (dump-state path gb-data)
         (print "Dumped state to " path))
       
       (close-window))))

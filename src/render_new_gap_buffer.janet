@@ -69,7 +69,7 @@ Returns `nil` if the max width is never exceeded."
     
     (when (= i
              caret-pos)
-      (put props :caret-pos [(+ x w) y]))
+      (put props :caret-pos [(* 0.5 (+ x w)) y]))
     
     ## ---- Handle wordwrapping
     
@@ -111,12 +111,12 @@ Returns `nil` if the max width is never exceeded."
       
       (let [new-w (+ w (first (sizes c)))]
         (set w new-w)))
-
+    
     (when (> y y-limit)
       (return stop-gb-iterate)))
   
   (when (= stop caret-pos)
-    (put props :caret-pos [(+ x w) y]))
+    (put props :caret-pos [(* 0.5 (+ x w)) y]))
   
   (when (not (> y y-limit))
     (let [old-w w]
@@ -209,7 +209,7 @@ Returns `nil` if the max width is never exceeded."
   
   (def gb props)
   
-  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
+  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
   
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
@@ -237,20 +237,20 @@ Returns `nil` if the max width is never exceeded."
                        gb
                        0 (gb-length gb)
                        1920
-                       (* y-scale 14)
+                       14
                        0
                        (- 2160 scroll))))
         
         (when changed
           (begin-texture-mode (props :texture))
           
-          (clear-background (colors :background))
+          (clear-background #:blue
+                            (colors :background)
+                            )
           
           (render-lines sizes conf gb lines 0 scroll (* y-scale 14) 1080)
           
-          (end-texture-mode)) 
-        
-        
+          (end-texture-mode))
         
         (put props :changed false)
         (put props :changed-nav false)))
@@ -259,11 +259,19 @@ Returns `nil` if the max width is never exceeded."
     #(:texture (gb-data :texture))
     )             # Reset internal modelview matrix  
   
-  (draw-render-texture-rec
-    (props :texture)
+  (rl-load-identity)             # Reset internal modelview matrix  
+  (rl-mult-matrixf-screen-scale)              
+  
+  (draw-texture-pro
+    (get-render-texture (props :texture))
     [0 0 w (- h)]
+    [0 0 (* 0.5 w) (* 0.5 h)]
     [0 0]
+    0
     :white)
+  
+  (pp (props :y-poses))
+  
   
   (+= (props :blink) 1.1)
   (when (> (props :blink) 60) (set (props :blink) 0))
@@ -272,8 +280,8 @@ Returns `nil` if the max width is never exceeded."
                         (props :caret-pos))]
     (draw-line-ex
       [x (+ y scroll)]
-      [x (+ y (* y-scale 14) (+ scroll))]
-      2
+      [x (+ y 14 (+ scroll))]
+      1
       (get-in props [:colors :caret])))
   
   #  DrawTextureRec(target.texture, (Rectangle) { 0, 0, target.texture.width, -target.texture.height }, (Vector2) { 0, 0 }, WHITE);

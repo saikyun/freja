@@ -1,6 +1,5 @@
 (use jaylib)
 (import spork/test)
-(import ./text_rendering_old :as old)
 (import ./find_row_etc :prefix "")
 
 (def weird-str
