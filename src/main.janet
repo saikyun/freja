@@ -266,26 +266,16 @@
 
 (varfn internal-frame
   []
-  (comment
-    (if (= (data :focus) :filepath)
-      (handle-mouse mouse-data filepath-data)
-      (handle-mouse mouse-data text-data))
-    
-    (handle-scroll text-data)
-    (handle-scroll text-data2))
+  (handle-mouse mouse-data gb-data)
   
-  (gb-handle-mouse mouse-data gb-data)
-  
-  (gb-handle-scroll gb-data)
+  (handle-scroll gb-data)
   
   (def dt (get-frame-time))
   
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
   
-  
   (def w (* x-scale (get-screen-width)))  
   (def h (* y-scale (get-screen-height)))  
-  
   
   (begin-drawing)
   
@@ -296,71 +286,23 @@
   (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix  
   (rl-load-identity)             # Reset internal modelview matrix  
   
-  #(test/timeit (new-render-experiment text-data))
-  #(new-render-experiment text-data)
-  
-  (comment
-    (test/timeit (render-text text-data))
-    (print "rendered text")  
-    (print))
-  
   (gb-render-text gb-data)
-  
-  (comment  (test/timeit (gb-render-text gb-data))
-    (print "rendered gb")
-    (print)
-    (print))
-  
-  
-  (comment
-    (let [[x-scale _ _ _ _ y-scale] (get-screen-scale)] # returns a matrix with a bunch of zeroes
-      (rl-viewport 0 0 (* x-scale (get-screen-width))
-                   (* y-scale (get-screen-height)))))
-  
   
   (clear-background (colors :background))
   
-  #(t/render-textfield conf text-data)
   (comment
-    (when (= (data :focus) :filepath)
-      (render-textarea conf filepath-data))
-    
-    (render-textarea conf text-data)
-    
     (try
       (frame dt)
       ([err fib]
         (print "hmm")
         (put data :latest-res (string "Error: " err))
         (print (debug/stacktrace fib err))
-        ))
-    
-    
-    #(draw-text (text-data :conf) (string (text-data :current-row)) [615 10] :white)
-    
-    (comment
-      (draw-text 
-        conf
-        (string/format "%m" (remove-keys text-data
-                                         (dumb-set :styles
-                                                   :positions
-                                                   :conf
-                                                   :data
-                                                   :sizes)))
-        [615 40]
-        :white))
-    
-    #(pp (keys text-data))
-    )
+        )))
   
   (end-drawing)
   
   (try
-    (do (comment (if (= (data :focus) :filepath)
-                   (handle-keyboard data filepath-data dt)
-                   (handle-keyboard data text-data dt)))
-      
-      (handle-keyboard data gb-data dt))
+    (do (handle-keyboard data gb-data dt))
     
     ([err fib]
       (print "kbd")
