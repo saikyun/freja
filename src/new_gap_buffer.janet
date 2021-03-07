@@ -15,10 +15,6 @@ The other functions are O(1) or O(n) where n is the length of the gap, which is 
      (- gap-stop gap-start)))
 
 (comment
-  (gb-length gb-data)
-
-  (length (gb-data :text))
-  
   (gb-length {:text @""
               :gap-start 0
               :gap-stop 0
@@ -143,6 +139,15 @@ Does bounds check as well."
       (put :gap-start new-pos)
       (put :gap-stop new-pos)))
 
+(varfn deselect
+  [gb]
+  (when (gb :selection)
+    (-> gb
+        (put :selection nil)
+        (put :changed-selection true)))
+  
+  gb)
+
 (varfn update-gap-pos!
   "Commits then puts `(f (gb :gap-start))` into :gap-start & :gap-stop.
 Does bounds check as well."
@@ -155,6 +160,7 @@ Does bounds check as well."
   
   (-> gb
       (put :changed-nav true)
+      deselect
       (put :gap-start new-pos)
       (put :gap-stop new-pos)))
 
@@ -168,10 +174,6 @@ Does bounds check as well."
   #=> true
   
   )
-
-(varfn forward-char!
-  [gb]
-  (update-gap-pos! gb inc))
 
 (varfn replace-content
   [gb text]
@@ -230,7 +232,7 @@ Does bounds check as well."
                  :gap-stop 0
                  :gap @""}
                (first "a"))
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"a"}
+  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"a" :changed true}
   
   (-> (insert-char @{:text @""
                      :gap-start 0
@@ -253,25 +255,25 @@ Does bounds check as well."
                :gap-start 0
                :gap-stop 0
                :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""}
+  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed true}
   
   (backspace @{:text @"a"
                :gap-start 0
                :gap-stop 0
                :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @""}
+  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @"" :changed true}
   
   (backspace @{:text @"a"
                :gap-start 1
                :gap-stop 1
                :gap @""})
-  #=> @{:gap-start 0 :gap-stop 1 :text @"a" :gap @""}
+  #=> @{:gap-start 0 :gap-stop 1 :text @"a" :gap @"" :changed true}
   
   (backspace @{:text @""
                :gap-start 0
                :gap-stop 0
                :gap @"a"})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""}
+  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed true}
   )
 
 (varfn delete
@@ -316,6 +318,10 @@ Does bounds check as well."
   #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""}
   )
 
+(varfn forward-char!
+  [gb]
+  (update-gap-pos! gb inc))
+
 (comment
   (let [t (math/rng-buffer (math/rng) (* 1000 1000 10))]
     (-> (test/timeit
@@ -329,25 +335,25 @@ Does bounds check as well."
                    :gap-start 0
                    :gap-stop 0
                    :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""} 
+  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed-nav true}
   
   (forward-char! @{:text @"a"
                    :gap-start 0
                    :gap-stop 0
                    :gap @""})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @""}
+  #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @"" :changed-nav true}
   
   (forward-char! @{:text @""
                    :gap-start 0
                    :gap-stop 0
                    :gap @"b"})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"b" :gap @""}
+  #=> @{:gap-start 1 :gap-stop 1 :text @"b" :gap @"" :changed-nav true}
   
   (forward-char! @{:text @"012"
                    :gap-start 0
                    :gap-stop 0
                    :gap @"b"})
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b012" :gap @""}
+  #=> @{:gap-start 2 :gap-stop 2 :text @"b012" :gap @"" :changed-nav true}
   
   (-> @{:text @"012"
         :gap-start 0
@@ -356,7 +362,7 @@ Does bounds check as well."
       delete
       forward-char!
       commit!)
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b12" :gap @""}
+  #=> @{:gap-start 2 :gap-stop 2 :text @"b12" :gap @"" :changed-nav true}
   
   (-> @{:text @"012"
         :gap-start 0
@@ -366,7 +372,7 @@ Does bounds check as well."
       delete
       delete
       commit!)
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b0" :gap @""}
+  #=> @{:gap-start 2 :gap-stop 2 :text @"b0" :gap @"" :changed-nav true}
   )
 
 (varfn backward-char!
@@ -378,15 +384,15 @@ Does bounds check as well."
                     :gap-start 1
                     :gap-stop 1
                     :gap @""})  
-  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @""}
-
+  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @"" :changed-nav true}
+  
   (-> @{:text @"ab"
         :gap-start 2
         :gap-stop 2
         :gap @""}
       backward-char!
       backward-char!)
-  #=> @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @""}
+  #=> @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @"" :changed-nav true}
   
   (-> @{:text @"ab"
         :gap-start 1
@@ -394,8 +400,66 @@ Does bounds check as well."
         :gap @""}
       backward-char!
       backward-char!)
-  #=>  @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @""}
+  #=>  @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @"" :changed-nav true}
   )
+
+(varfn select-forward-char!
+  [gb]
+  (def {:selection selection
+        :gap-start gap-start}
+    (commit! gb))
+  
+  (when (not selection)
+    (put gb :selection gap-start))
+  
+  (print "huh?")
+  
+  (-> gb
+      (update :selection inc)
+      (put :changed-selection true)))
+
+(comment
+  ## making the selection bigger
+  (select-forward-char! @{:text @"a"
+                          :gap-start 1
+                          :gap-stop 1
+                          :gap @""})
+  #=> @{:gap-stop 1 :changed-selection true :gap-start 1 :text @"a" :selection 2 :gap @""}
+  
+  (select-forward-char! @{:gap-stop 1 
+                          :changed-selection true
+                          :gap-start 1
+                          :text @"a"
+                          :selection 2
+                          :gap @""})
+  #=> @{:gap-stop 1 :changed-selection true :gap-start 1 :text @"a" :selection 3 :gap @""}
+  
+  
+  ## making the selection smaller
+  (select-forward-char! @{:gap-stop 2
+                          :changed-selection true
+                          :gap-start 2
+                          :text @"abc"
+                          :selection 0
+                          :gap @""})
+  #=> @{:gap-stop 2 :changed-selection true :gap-start 2 :text @"abc" :selection 1 :gap @""}
+  
+  )
+
+(varfn select-backward-char!
+  [gb]
+  (def {:selection selection
+        :gap-start gap-start}
+    (commit! gb))
+  
+  (when (not selection)
+    (put gb :selection gap-start))
+  
+  (print "huh?")
+  
+  (-> gb
+      (update :selection dec)
+      (put :changed-selection true)))
 
 (def space (first " "))
 (def newline (first "\n"))
@@ -419,6 +483,11 @@ Does bounds check as well."
   (commit! gb)
   
   (var i (dec gap-start))
+  
+  # skip all whitespace
+  (while (word-delimiter? (gb-nth gb (dec i)))
+    (-= i 1))
+  
   (while (and (pos? i)
               (not (word-delimiter? (gb-nth gb (dec i)))))
     (-= i 1))
@@ -451,6 +520,10 @@ Does bounds check as well."
   
   (var i (inc gap-start))
   (def len (gb-length gb))
+  
+  ## skip all whitespace
+  (while (word-delimiter? (gb-nth gb i))
+    (+= i 1))
   
   (while (and (< i len)
               (not (word-delimiter? (gb-nth gb i))))
@@ -673,11 +746,13 @@ Does bounds check as well."
                 :gap gap} ,gb)
           
           
-          (loop [,i-sym :range [(max ,start 0) (min ,stop gap-start)]
+          (loop [,i-sym :range [(max ,start 0)
+                                (min ,stop gap-start)]
                  :let [,c-sym (text ,i-sym)]]
             ,;body)
           
-          (loop [,i-sym :range [(max (- ,start gap-start) 0) (min (- ,stop gap-start) (length gap))]
+          (loop [,i-sym :range [(max (- ,start gap-start) 0)
+                                (min (- ,stop gap-start) (length gap))]
                  :let [,c-sym (gap ,i-sym)
                        ,i-sym (+ ,i-sym gap-start)]]
             ,;body)

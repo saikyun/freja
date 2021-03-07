@@ -54,6 +54,15 @@
                 (* (tc :mult) (tc :spacing))
                 (or color :black)))
 
+(defn draw-text*2
+  [tc text pos color]
+  (draw-text-ex (tc :font)
+                text
+                pos
+                (math/floor (* 2 (tc :mult) (tc :size)))
+                (* (tc :mult) 2 (tc :spacing))
+                (or color :black)))
+
 (varfn get-pos-in-text
   [text-data x]
   (def {:conf conf :offset offset :text text :selected selected :after after} text-data)

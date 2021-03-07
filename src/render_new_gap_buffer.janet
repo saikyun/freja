@@ -4,29 +4,49 @@
 (import ./textfield_api :prefix "")
 (import ./text_rendering :prefix "")
 
-(defn index-passing-max-width
+(varfn index-passing-max-width
   "Returns the index of the char exceeding the max width.
 Returns `nil` if the max width is never exceeded."
   [sizes gb start stop max-width]
-  (var ret nil)
+  
   (var acc-w 0)
   
-  (gb-iterate gb
-              start stop
-              i c
-              (let [[w h] (sizes c)]
-                (+= acc-w w)
-                (when (dyn :debug)
-                  (print "c: " c " - " "acc-w: " acc-w))
-                (when (> acc-w max-width) # we went too far!
-                  (set ret i)
-                  (break))))
+  (or (gb-iterate
+        gb
+        start stop
+        i c
+        (let [[w h] (sizes c)]
+          (+= acc-w w)
+          (when (dyn :debug)
+            (print "i: " i " - c: " c " - " "acc-w: " acc-w))
+          (when (> acc-w max-width) # we went too far!
+            (return stop-gb-iterate i))))
+      stop))
+
+(varfn index-passing-middle-max-width
+  "Returns the index of the middle of the char exceeding the max width.
+Returns `nil` if the max width is never exceeded."
+  [sizes gb start stop max-width]
   
-  ret)
+  (var acc-w 0)
+  (var last-w 0)
+  
+  (or (gb-iterate
+        gb
+        start stop
+        i c
+        (let [[w h] (sizes c)]
+          (+= acc-w (+ (* w 0.5) last-w))
+          (set last-w (* w 0.5))
+          (when (dyn :debug)
+            (print "i: " i " - c: " c " - " "acc-w: " acc-w))
+          (when (> acc-w max-width) # we went too far!
+            (return stop-gb-iterate i))))
+      stop))
 
 (comment
   (with-dyns [:debug true]
-    (let [sizes (text-data :sizes)
+    (let [sizes (gb-data :sizes)
           gb {:text @"abc"
               :gap-start 0
               :gap-stop 0
@@ -151,9 +171,16 @@ Returns `nil` if the max width is never exceeded."
 (set debug true)
 (set debug false)
 
+(varfn in-selection?
+  [{:selection selection :gap-start gap-start} i]
+  (when selection
+    (let [start (min selection gap-start)
+          stop (max selection gap-start)]
+      (and (>= i start)
+           (< i stop)))))
+
 (varfn render-lines
   [sizes conf gb lines start y h y-limit]
-  
   (var y y)
   
   (when debug
@@ -172,6 +199,9 @@ Returns `nil` if the max width is never exceeded."
   (loop [l :in lines]
     (when (> y (- h))
       (do (set x 0) 
+        
+        ## TODO: If line in selection, draw selection box here
+        
         (gb-iterate
           gb
           last l
@@ -184,8 +214,10 @@ Returns `nil` if the max width is never exceeded."
               (print (length s))
               #(print "x: " x " - y: " y)
               )
-            (draw-text conf s [x y] :black)
-            (+= x w)))))
+            (draw-text*2 conf s [x y] (if (in-selection? gb i)
+                                        :blue
+                                        :black))
+            (+= x (* 2 w))))))
     (+= y h)
     
     (when debug
@@ -202,6 +234,7 @@ Returns `nil` if the max width is never exceeded."
         :scroll scroll
         :changed changed
         :changed-nav changed-nav
+        :changed-selection changed-selection
         :lines lines
         :y-poses y-poses
         :scroll scroll}
@@ -217,7 +250,7 @@ Returns `nil` if the max width is never exceeded."
   (when (not (props :texture))
     (put props :texture (load-render-texture w h)))
   
-  (when (or changed changed-nav)
+  (when (or changed changed-nav changed-selection)
     (test/timeit
       (do
         (def lines (or lines @[]))
@@ -239,21 +272,22 @@ Returns `nil` if the max width is never exceeded."
                        1920
                        14
                        0
-                       (- 2160 scroll))))
+                       (- 2160 (* 2 scroll)))))
         
-        (when changed
+        (when (or changed changed-selection)
           (begin-texture-mode (props :texture))
           
           (clear-background #:blue
                             (colors :background)
                             )
           
-          (render-lines sizes conf gb lines 0 scroll (* y-scale 14) 1080)
+          (render-lines sizes conf gb lines 0 (* 2 scroll) (* y-scale 14) 1080)
           
           (end-texture-mode))
         
         (put props :changed false)
-        (put props :changed-nav false)))
+        (put props :changed-nav false)
+        (put props :changed-selection false)))
     
     
     #(:texture (gb-data :texture))
@@ -270,17 +304,14 @@ Returns `nil` if the max width is never exceeded."
     0
     :white)
   
-  (pp (props :y-poses))
-  
-  
   (+= (props :blink) 1.1)
   (when (> (props :blink) 60) (set (props :blink) 0))
   
   (when-let [[x y] (and (< (props :blink) 30)
                         (props :caret-pos))]
     (draw-line-ex
-      [x (+ y scroll)]
-      [x (+ y 14 (+ scroll))]
+      [(* 2 x) (+ y scroll)]
+      [(* 2 x) (+ y 14 scroll)]
       1
       (get-in props [:colors :caret])))
   

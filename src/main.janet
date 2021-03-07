@@ -59,6 +59,8 @@
                :gap-stop 0
                :gap @""
 
+               :selection nil
+
                :position [0 0]
                :offset [0 0]
                
@@ -211,14 +213,14 @@
             tc @{:font-path "./assets/fonts/Monaco.ttf"
                  :size (* 14 x-scale)
                  :line-height 1.2
-                 :mult 1 #(/ 1 x-scale)
+                 :mult (/ 1 x-scale)
                  :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
                  :spacing 0.5}
             
             tc2 @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
                   :line-height 1.1
                   :size (* 20 x-scale)
-                  :mult 1 #(/ 1 x-scale)
+                  :mult (/ 1 x-scale)
                   :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
                   :spacing 2}]
         

@@ -1,5 +1,6 @@
 (use jaylib)
 (import ./new_gap_buffer :prefix "")
+(import ./render_new_gap_buffer :prefix "")
 (import ./file_handling :prefix "")
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
@@ -82,7 +83,7 @@
                           
                           (or (key-down? :left-shift)
                               (key-down? :right-shift))
-                          (comment (select-char-before props))
+                          (select-backward-char! props)
                           
                           (backward-char! props)))
                 
@@ -102,7 +103,7 @@
                            
                            (or (key-down? :left-shift)
                                (key-down? :right-shift))
-                           (comment (select-char-after props))
+                           (select-forward-char! props)
                            
                            (forward-char! props)))
                 
@@ -285,6 +286,7 @@
         :offset offset
         :position position
         :y-poses y-poses
+        :sizes sizes
         :scroll scroll} props)
   
   (def [ox oy] offset)
@@ -364,47 +366,19 @@
           (put mouse-data :down-pos [x y]))
         (put mouse-data :just-down false))
       
-      (print x " / " y)
-      (pp y-poses)
-      (pp lines)
-      
+      (print "y-offset: " y-offset)
       (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare y (+ $ y-offset)))))
             row-start-pos (if (= 0 line-index)
                             0
                             (lines (dec line-index)))
             row-end-pos (lines line-index)]
         
-
-        ### TODO: Use this function to find x position
-        (comment
-          (defn index-passing-max-width
-            "Returns the index of the char exceeding the max width.
-Returns `nil` if the max width is never exceeded."
-            [sizes gb start stop max-width]
-            (var ret nil)
-            (var acc-w 0)
-            
-            (gb-iterate gb
-                        start stop
-                        i c
-                        (let [[w h] (sizes c)]
-                          (+= acc-w w)
-                          (when (dyn :debug)
-                            (print "c: " c " - " "acc-w: " acc-w))
-                          (when (> acc-w max-width) # we went too far!
-                            (set ret i)
-                            (break))))
-            
-            ret))
         
-        (print "line index: " line-index)
-        (comment (print
-                   (string/slice (props :text)
-                                 row-start-pos
-                                 row-end-pos)))
-        
-        (put-gap-pos! props row-start-pos)
-        )
+        (put-gap-pos! props (index-passing-middle-max-width (props :sizes)
+                                                            props
+                                                            row-start-pos
+                                                            row-end-pos
+                                                            x)))
       
       (comment (put mouse-data :selected-pos [(get-mouse-pos
                                                 (mouse-data :down-pos)
