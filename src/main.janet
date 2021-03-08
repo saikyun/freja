@@ -227,6 +227,7 @@
         (set conf (load-font gb-data tc))
         
         (put gb-data :context data)
+        (put gb-data :screen-scale [x-scale y-scale])
         (put gb-data :colors colors)
         
         (set-target-fps 60)

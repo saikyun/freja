@@ -55,12 +55,12 @@
                 (or color :black)))
 
 (defn draw-text*2
-  [tc text pos color]
+  [tc text pos color scale]
   (draw-text-ex (tc :font)
                 text
                 pos
-                (math/floor (* 2 (tc :mult) (tc :size)))
-                (* (tc :mult) 2 (tc :spacing))
+                (math/floor (* scale (tc :mult) (tc :size)))
+                (* (tc :mult) scale (tc :spacing))
                 (or color :black)))
 
 (varfn get-pos-in-text

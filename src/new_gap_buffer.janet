@@ -5,6 +5,250 @@ The other functions are O(1) or O(n) where n is the length of the gap, which is 
 
 (import spork/test)
 
+(varfn ez-gb
+  [{:text text
+    :gap-start gap-start
+    :gap-stop gap-stop
+    :gap gap
+    :selection selection
+    :changed changed
+    :changed-nav changed-nav
+    :changed-selection changed-selection}]
+  @{:text text
+    :gap-start gap-start
+    :gap-stop gap-stop
+    :gap gap
+    :selection selection
+    :changed changed
+    :changed-nav changed-nav
+    :changed-selection changed-selection})
+
+(comment
+
+  )
+
+(defmacro gb-iterate
+  [gb
+   start
+   stop
+   i-sym
+   c-sym
+   & body]
+  ~(label stop-gb-iterate
+          (def {:gap-start gap-start
+                :gap-stop gap-stop
+                :text text
+                :gap gap} ,gb)
+          
+          
+          (loop [,i-sym :range [(max ,start 0)
+                                (min ,stop gap-start)]
+                 :let [,c-sym (text ,i-sym)]]
+            ,;body)
+          
+          (loop [,i-sym :range [(max (- ,start gap-start) 0)
+                                (min (- ,stop gap-start) (length gap))]
+                 :let [,c-sym (gap ,i-sym)
+                       ,i-sym (+ ,i-sym gap-start)]]
+            ,;body)
+          
+          (loop [,i-sym :range [(max (+ (- ,start (length gap))
+                                        (- gap-stop gap-start))
+                                     gap-stop)
+                                (min (+ (- ,stop (length gap))
+                                        (- gap-stop gap-start))
+                                     (length text))]
+                 :let [,c-sym (text ,i-sym)
+                       ,i-sym (- (+ ,i-sym
+                                    (length gap))
+                                 (- gap-stop gap-start))]]
+            ,;body)))
+
+(varfn iterate-backwards
+  "Like `text-iterator`, implemented as a generator."
+  [gb]
+  (def {:gap-start gap-start
+        :gap-stop gap-stop
+        :text text
+        :gap gap} gb)
+  
+  (loop [i :down-to [(dec (length text)) gap-stop]]
+    (yield (text i)))    
+  
+  (loop [c :in (string/reverse gap)]
+    (yield c))    
+  
+  (loop [i :down-to [(dec gap-start) 0]]
+    (yield (text i)))
+  
+  nil)
+
+(varfn index-char-backward
+  "Each time called, signals the next index and character in a gap buffer."
+  [gb]
+  (def {:gap-start gap-start
+        :gap-stop gap-stop
+        :text text
+        :gap gap} gb)
+  
+  (loop [i :down-to [(dec (length text)) gap-stop]]
+    (yield [(+ (- gap-stop gap-start) (length gap) i) # index
+            (text i)]))                               # character
+  
+  (loop [i :down-to [(dec (length gap)) 0]]
+    (yield [(+ gap-start i)
+            (gap i)]))
+  
+  (loop [i :down-to [(dec gap-start) 0]]
+    (yield [i
+            (text i)]))
+  
+  nil)
+
+(varfn index-char-backward-start
+  ``
+Each time called, signals the next index and character in a gap buffer.
+``
+  [gb start]
+  (def {:gap-start gap-start
+        :gap-stop gap-stop
+        :text text
+        :gap gap} gb)
+  
+  (def start start)
+  
+  (loop [i :down-to [(min (+ (- start (length gap))
+                             (- gap-stop gap-start))
+                          (dec (length text))) gap-stop]]
+    (yield [(+ (- gap-stop gap-start) (length gap) i) # index
+            (text i)]))                               # character
+  
+  (loop [i :down-to [(min (- start gap-start)
+                          (dec (length gap)))
+                     0]]
+    (yield [(+ gap-start i)
+            (gap i)]))
+  
+  (loop [i :down-to [(min start (dec gap-start)) 0]]
+    (yield [i
+            (text i)]))
+  
+  nil)
+
+(varfn index-char-start
+  "GB iterator implemented as a generator."
+  [gb start]
+  (def {:gap-start gap-start
+        :gap-stop gap-stop
+        :text text
+        :gap gap} gb)
+  
+  (loop [i :range [(max 0 start) gap-start]]
+    (yield [i
+            (text i)]))
+  
+  (loop [i :range [(max (- start gap-start)
+                        0)
+                   
+                   (length gap)]]
+    (yield [(+ gap-start i)
+            (gap i)]))
+  
+  (loop [i :range [(max (+ (- start (length gap))
+                           (- gap-stop gap-start))
+                        gap-stop)
+                   (length text)]]
+    (yield [(+ (length gap)
+               (- gap-stop gap-start)
+               i)
+            (text i)]))
+  
+  nil)
+
+(comment
+  (let [gb @{:text @"abc def"
+             :gap-start 0
+             :gap-stop 0
+             :gap @""}
+        f (fiber/new (fn [] (index-char-start gb 3)))
+        s @""]
+    (loop [[i c] :iterate (resume f)]
+      (buffer/push-byte s c))
+    s)
+  
+  (let [gb @{:text @"abc def"
+             :gap-start 0
+             :gap-stop 0
+             :gap @""}
+        f (fiber/new (fn [] (index-char-backward-start gb 3)))
+        s @""]
+    (loop [[i c] :iterate (resume f)]
+      (buffer/push-byte s c))
+    s)
+  
+  
+  
+
+  (let [gb @{:gap-stop 4 :changed-nav false :changed-selection false :gap-start 0 :text @"hellu aoeu" :gap @"abca" :changed false}
+        a @[]]
+    (gb-iterate gb
+                0 100
+                i c
+                (array/push a i))
+    a)
+  #=>  @[0 1 2 3 4 5 6 7 8 9]
+  
+  
+  
+  (let [s1 (let [gb @{:text @"abc def"
+                      :gap-start 3
+                      :gap-stop 5
+                      :gap @"123"}
+                 s @""]
+             (gb-iterate gb
+                         0 100
+                         i c
+                         (buffer/push-byte s c))
+             s)
+        s2 (let [gb @{:text @"abc def"
+                      :gap-start 3
+                      :gap-stop 5
+                      :gap @"123"}
+                 f (fiber/new (fn [] (index-char-start gb 0)))
+                 s @""]
+             (loop [[i c] :iterate (resume f)]
+               (buffer/push-byte s c))
+             s)]
+    (print s1)
+    (print s2)
+    (deep= s1 s2))
+  #=> true
+  
+  (let [s1 (let [gb @{:text @"abc def"
+                      :gap-start 3
+                      :gap-stop 5
+                      :gap @"123"}
+                 s @""]
+             (gb-iterate gb
+                         5 100
+                         i c
+                         (buffer/push-byte s c))
+             s)
+        s2 (let [gb @{:text @"abc def"
+                      :gap-start 3
+                      :gap-stop 5
+                      :gap @"123"}
+                 f (fiber/new (fn [] (index-char-start gb 5)))
+                 s @""]
+             (loop [[i c] :iterate (resume f)]
+               (buffer/push-byte s c))
+             s)]
+    (print s1)
+    (print s2)
+    (deep= s1 s2))
+  #=> true
+  )
+
 (defn gb-length
   [{:text text
     :gap-start gap-start
@@ -77,6 +321,75 @@ The other functions are O(1) or O(n) where n is the length of the gap, which is 
         (put gb :gap-stop  p))
       (update gb :gap buffer/clear))))
 
+(defn c->s
+  [c]
+  (-> (buffer/new 1)
+      (buffer/push-byte c)))
+
+(comment
+  (let [gb @{:text @"abc def"
+             :gap-start 3
+             :gap-stop 5
+             :gap @"123"}
+        f (fiber/new (fn [] (index-char-backward-start gb 10)))
+        s @""]
+    (loop [[i c] :iterate (resume f)]
+      (buffer/push-byte s c))
+    s)
+  #=> @"fe321cba"
+  
+
+  (let [gb @{:text @"abc def"
+             :gap-start 3
+             :gap-stop 5
+             :gap @"123"}
+        f (fiber/new (fn [] (index-char-backward-start gb 3)))
+        s @""]
+    (loop [[i c] :iterate (resume f)]
+      (buffer/push-byte s c))
+    s)
+  #=> @"1cba"
+  
+  (let [s1 (let [gb @{:text @"abc def"
+                      :gap-start 3
+                      :gap-stop 5
+                      :gap @"123"}
+                 s @""]
+             (gb-iterate gb
+                         0 100
+                         i c
+                         (buffer/push-byte s c))
+             s)
+        s2 (let [gb @{:text @"abc def"
+                      :gap-start 3
+                      :gap-stop 5
+                      :gap @"123"}
+                 f (fiber/new (fn [] (index-char-backward-start gb 10)))
+                 s @""]
+             (loop [[i c] :iterate (resume f)]
+               (buffer/push-byte s c))
+             s)]
+    (print s1)
+    (print s2)
+    (deep= (string s1) (string/reverse s2)))
+  #=> true
+  )
+
+(varfn remove-selection!
+  [gb]
+  (def {:selection selection
+        :gap-start gap-start} (commit! gb))
+  (if selection
+    (let [sel-start (min selection gap-start)
+          sel-stop  (max selection gap-start)]
+      (-> gb
+          (put :selection nil)
+          (put :gap-start sel-start)
+          (put :gap-stop sel-stop)
+          (put :changed true)
+          commit!))
+    gb))
+
 (defn test-blit
   [gb]
   (def {:text text
@@ -141,12 +454,11 @@ Does bounds check as well."
 
 (varfn deselect
   [gb]
-  (when (gb :selection)
+  (if (gb :selection)
     (-> gb
         (put :selection nil)
-        (put :changed-selection true)))
-  
-  gb)
+        (put :changed-selection true))
+    gb))
 
 (varfn update-gap-pos!
   "Commits then puts `(f (gb :gap-start))` into :gap-start & :gap-stop.
@@ -186,6 +498,7 @@ Does bounds check as well."
 
 (varfn insert-char
   [gb k]
+  (def {:selection selection} gb)
   (let [k (case k
             :space (chr " ")
             :grave (chr "`")
@@ -194,15 +507,11 @@ Does bounds check as well."
             (if (keyword? k)
               (first k)
               k))]
-    (comment
-      (do (buffer/clear selected)
-        (if (keyword? k)
-          (buffer/push-string text (string k))
-          (put text (length text) k)))
-      )
     (update gb :gap buffer/push-byte k))
-
-  (put gb :changed true))
+  
+  (-> gb
+      remove-selection!
+      (put :changed true)))
 
 (defn ascii-upper-chr
   [c]
@@ -224,7 +533,9 @@ Does bounds check as well."
     
     (update gb :gap buffer/push-byte k))
   
-  (put gb :changed true))
+  (-> gb
+      remove-selection!
+      (put :changed true)))
 
 (comment
   (insert-char @{:text @""
@@ -245,8 +556,17 @@ Does bounds check as well."
 
 (varfn backspace
   [gb]
-  (if (empty? (gb :gap))
+  (def {:selection selection} gb)
+  
+  (print "bs!" selection)
+  
+  (cond selection
+    (remove-selection! gb)
+    
+    (empty? (gb :gap))
     (update gb :gap-start |(max 0 (dec $)))
+    
+    # else
     (update gb :gap buffer/popn 1))
   (put gb :changed true))
 
@@ -412,8 +732,6 @@ Does bounds check as well."
   (when (not selection)
     (put gb :selection gap-start))
   
-  (print "huh?")
-  
   (-> gb
       (update :selection inc)
       (put :changed-selection true)))
@@ -455,8 +773,6 @@ Does bounds check as well."
   (when (not selection)
     (put gb :selection gap-start))
   
-  (print "huh?")
-  
   (-> gb
       (update :selection dec)
       (put :changed-selection true)))
@@ -473,6 +789,68 @@ Does bounds check as well."
 ## move-cursor-to
 ## get-current-cursor-pos
 
+(varfn caret-pos
+  [{:gap gap
+    :gap-start gap-start
+    :selection selection}]
+  (if selection
+    selection
+    (+ (length gap)
+       gap-start)))
+
+(comment
+  (caret-pos @{:text @"abc def"
+               :gap-start 3
+               :gap-stop 5
+               :gap @"123"})
+  #=> 6
+
+  (caret-pos @{:text @"abc def"
+               :gap-start 5
+               :gap-stop 5
+               :gap @""})
+  #=> 5
+  
+  #(fiber/status (fiber/new (fn [] (index-char-backward-start gb-data 10))))
+  )
+
+(varfn forward-word!
+  [gb]
+  (def {:gap gap
+        :gap-start gap-start
+        :gap-stop gap-stop
+        :text text} gb)
+  
+  (var target-i (caret-pos gb))
+  
+  (def f (fiber/new (fn [] (index-char-start gb target-i))))
+  
+  (var skipping-delims true) 
+  
+  (loop [[i c] :iterate (resume f)
+         :let [delim (word-delimiter? c)]]
+    # skip word delimiters until encountering a non word delimiter
+    (set skipping-delims (and skipping-delims delim))
+    (when (not (or (and skipping-delims delim)
+                   (and (not skipping-delims)
+                        (not delim))))
+      (break))
+    
+    (set target-i i))
+  
+  # the i we got was the position of the char
+  # the caret position should be one higher than that
+  # i.e. to the right of the char
+  (set target-i (inc target-i))
+  
+  (-> gb
+      deselect
+      (put-gap-pos! target-i)))
+
+(comment
+  #(caret-pos gb-data)
+  )
+
 (varfn backward-word!
   [gb]
   (def {:gap gap
@@ -480,21 +858,28 @@ Does bounds check as well."
         :gap-stop gap-stop
         :text text} gb)
   
-  (commit! gb)
+  ## the caret pos is between two chars
+  # so if we want to go to the char to the left, we decrease the caret by one
+  (var target-i (dec (caret-pos gb)))
   
-  (var i (dec gap-start))
+  (def f (fiber/new (fn [] (index-char-backward-start gb target-i))))
   
-  # skip all whitespace
-  (while (word-delimiter? (gb-nth gb (dec i)))
-    (-= i 1))
+  (var skipping-delims true) 
   
-  (while (and (pos? i)
-              (not (word-delimiter? (gb-nth gb (dec i)))))
-    (-= i 1))
+  (loop [[i c] :iterate (resume f)
+         :let [delim (word-delimiter? c)]]
+    # skip word delimiters until encountering a non word delimiter
+    (set skipping-delims (and skipping-delims delim))
+    (when (not (or (and skipping-delims delim)
+                   (and (not skipping-delims)
+                        (not delim))))
+      (break))
+    
+    (set target-i i))
   
-  (put-gap-pos! gb i)
-  
-  gb)
+  (-> gb
+      deselect
+      (put-gap-pos! target-i)))
 
 (comment
   (backward-word! @{:text @"abc"
@@ -508,30 +893,6 @@ Does bounds check as well."
                       :gap-stop (length t)
                       :gap @""}))
   )
-
-(varfn forward-word!
-  [gb]
-  (def {:gap gap
-        :gap-start gap-start
-        :gap-stop gap-stop
-        :text text} gb)
-  
-  (commit! gb)
-  
-  (var i (inc gap-start))
-  (def len (gb-length gb))
-  
-  ## skip all whitespace
-  (while (word-delimiter? (gb-nth gb i))
-    (+= i 1))
-  
-  (while (and (< i len)
-              (not (word-delimiter? (gb-nth gb i))))
-    (+= i 1))
-  
-  (put-gap-pos! gb i)
-  
-  gb)
 
 (varfn text-iterator
   "Returns a function which returns one character at the time from the gap buffer."
@@ -605,45 +966,6 @@ Does bounds check as well."
   
   (loop [i :range [gap-stop (length text)]]
     (yield (text i)))
-  
-  nil)
-
-(varfn text-iterator3-backward
-  "Like `text-iterator`, implemented as a generator."
-  [gb]
-  (def {:gap-start gap-start
-        :gap-stop gap-stop
-        :text text
-        :gap gap} gb)
-  
-  (loop [i :down-to [(dec (length text)) gap-stop]]
-    (yield (text i)))    
-  
-  (loop [c :in (string/reverse gap)]
-    (yield c))    
-  
-  (loop [i :down-to [(dec gap-start) 0]]
-    (yield (text i)))
-  
-  nil)
-
-(varfn index-char-backward
-  "Each time called, signals the next index and character in a gap buffer."
-  [gb]
-  (def {:gap-start gap-start
-        :gap-stop gap-stop
-        :text text
-        :gap gap} gb)
-  
-  (loop [i :down-to [(dec (length text)) gap-stop]]
-    (yield [(+ (- gap-stop gap-start) (length gap) i) # index
-            (text i)]))                               # character
-  
-  (loop [i :down-to [(dec (length gap)) 0]]
-    (yield [(+ gap-start i) (gap i)]))
-  
-  (loop [i :down-to [(dec gap-start) 0]]
-    (yield [i (text i)]))
   
   nil)
 
@@ -731,41 +1053,6 @@ Does bounds check as well."
      (loop [,i-sym :range [gap-stop (length text)]
             :let [,c-sym (text ,i-sym)]]
        ,;body)))
-
-(defmacro gb-iterate
-  [gb
-   start
-   stop
-   i-sym
-   c-sym
-   & body]
-  ~(label stop-gb-iterate
-          (def {:gap-start gap-start
-                :gap-stop gap-stop
-                :text text
-                :gap gap} ,gb)
-          
-          
-          (loop [,i-sym :range [(max ,start 0)
-                                (min ,stop gap-start)]
-                 :let [,c-sym (text ,i-sym)]]
-            ,;body)
-          
-          (loop [,i-sym :range [(max (- ,start gap-start) 0)
-                                (min (- ,stop gap-start) (length gap))]
-                 :let [,c-sym (gap ,i-sym)
-                       ,i-sym (+ ,i-sym gap-start)]]
-            ,;body)
-          
-          (loop [,i-sym :range [(max (+ (- ,start (length gap))
-                                        (- gap-stop gap-start))
-                                     gap-stop)
-                                (min (+ (- ,stop (length gap))
-                                        (- gap-stop gap-start))
-                                     (length text))]
-                 :let [,c-sym (text ,i-sym)
-                       ,i-sym (+ ,i-sym (length gap))]]
-            ,;body)))
 
 (comment
   (gb-iterate @{:gap-start 0 :gap-stop 0 :text @"abcdefuheorlcauhcreloahurclehoalruhecrolahurclehoarlcuhecroahucrleoahcrluheolarh" :gap @""}
