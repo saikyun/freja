@@ -185,6 +185,13 @@
                            
                            (insert-char props (first "\n"))))
                 
+                :up   (fn [props]
+                        (reset-blink props)
+                        (move-up! props))
+                :down (fn [props]
+                        (reset-blink props)
+                        (move-down! props))
+                
                 #:up (vertical-move previous-row (fn [_] 0))
                 
                 # :down (vertical-move
@@ -367,18 +374,17 @@
         (put mouse-data :just-down false))
       
       (print "y-offset: " y-offset)
+      
       (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare y (+ $ y-offset)))))
             row-start-pos (if (= 0 line-index)
                             0
                             (lines (dec line-index)))
             row-end-pos (lines line-index)]
         
-        
-        (put-gap-pos! props (index-passing-middle-max-width (props :sizes)
-                                                            props
+        (put-gap-pos! props (index-passing-middle-max-width props
                                                             row-start-pos
                                                             row-end-pos
-                                                            x)))
+                                                            (- x ox))))
       
       (comment (put mouse-data :selected-pos [(get-mouse-pos
                                                 (mouse-data :down-pos)

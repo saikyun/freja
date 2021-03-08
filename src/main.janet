@@ -58,11 +58,12 @@
                :gap-start 0
                :gap-stop 0
                :gap @""
-
+               
                :selection nil
-
+               
+               :size [800 800]
                :position [0 0]
-               :offset [0 0]
+               :offset [30 0]
                
                :changed true
                :scroll 0

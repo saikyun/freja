@@ -511,6 +511,7 @@ Does bounds check as well."
   
   (-> gb
       remove-selection!
+      (put :changed-x-pos true)
       (put :changed true)))
 
 (defn ascii-upper-chr
@@ -640,7 +641,9 @@ Does bounds check as well."
 
 (varfn forward-char!
   [gb]
-  (update-gap-pos! gb inc))
+  (-> gb
+      (update-gap-pos! inc)
+      (put :changed-x-pos true)))
 
 (comment
   (let [t (math/rng-buffer (math/rng) (* 1000 1000 10))]
@@ -697,7 +700,9 @@ Does bounds check as well."
 
 (varfn backward-char!
   [gb]
-  (update-gap-pos! gb dec))
+  (-> gb
+      (update-gap-pos! dec)
+      (put :changed-x-pos true)))
 
 (comment
   (backward-char! @{:text @"a"
@@ -845,7 +850,8 @@ Does bounds check as well."
   
   (-> gb
       deselect
-      (put-gap-pos! target-i)))
+      (put-gap-pos! target-i)
+      (put :changed-x-pos true)))
 
 (comment
   #(caret-pos gb-data)
@@ -879,7 +885,8 @@ Does bounds check as well."
   
   (-> gb
       deselect
-      (put-gap-pos! target-i)))
+      (put-gap-pos! target-i)
+      (put :changed-x-pos true)))
 
 (comment
   (backward-word! @{:text @"abc"
