@@ -62,8 +62,8 @@
 (defmacro- path/decl-last-sep
   [pre sep]
   ~(def- ,(symbol pre "/last-sep-peg")
-     (peg/compile '{:back (> -1 (+ (* ,sep ($)) :back))
-                    :main (+ :back (constant 0))})))
+    (peg/compile '{:back (> -1 (+ (* ,sep ($)) :back))
+                   :main (+ :back (constant 0))})))
 
 (defmacro- path/decl-dirname
   [pre]
@@ -223,6 +223,7 @@
 
 (defn display/print-color
   [msg color]
+  # XXX: what if color doesn't match...
   (let [color-num (match color
                     :black 30
                     :blue 34
@@ -244,6 +245,18 @@
 (defn display/print-dashes
   [&opt n]
   (print (display/dashes n)))
+
+(defn display/print-form
+  [form &opt color]
+  (def buf @"")
+  (with-dyns [:out buf]
+    (printf "%m" form))
+  (def msg (string/trimr buf))
+  (print ":")
+  (if color
+    (display/print-color msg color)
+    (prin msg))
+  (print))
 # some bits from jpm
 
 ### Copyright 2019 © Calvin Rose
@@ -275,9 +288,9 @@
   [path]
   (case (os/lstat path :mode)
     :directory (do
-                 (each subpath (os/dir path)
-                   (jpm/rm (string path jpm/sep subpath)))
-                 (os/rmdir path))
+      (each subpath (os/dir path)
+        (jpm/rm (string path jpm/sep subpath)))
+      (os/rmdir path))
     nil nil # do nothing if file does not exist
     # Default, try to remove
     (os/rm path)))
@@ -309,7 +322,7 @@
 (defn jpm/pslurp
   [cmd]
   (string/trim (with [f (file/popen cmd)]
-                 (:read f :all))))
+                     (:read f :all))))
 
 (defn jpm/create-dirs
   "Create all directories needed for a file (mkdir -p)."
@@ -356,20 +369,20 @@
     :root0 (choice :value :comment)
     #
     :value (sequence
-             (any (choice :s :readermac))
-             :raw-value
-             (any :s))
+            (any (choice :s :readermac))
+            :raw-value
+            (any :s))
     #
     :readermac (set "',;|~")
     #
     :raw-value (choice
-                 :constant :number
-                 :symbol :keyword
-                 :string :buffer
-                 :long-string :long-buffer
-                 :parray :barray
-                 :ptuple :btuple
-                 :struct :table)
+                :constant :number
+                :symbol :keyword
+                :string :buffer
+                :long-string :long-buffer
+                :parray :barray
+                :ptuple :btuple
+                :struct :table)
     #
     :comment (sequence (any :s)
                        "#"
@@ -379,19 +392,19 @@
     :constant (choice "false" "nil" "true")
     #
     :number (drop (cmt
-                    (capture :token)
-                    ,scan-number))
+                   (capture :token)
+                   ,scan-number))
     #
     :token (some :symchars)
     #
     :symchars (choice
-                (range "09" "AZ" "az" "\x80\xFF")
-                # XXX: see parse.c's is_symbol_char which mentions:
-                #
-                #        \, ~, and |
-                #
-                #      but tools/symcharsgen.c does not...
-                (set "!$%&*+-./:<?=>@^_"))
+               (range "09" "AZ" "az" "\x80\xFF")
+               # XXX: see parse.c's is_symbol_char which mentions:
+               #
+               #        \, ~, and |
+               #
+               #      but tools/symcharsgen.c does not...
+               (set "!$%&*+-./:<?=>@^_"))
     #
     :keyword (sequence ":" (any :symchars))
     #
@@ -415,15 +428,15 @@
     :long-string :long-bytes
     #
     :long-bytes {:main (drop (sequence
-                               :open
-                               (any (if-not :close 1))
-                               :close))
+                              :open
+                              (any (if-not :close 1))
+                              :close))
                  :open (capture :delim :n)
                  :delim (some "`")
                  :close (cmt (sequence
-                               (not (look -1 "`"))
-                               (backref :n)
-                               (capture :delim))
+                              (not (look -1 "`"))
+                              (backref :n)
+                              (capture :delim))
                              ,=)}
     #
     :long-buffer (sequence "@" :long-bytes)
@@ -495,7 +508,7 @@
   (peg/match grammar/janet "[:a :b] 1")
   # => @[]
 
-  )
+ )
 (defn validate/valid-code?
   [form-bytes]
   (let [p (parser/new)
@@ -655,7 +668,7 @@
 
     )
     ``)
-  # => result
+    # => result
 
   )
 
@@ -708,7 +721,7 @@
   (pegs/parse-comment-block comment-in-comment-str)
   # => @["" "(comment\n\n     (+ 1 1)\n     # => 2\n\n   )\n"]
 
-  )
+)
 
 # recognize next top-level form, returning a map
 # modify a copy of grammar/janet
@@ -756,14 +769,14 @@
        :s-line 1
        :end 12}]) # => true
 
-  (deep=
-    #
-    (peg/match pegs/top-level sample-source 12)
-    #
+  (def result
     @[{:type :value
        :value "(+ 1 1)\n"
        :s-line 2
-       :end 20}]) # => true
+       :end 20}])
+
+  (peg/match pegs/top-level sample-source 12)
+  # => result
 
   (string/slice sample-source 12 20)
   # => "(+ 1 1)\n"
@@ -1159,13 +1172,13 @@
 
     (comment
 
-    (+ a 1)
-    # => 2
+      (+ a 1)
+      # => 2
 
-    (def b 3)
+      (def b 3)
 
-    (- b a)
-    # => 2
+      (- b a)
+      # => 2
 
     )
     ``)
@@ -1325,9 +1338,10 @@
 (defn utils/no-ext
   [file-path]
   (when file-path
-    (when-let [rev (string/reverse file-path)
-               dot (string/find "." rev)]
-      (string/reverse (string/slice rev (inc dot))))))
+    (if-let [rev (string/reverse file-path)
+             dot (string/find "." rev)]
+      (string/reverse (string/slice rev (inc dot)))
+      file-path)))
 
 (comment
 
@@ -1342,31 +1356,36 @@
 (defn judges/make-judges
   [src-root judge-root]
   (def subdirs @[])
+  (def out-in-tbl @{})
   (defn helper
     [src-root subdirs judge-root]
     (each path (os/dir src-root)
-      (def fpath (path/join src-root path))
-      (case (os/stat fpath :mode)
+      (def in-path (path/join src-root path))
+      (case (os/stat in-path :mode)
         :directory
         (do
-          (helper fpath (array/push subdirs path)
+          (helper in-path (array/push subdirs path)
                   judge-root)
           (array/pop subdirs))
         #
         :file
-        (when (string/has-suffix? ".janet" fpath)
+        (when (string/has-suffix? ".janet" in-path)
           (def judge-file-name
             (string (utils/no-ext path) ".judge"))
-          (unless (generate/handle-one
-                    {:input fpath
-                     :output (path/join judge-root
-                                        ;subdirs
-                                        judge-file-name)})
-            (eprintf "Test generation failed for: %s" fpath)
-            (eprintf "Please confirm validity of source file: %s" fpath)
-            (error nil))))))
+          (let [out-path (path/join judge-root
+                                    ;subdirs
+                                    judge-file-name)]
+            (unless (generate/handle-one {:input in-path
+                                          :output out-path})
+              (eprintf "Test generation failed for: %s" in-path)
+              (eprintf "Please confirm validity of source file: %s" in-path)
+              (error nil))
+            (put out-in-tbl
+                 (path/abspath out-path)
+                 (path/abspath in-path)))))))
   #
-  (helper src-root subdirs judge-root))
+  (helper src-root subdirs judge-root)
+  out-in-tbl)
 
 # since there are no tests in this comment block, nothing will execute
 (comment
@@ -1463,7 +1482,7 @@
                         (some :h)
                         "-"
                         "judge-gen")
-             (judges/make-results-dir-path ""))
+    (judges/make-results-dir-path ""))
   # => @[]
 
   )
@@ -1480,7 +1499,7 @@
     fpath))
 
 (defn judges/judge-all
-  [judge-root]
+  [judge-root test-src-tbl]
   (def results @{})
   (def file-paths
     (sort (judges/find-judge-files judge-root)))
@@ -1523,8 +1542,12 @@
                 (eprintf "  %s" err-path))
               (eprintf "Unknown error:\n %p" err)))
           (error nil))))
+    (def src-full-path
+      (in test-src-tbl jf-full-path))
+    (assert src-full-path
+            (string "Failed to determine source for test: " jf-full-path))
     (put results
-         jf-full-path results-for-path)
+         src-full-path results-for-path)
     (++ count))
   results)
 
@@ -1536,6 +1559,7 @@
   (var total-tests 0)
   (var total-passed 0)
   (def failures @{})
+  # analyze results
   (eachp [fpath test-results] results
     (def name (path/basename fpath))
     (when test-results
@@ -1552,37 +1576,48 @@
           (array/push fails test-result)))
       (when (not (empty? fails))
         (put failures fpath fails))))
-  (when (pos? (length failures))
-    (print))
-  (eachp [fpath failed-tests] failures
-    (print "  test file: " fpath)
-    (print "source file: " (string (utils/no-ext fpath) ".janet"))
+  # report any failures
+  (var i 0)
+  (each fpath (sort (keys failures))
+    (def failed-tests (get failures fpath))
     (each fail failed-tests
       (def {:test-value test-value
             :expected-value expected-value
             :name test-name
             :passed test-passed
             :test-form test-form} fail)
+      (++ i)
       (print)
-      (display/print-color (string "  failed: " test-name) :red)
+      (prin "--(")
+      (display/print-color i :cyan)
+      (print ")--")
       (print)
-      (printf "    form: %M" test-form)
-      (prin "expected")
-      # XXX: this could use some work...
-      (if (< 30 (length (describe expected-value)))
-        (print ":")
-        (prin ": "))
-      (printf "%m" expected-value)
-      (prin "  actual")
-      # XXX: this could use some work...
-      (if (< 30 (length (describe test-value)))
-        (print ":")
-        (prin ": "))
-      (display/print-color (string/format "%m" test-value) :blue)
-      (print)))
+      (display/print-color "source file:" :yellow)
+      (print)
+      (display/print-color (string (utils/no-ext fpath) ".janet") :red)
+      (print)
+      (print)
+      #
+      (display/print-color "failed:" :yellow)
+      (print)
+      (display/print-color test-name :red)
+      (print)
+      #
+      (print)
+      (display/print-color "form" :yellow)
+      (display/print-form test-form)
+      #
+      (print)
+      (display/print-color "expected" :yellow)
+      (display/print-form expected-value)
+      #
+      (print)
+      (display/print-color "actual" :yellow)
+      (display/print-form test-value :blue)))
   (when (zero? (length failures))
     (print)
     (print "No tests failed."))
+  # summarize totals
   (print)
   (display/print-dashes)
   (when (= 0 total-tests)
@@ -1673,12 +1708,13 @@
       # create judge files
       (prin "Creating tests files... ")
       (flush)
-      (judges/make-judges src-root judge-root)
+      (def ts-tbl
+        (judges/make-judges src-root judge-root))
       (print "done")
       # judge
-      (print "Judging...")
+      (print "Running tests...")
       (def results
-        (judges/judge-all judge-root))
+        (judges/judge-all judge-root ts-tbl))
       (display/print-dashes)
       # summarize results
       (def all-passed

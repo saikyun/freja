@@ -23,10 +23,6 @@ The other functions are O(1) or O(n) where n is the length of the gap, which is 
     :changed-nav changed-nav
     :changed-selection changed-selection})
 
-(comment
-
-  )
-
 (defmacro gb-iterate
   [gb
    start
@@ -165,90 +161,6 @@ Each time called, signals the next index and character in a gap buffer.
   
   nil)
 
-(comment
-  (let [gb @{:text @"abc def"
-             :gap-start 0
-             :gap-stop 0
-             :gap @""}
-        f (fiber/new (fn [] (index-char-start gb 3)))
-        s @""]
-    (loop [[i c] :iterate (resume f)]
-      (buffer/push-byte s c))
-    s)
-  
-  (let [gb @{:text @"abc def"
-             :gap-start 0
-             :gap-stop 0
-             :gap @""}
-        f (fiber/new (fn [] (index-char-backward-start gb 3)))
-        s @""]
-    (loop [[i c] :iterate (resume f)]
-      (buffer/push-byte s c))
-    s)
-  
-  
-  
-
-  (let [gb @{:gap-stop 4 :changed-nav false :changed-selection false :gap-start 0 :text @"hellu aoeu" :gap @"abca" :changed false}
-        a @[]]
-    (gb-iterate gb
-                0 100
-                i c
-                (array/push a i))
-    a)
-  #=>  @[0 1 2 3 4 5 6 7 8 9]
-  
-  
-  
-  (let [s1 (let [gb @{:text @"abc def"
-                      :gap-start 3
-                      :gap-stop 5
-                      :gap @"123"}
-                 s @""]
-             (gb-iterate gb
-                         0 100
-                         i c
-                         (buffer/push-byte s c))
-             s)
-        s2 (let [gb @{:text @"abc def"
-                      :gap-start 3
-                      :gap-stop 5
-                      :gap @"123"}
-                 f (fiber/new (fn [] (index-char-start gb 0)))
-                 s @""]
-             (loop [[i c] :iterate (resume f)]
-               (buffer/push-byte s c))
-             s)]
-    (print s1)
-    (print s2)
-    (deep= s1 s2))
-  #=> true
-  
-  (let [s1 (let [gb @{:text @"abc def"
-                      :gap-start 3
-                      :gap-stop 5
-                      :gap @"123"}
-                 s @""]
-             (gb-iterate gb
-                         5 100
-                         i c
-                         (buffer/push-byte s c))
-             s)
-        s2 (let [gb @{:text @"abc def"
-                      :gap-start 3
-                      :gap-stop 5
-                      :gap @"123"}
-                 f (fiber/new (fn [] (index-char-start gb 5)))
-                 s @""]
-             (loop [[i c] :iterate (resume f)]
-               (buffer/push-byte s c))
-             s)]
-    (print s1)
-    (print s2)
-    (deep= s1 s2))
-  #=> true
-  )
-
 (defn gb-length
   [{:text text
     :gap-start gap-start
@@ -257,44 +169,6 @@ Each time called, signals the next index and character in a gap buffer.
   (- (+ (length text)
         (length gap))
      (- gap-stop gap-start)))
-
-(comment
-  (gb-length {:text @""
-              :gap-start 0
-              :gap-stop 0
-              :gap @""})
-  #=> 0
-  
-  (gb-length {:text @"a"
-              :gap-start 0
-              :gap-stop 0
-              :gap @""})
-  #=> 1
-  
-  (gb-length {:text @"a"
-              :gap-start 0
-              :gap-stop 0
-              :gap @"b"}) 
-  #=> 2
-  
-  (gb-length {:text @"a"
-              :gap-start 1
-              :gap-stop 1
-              :gap @"b"}) 
-  #=> 2
-  
-  (gb-length {:text @"ab"
-              :gap-start 1
-              :gap-stop 2
-              :gap @""})
-  #=> 1
-  
-  (gb-length {:text @"abc"
-              :gap-start 1
-              :gap-stop 2
-              :gap @"123"})
-  #=> 5
-  )
 
 (defn fresh?
   [{:gap-start gap-start
@@ -326,61 +200,13 @@ Each time called, signals the next index and character in a gap buffer.
   (-> (buffer/new 1)
       (buffer/push-byte c)))
 
-(comment
-  (let [gb @{:text @"abc def"
-             :gap-start 3
-             :gap-stop 5
-             :gap @"123"}
-        f (fiber/new (fn [] (index-char-backward-start gb 10)))
-        s @""]
-    (loop [[i c] :iterate (resume f)]
-      (buffer/push-byte s c))
-    s)
-  #=> @"fe321cba"
-  
-
-  (let [gb @{:text @"abc def"
-             :gap-start 3
-             :gap-stop 5
-             :gap @"123"}
-        f (fiber/new (fn [] (index-char-backward-start gb 3)))
-        s @""]
-    (loop [[i c] :iterate (resume f)]
-      (buffer/push-byte s c))
-    s)
-  #=> @"1cba"
-  
-  (let [s1 (let [gb @{:text @"abc def"
-                      :gap-start 3
-                      :gap-stop 5
-                      :gap @"123"}
-                 s @""]
-             (gb-iterate gb
-                         0 100
-                         i c
-                         (buffer/push-byte s c))
-             s)
-        s2 (let [gb @{:text @"abc def"
-                      :gap-start 3
-                      :gap-stop 5
-                      :gap @"123"}
-                 f (fiber/new (fn [] (index-char-backward-start gb 10)))
-                 s @""]
-             (loop [[i c] :iterate (resume f)]
-               (buffer/push-byte s c))
-             s)]
-    (print s1)
-    (print s2)
-    (deep= (string s1) (string/reverse s2)))
-  #=> true
-  )
-
 (varfn remove-selection!
   [gb]
-  (def {:selection selection
-        :gap-start gap-start} (commit! gb))
+  (def {:selection selection} gb)
   (if selection
-    (let [sel-start (min selection gap-start)
+    (let [gb (commit! gb)
+          {:gap-start gap-start} gb
+          sel-start (min selection gap-start)
           sel-stop  (max selection gap-start)]
       (-> gb
           (put :selection nil)
@@ -476,17 +302,6 @@ Does bounds check as well."
       (put :gap-start new-pos)
       (put :gap-stop new-pos)))
 
-(comment
-  (= (do (def gb @{:text @"abc"
-                   :gap-start 0
-                   :gap-stop 0
-                   :gap @"123"})
-       (gb-nth gb 3))
-     (first "a"))
-  #=> true
-  
-  )
-
 (varfn replace-content
   [gb text]
   (-> gb
@@ -499,6 +314,7 @@ Does bounds check as well."
 (varfn insert-char
   [gb k]
   (def {:selection selection} gb)
+  
   (let [k (case k
             :space (chr " ")
             :grave (chr "`")
@@ -538,23 +354,6 @@ Does bounds check as well."
       remove-selection!
       (put :changed true)))
 
-(comment
-  (insert-char @{:text @""
-                 :gap-start 0
-                 :gap-stop 0
-                 :gap @""}
-               (first "a"))
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"a" :changed true}
-  
-  (-> (insert-char @{:text @""
-                     :gap-start 0
-                     :gap-stop 0
-                     :gap @""}
-                   (first "a"))
-      commit!)
-  @{:gap-start 1 :gap-stop 1 :text @"a" :gap @""}
-  )
-
 (varfn backspace
   [gb]
   (def {:selection selection} gb)
@@ -571,73 +370,9 @@ Does bounds check as well."
     (update gb :gap buffer/popn 1))
   (put gb :changed true))
 
-(comment
-  (backspace @{:text @""
-               :gap-start 0
-               :gap-stop 0
-               :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed true}
-  
-  (backspace @{:text @"a"
-               :gap-start 0
-               :gap-stop 0
-               :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @"" :changed true}
-  
-  (backspace @{:text @"a"
-               :gap-start 1
-               :gap-stop 1
-               :gap @""})
-  #=> @{:gap-start 0 :gap-stop 1 :text @"a" :gap @"" :changed true}
-  
-  (backspace @{:text @""
-               :gap-start 0
-               :gap-stop 0
-               :gap @"a"})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed true}
-  )
-
 (varfn delete
   [gb]
   (update gb :gap-stop |(min (length (gb :text)) (inc $))))
-
-(comment
-  (delete @{:text @""
-            :gap-start 0
-            :gap-stop 0
-            :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""}
-  
-  (delete @{:text @"a"
-            :gap-start 0
-            :gap-stop 0
-            :gap @""})
-  #=> @{:gap-start 0 :gap-stop 1 :text @"a" :gap @""}
-  
-  (delete @{:text @"a"
-            :gap-start 1
-            :gap-stop 1
-            :gap @""})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @""}
-  
-  (delete @{:text @""
-            :gap-start 0
-            :gap-stop 0
-            :gap @"a"})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"a"}
-  
-  
-  (-> @{:text @"abcd"
-        :gap-start 0
-        :gap-stop 0
-        :gap @""}
-      delete
-      delete
-      delete
-      delete
-      commit!)
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""}
-  )
 
 (varfn forward-char!
   [gb]
@@ -645,88 +380,11 @@ Does bounds check as well."
       (update-gap-pos! inc)
       (put :changed-x-pos true)))
 
-(comment
-  (let [t (math/rng-buffer (math/rng) (* 1000 1000 10))]
-    (-> (test/timeit
-          (forward-char! @{:text t
-                           :gap-start 0
-                           :gap-stop 0
-                           :gap t}))
-        (get :gap-start)))
-  
-  (forward-char! @{:text @""
-                   :gap-start 0
-                   :gap-stop 0
-                   :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed-nav true}
-  
-  (forward-char! @{:text @"a"
-                   :gap-start 0
-                   :gap-stop 0
-                   :gap @""})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @"" :changed-nav true}
-  
-  (forward-char! @{:text @""
-                   :gap-start 0
-                   :gap-stop 0
-                   :gap @"b"})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"b" :gap @"" :changed-nav true}
-  
-  (forward-char! @{:text @"012"
-                   :gap-start 0
-                   :gap-stop 0
-                   :gap @"b"})
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b012" :gap @"" :changed-nav true}
-  
-  (-> @{:text @"012"
-        :gap-start 0
-        :gap-stop 0
-        :gap @"b"}
-      delete
-      forward-char!
-      commit!)
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b12" :gap @"" :changed-nav true}
-  
-  (-> @{:text @"012"
-        :gap-start 0
-        :gap-stop 0
-        :gap @"b"}
-      forward-char!
-      delete
-      delete
-      commit!)
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b0" :gap @"" :changed-nav true}
-  )
-
 (varfn backward-char!
   [gb]
   (-> gb
       (update-gap-pos! dec)
       (put :changed-x-pos true)))
-
-(comment
-  (backward-char! @{:text @"a"
-                    :gap-start 1
-                    :gap-stop 1
-                    :gap @""})  
-  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @"" :changed-nav true}
-  
-  (-> @{:text @"ab"
-        :gap-start 2
-        :gap-stop 2
-        :gap @""}
-      backward-char!
-      backward-char!)
-  #=> @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @"" :changed-nav true}
-  
-  (-> @{:text @"ab"
-        :gap-start 1
-        :gap-stop 1
-        :gap @""}
-      backward-char!
-      backward-char!)
-  #=>  @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @"" :changed-nav true}
-  )
 
 (varfn select-forward-char!
   [gb]
@@ -740,34 +398,6 @@ Does bounds check as well."
   (-> gb
       (update :selection inc)
       (put :changed-selection true)))
-
-(comment
-  ## making the selection bigger
-  (select-forward-char! @{:text @"a"
-                          :gap-start 1
-                          :gap-stop 1
-                          :gap @""})
-  #=> @{:gap-stop 1 :changed-selection true :gap-start 1 :text @"a" :selection 2 :gap @""}
-  
-  (select-forward-char! @{:gap-stop 1 
-                          :changed-selection true
-                          :gap-start 1
-                          :text @"a"
-                          :selection 2
-                          :gap @""})
-  #=> @{:gap-stop 1 :changed-selection true :gap-start 1 :text @"a" :selection 3 :gap @""}
-  
-  
-  ## making the selection smaller
-  (select-forward-char! @{:gap-stop 2
-                          :changed-selection true
-                          :gap-start 2
-                          :text @"abc"
-                          :selection 0
-                          :gap @""})
-  #=> @{:gap-stop 2 :changed-selection true :gap-start 2 :text @"abc" :selection 1 :gap @""}
-  
-  )
 
 (varfn select-backward-char!
   [gb]
@@ -803,22 +433,6 @@ Does bounds check as well."
     (+ (length gap)
        gap-start)))
 
-(comment
-  (caret-pos @{:text @"abc def"
-               :gap-start 3
-               :gap-stop 5
-               :gap @"123"})
-  #=> 6
-
-  (caret-pos @{:text @"abc def"
-               :gap-start 5
-               :gap-stop 5
-               :gap @""})
-  #=> 5
-  
-  #(fiber/status (fiber/new (fn [] (index-char-backward-start gb-data 10))))
-  )
-
 (varfn forward-word!
   [gb]
   (def {:gap gap
@@ -853,10 +467,6 @@ Does bounds check as well."
       (put-gap-pos! target-i)
       (put :changed-x-pos true)))
 
-(comment
-  #(caret-pos gb-data)
-  )
-
 (varfn backward-word!
   [gb]
   (def {:gap gap
@@ -887,19 +497,6 @@ Does bounds check as well."
       deselect
       (put-gap-pos! target-i)
       (put :changed-x-pos true)))
-
-(comment
-  (backward-word! @{:text @"abc"
-                    :gap-start 2
-                    :gap-stop 2
-                    :gap @""})
-  
-  (let [t "abc def"]
-    (backward-word! @{:text t
-                      :gap-start (length t)
-                      :gap-stop (length t)
-                      :gap @""}))
-  )
 
 (varfn text-iterator
   "Returns a function which returns one character at the time from the gap buffer."
@@ -976,71 +573,6 @@ Does bounds check as well."
   
   nil)
 
-(comment
-  (let [gb @{:text @"abc"
-             :gap-start 1
-             :gap-stop 3
-             :gap @"123"}
-        f (fiber/new (fn [] (index-char-backward gb)))]
-    (reduce (fn [a b]
-              (and a b))
-            true (seq [[i c] :iterate (resume f)]
-                   (= (gb-nth gb i) c))))
-  #=> true
-  
-  (let [gb @{:text @"abc def"
-             :gap-start 7
-             :gap-stop 7
-             :gap @""}
-        f (fiber/new (fn [] (index-char-backward gb)))]
-    (var res nil)
-    (loop [[i c] :iterate (resume f)
-           :until (word-delimiter? c)]
-      (set res i))
-    res)
-  
-  
-  (def f (fiber/new (fn [] (text-iterator3 @{:text @"abc"
-                                             :gap-start 1
-                                             :gap-stop 1
-                                             :gap @""})))) 
-  
-  (seq [c :iterate (resume f)]
-    c)
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 1
-                            :gap-stop 1
-                            :gap @""})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  #=> "abc"
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 0
-                            :gap-stop 0
-                            :gap @"123"})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 1
-                            :gap-stop 1
-                            :gap @"123"})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  #=> "a123bc"
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 0
-                            :gap-stop 1
-                            :gap @"123"})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  #=> "123bc"
-  
-  )
-
 (defmacro gb-iterate-whole
   [gb i-sym c-sym & body]
   ~(do (def {:gap-start gap-start
@@ -1061,82 +593,6 @@ Does bounds check as well."
             :let [,c-sym (text ,i-sym)]]
        ,;body)))
 
-(comment
-  (gb-iterate @{:gap-start 0 :gap-stop 0 :text @"abcdefuheorlcauhcreloahurclehoalruhecrolahurclehoarlcuhecroahucrleoahcrluheolarh" :gap @""}
-              0 100
-              i c
-              (print i)
-              (return stop-gb-iterate))
-  )
-
-(def rng (math/rng))
-
-(varfn random-gap-buffer
-  [max-len]
-  (let [text-len (math/rng-int rng max-len)
-        gap-len (math/rng-int rng max-len)
-        
-        gstart (math/rng-int rng (inc text-len))        
-        gstop (+ gstart
-                 (math/rng-int rng (- (inc text-len) gstart)))        
-        
-        gb @{:text (math/rng-buffer rng text-len)
-             :gap-start gstart
-             :gap-stop gstop
-             :gap (math/rng-buffer rng gap-len)}]
-    gb))
-
-(comment
-  (gb-iterate-whole @{:text @"abc"
-                      :gap-start 2
-                      :gap-stop 3
-                      :gap @"123"}
-                    i c
-                    (print "c: " c " - i: " i))
-  
-  (let [gb @{:text @"abcefg"
-             :gap-start 0
-             :gap-stop 1
-             :gap @"hello"}
-        b @""]
-    (gb-iterate gb
-                4
-                100
-                i c
-                (print "c: " c " - i: " i)
-                (buffer/push-byte b c))
-    (print b))
-  
-  
-  (let [gb (random-gap-buffer 1000)
-        b @""]
-    (gb-iterate gb
-                0
-                (gb-length gb)
-                i c
-                (buffer/push-byte b c))
-    (deep= b
-           ((commit! gb) :text)))
-  #=> true
-  
-  (reduce |(and $0 $1)
-          true
-          (seq [_ :range [0 1000]]
-            (let [gb (random-gap-buffer 1000)
-                  start (math/rng-int rng (gb-length gb))
-                  stop (+ start
-                          (math/rng-int rng (- (gb-length gb) start)))
-                  b @""]
-              (gb-iterate gb
-                          start
-                          stop
-                          i c
-                          (buffer/push-byte b c))
-              (deep= b
-                     (buffer/slice ((commit! gb) :text) start stop)))))
-  #=> true
-  )
-
 (varfn render
   [gb]
   (def b2 (buffer/new (gb-length gb)))
@@ -1147,161 +603,3 @@ Does bounds check as well."
   
   b2)
 
-(comment
-  (render @{:text @"abc"
-            :gap-start 0
-            :gap-stop 1
-            :gap @"123"})
-  #=> @"123bc"
-  
-  (let [gb @{:text @"abc"
-             :gap-start 0
-             :gap-stop 1
-             :gap @"123"}]
-    (deep= (render gb)      ## need to use deep= when comparing buffers
-           (-> gb
-               commit!
-               render)))
-  #=> true
-  )
-
-(comment
-  (def rng (math/rng))
-  (def size 1000000000) #1gb
-  (def size 1000000) #1mb
-  (def stuff @{:text @""
-               :gap-start 0
-               :gap-stop 0
-               :gap @""})
-  (do (put stuff :text (math/rng-buffer rng size))
-    (put stuff :gap (math/rng-buffer rng size))
-    :ok)
-  
-  (insert-char stuff (first "a"))
-  (backspace stuff)
-  (forward-char! stuff)
-  
-  (do (test/timeit (commit! stuff))
-    :ok)
-  
-  (do (test/timeit (freeze (stuff :text)))
-    :ok)
-  
-  
-  (do (def b2 (buffer/new (* size 2)))
-    (test/timeit
-      (let [it (text-iterator stuff)]
-        (loop [c :iterate (it)]
-          (buffer/push-byte b2 c))))) 
-  
-  (do (def v (math/rng-buffer (math/rng) 1))
-    (test/timeit (freeze v))
-    :ok)
-  
-  (do (def v (math/rng-buffer (math/rng) 1000000))
-    (test/timeit (freeze v))
-    :ok)
-  
-  (do (test/timeit (do (buffer
-                         (stuff :text)
-                         (string/reverse (stuff :gap)))))
-    :ok)
-  
-  (commit! @{:text @"aoeu"
-             :gap-start 1
-             :gap-stop 4
-             :gap @"123"})
-  
-  (test-blit {:text @"aoeu"
-              :gap-start 1
-              :gap-stop 1
-              :gap @"123"})
-  #=> @"a123oeu"
-  )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-(def rng (math/rng))
-#(def size (* 0.25 1000000000)) #1gb
-(def size 10000000) #10mb
-(def size 100) #100b
-(def stuff @{:text @""
-             :gap-start 0
-             :gap-stop 0
-             :gap @""})
-(do (put stuff :text (math/rng-buffer rng size))
-  (put stuff :gap (math/rng-buffer rng size))
-  :ok)
-
-(do (def b2 (buffer/new (* size 2)))
-  (def c (first "a"))
-  (print "base stuff")
-  (test/timeit (loop [i :range [0 (* size 2)]]
-                 (buffer/push-byte b2 c))))
-
-(print (= (do (def b2 (buffer/new (* size 2)))
-            (print "generator")
-            (test/timeit
-              (let [f (fiber/new (fn [] (text-iterator3 stuff)))] 
-                (loop [c :iterate (resume f)]
-                  (buffer/push-byte b2 c))))
-            (freeze b2))
-          
-          (do (def b2 (buffer/new (* size 2)))
-            (print "cond")
-            (test/timeit
-              (let [it (text-iterator stuff)]
-                (loop [c :iterate (it)]
-                  (buffer/push-byte b2 c))))
-            (freeze b2))
-          
-          (do (def b2 (buffer/new (* size 2)))
-            (print "state machine")
-            (test/timeit
-              (let [it (text-iterator2 stuff)]
-                (loop [c :iterate (it)]
-                  (buffer/push-byte b2 c))))
-            (freeze b2))
-
-
-
-          (do (def b2 (buffer/new (* size 2)))
-            (print "macro")
-            (test/timeit
-              (gb-iterate-whole stuff _ c (buffer/push-byte b2 c)))
-            
-            (freeze b2))
-          
-          (do (def b2 (buffer/new (* size 2)))
-            (print "hard coded")
-            (test/timeit
-              (do (def {:gap-start gap-start
-                        :gap-stop gap-stop
-                        :text text
-                        :gap gap} stuff)
-                
-                (loop [c :in (buffer/slice text 0 gap-start)]
-                  (buffer/push-byte b2 c))
-                
-                (loop [c :in gap]
-                  (buffer/push-byte b2 c))
-                
-                
-                (loop [c :in (buffer/slice text gap-stop (length text))]
-                  (buffer/push-byte b2 c))))
-            
-            (freeze b2))))
