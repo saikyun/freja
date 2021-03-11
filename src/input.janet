@@ -287,6 +287,34 @@
       (update props :scroll |(min 0 (+ $ (* move 10))))
       (put props :changed true))))
 
+(varfn get-mouse-pos
+  [props [mx my]]
+  
+  (def {:lines lines
+        :y-poses y-poses
+        :offset offset
+        :scroll scroll
+        :position position} props)
+  
+  (def [x-pos y-pos] position) 
+  (def [ox oy] offset)
+  
+  (def y-offset (+ y-pos oy scroll))
+  (def x-offset (+ x-pos ox))
+  
+  (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare my (+ $ y-offset)))))
+        row-start-pos (if (= 0 line-index)
+                        0
+                        (lines (dec line-index)))
+        row-end-pos (lines line-index)]
+    
+    (print "li: " line-index)
+    
+    (index-passing-middle-max-width props
+                                    row-start-pos
+                                    row-end-pos
+                                    (- mx ox))))
+
 (varfn handle-mouse
   [mouse-data props]
   (def {:lines lines
@@ -375,36 +403,26 @@
       
       (print "y-offset: " y-offset)
       
-      (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare y (+ $ y-offset)))))
-            row-start-pos (if (= 0 line-index)
-                            0
-                            (lines (dec line-index)))
-            row-end-pos (lines line-index)]
-        
-        (put-gap-pos! props (index-passing-middle-max-width props
-                                                            row-start-pos
-                                                            row-end-pos
-                                                            (- x ox))))
       
-      (comment (put mouse-data :selected-pos [(get-mouse-pos
-                                                (mouse-data :down-pos)
-                                                props                                     
-                                                text                                     
-                                                sizes                                     
-                                                ps                                     
-                                                rows                                     
-                                                x-offset                                     
-                                                y-offset)
-                                              (get-mouse-pos
-                                                pos
-                                                props                                     
-                                                text                                     
-                                                sizes                                     
-                                                ps                                     
-                                                rows                                     
-                                                x-offset                                     
-                                                y-offset)])
+      
+      (let [down-pos (get-mouse-pos props (mouse-data :down-pos)) 
+            curr-pos (get-mouse-pos props pos)]
         
+        (print "dp: " down-pos " - cp: " curr-pos)
+        
+        (if (not= down-pos curr-pos)
+          (-> props
+              (put :selection down-pos)
+              (put :changed-selection true))
+          (-> props
+              (put :selection nil)
+              (put :changed-selection true)))
+        
+        (-> props
+            (put :caret curr-pos)
+            (put :changed-nav true)))
+      
+      (comment
         (var moved-caret false)
         
         (let [[start end] (mouse-data :selected-pos)
@@ -428,8 +446,9 @@
                 (put props :stickiness :down)
                 (put props :stickiness :right))
               
-              (select-region props start end)))))))
-  
-  
-  
-  )
+              (select-region props start end)))))
+      
+      
+      
+      
+      )))

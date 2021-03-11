@@ -170,10 +170,10 @@ Returns `nil` if the max width is never exceeded."
 (set debug false)
 
 (varfn in-selection?
-  [{:selection selection :gap-start gap-start} i]
+  [{:selection selection :caret caret} i]
   (when selection
-    (let [start (min selection gap-start)
-          stop (max selection gap-start)]
+    (let [start (min selection caret)
+          stop (max selection caret)]
       (and (>= i start)
            (< i stop)))))
 
@@ -187,25 +187,32 @@ Returns `nil` if the max width is never exceeded."
     gb 
     start stop
     i c
-    (let [[w h] (sizes c)] (+= acc-w (* x-scale w))))
+    (let [[w h] (sizes c)] (+= acc-w w)))
   
   acc-w)
 
 (comment
   (width-between gb-data 0 10)
+  
+  (gb-iterate
+    gb-data
+    0 100
+    i c
+    (print i)
+    )
   )
 
 (varfn render-selection-box
   [gb start stop y]
   (def {:selection selection
-        :gap-start gap-start
+        :caret caret
         :sizes sizes
         :offset offset
         :screen-scale screen-scale} gb)
   (def [x-scale y-scale] screen-scale)
   (when selection
-    (let [sel-start (min selection gap-start)
-          sel-stop  (max selection gap-start)]
+    (let [sel-start (min selection caret)
+          sel-stop  (max selection caret)]
       
       (when (and (< sel-start stop)
                  (>= sel-stop start))
@@ -366,14 +373,14 @@ Returns `nil` if the max width is never exceeded."
                        (min (max 0 (dec (length lines)))))
         _ (print line-index)
         _ (pp lines)
-        x (width-between
-            gb
-            (get lines (dec line-index) 0)
-            index)
+        x (tracev (width-between
+                    gb
+                    (get lines (dec line-index) 0)
+                    index))
         y (y-poses line-index)]
     
     (when (dyn :debug)
-      (print "line-index:" line-index))
+      (print "line-index: " line-index))
     
     [x y]))
 
@@ -382,7 +389,7 @@ Returns `nil` if the max width is never exceeded."
   (gb-data :y-poses)
   
   (with-dyns [:debug true]
-    (index->pos gb-data (caret-pos gb-data)))
+    (index->pos gb-data (gb-data :caret)))
   )
 
 (varfn gb-render-text
@@ -448,10 +455,12 @@ Returns `nil` if the max width is never exceeded."
           
           (end-texture-mode))
         
-        (put props :caret-pos (index->pos props (caret-pos props)))
-
+        (put props :caret-pos (index->pos props (props :caret)))
+        
         (when changed-x-pos
           (put props :memory-of-caret-x-pos (get-in props [:caret-pos 0])))
+        
+        (pp (ez-gb props))
         
         (put props :changed false)
         (put props :changed-x-pos false)
@@ -479,10 +488,11 @@ Returns `nil` if the max width is never exceeded."
   (when-let [[x y] (and (< (props :blink) 30)
                         (props :caret-pos))]
     (draw-line-ex
-      [(+ (offset 0) (* x-scale x)) (+ y scroll)]
-      [(+ (offset 0) (* x-scale x)) (+ y 14 scroll)]
+      [(+ (* (conf :mult) (offset 0)) x) (+ y scroll)]
+      [(+ (* (conf :mult) (offset 0)) x) (+ y 14 scroll)]
       1
       (get-in props [:colors :caret])))
+  
   
   #  DrawTextureRec(target.texture, (Rectangle) { 0, 0, target.texture.width, -target.texture.height }, (Vector2) { 0, 0 }, WHITE);
   )

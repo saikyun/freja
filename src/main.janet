@@ -58,6 +58,7 @@
                :gap-start 0
                :gap-stop 0
                :gap @""
+               :caret 0
                
                :selection nil
                

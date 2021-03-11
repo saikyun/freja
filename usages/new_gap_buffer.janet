@@ -424,36 +424,42 @@
     (-> (test/timeit
           (forward-char! @{:text t
                            :gap-start 0
+                           :caret 0
                            :gap-stop 0
                            :gap t}))
         (get :gap-start)))
   
   (forward-char! @{:text @""
                    :gap-start 0
+                   :caret 0
                    :gap-stop 0
                    :gap @""})
   #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed-nav true :changed-x-pos true}
   
   (forward-char! @{:text @"a"
                    :gap-start 0
+                   :caret 0
                    :gap-stop 0
                    :gap @""})
   #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @"" :changed-nav true :changed-x-pos true}
   
   (forward-char! @{:text @""
                    :gap-start 0
+                   :caret 0
                    :gap-stop 0
                    :gap @"b"})
   #=> @{:gap-start 1 :gap-stop 1 :text @"b" :gap @"" :changed-nav true :changed-x-pos true}
   
   (forward-char! @{:text @"012"
                    :gap-start 0
+                   :caret 0
                    :gap-stop 0
                    :gap @"b"})
   #=> @{:gap-start 2 :gap-stop 2 :text @"b012" :gap @"" :changed-nav true :changed-x-pos true}
   
   (-> @{:text @"012"
         :gap-start 0
+        :caret 0
         :gap-stop 0
         :gap @"b"}
       delete
@@ -463,6 +469,7 @@
   
   (-> @{:text @"012"
         :gap-start 0
+        :caret 0
         :gap-stop 0
         :gap @"b"}
       forward-char!
@@ -518,12 +525,12 @@
   
   ## making the selection smaller
   (select-forward-char! @{:gap-stop 2
-                          :changed-selection true
                           :gap-start 2
                           :text @"abc"
-                          :selection 0
+                          :selection 2
+                          :caret 0
                           :gap @""})
-  #=> @{:gap-stop 2 :changed-selection true :gap-start 2 :text @"abc" :selection 1 :gap @""}
+  #=> @{:gap-stop 2 :changed-selection true :gap-start 2 :text @"abc" :selection 2 :caret 1 :gap @""}
   
   )
 
@@ -576,4 +583,20 @@
                commit!
                render)))
   #=> true
+  )
+
+
+
+### string->gb
+(comment
+  (-> (string->gb "ab|c")
+      forward-char!
+      render) 
+  #=> "abc|"
+
+  (-> (string->gb "ab(c)|")
+      commit!
+      render)
+  #=> "ab|"
+  
   )
