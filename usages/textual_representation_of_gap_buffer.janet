@@ -66,6 +66,10 @@
   (string->gb "a[xyz]b")
   #=>  @{:gap-stop 1 :caret 5 :gap-start 1 :text @"ab" :gap @"xyz"}
   
+  ### if there is no [] but there is a |, that means there's an empty gap at the position of the caret
+  (string->gb     "ab|c")
+  #=> (string->gb "ab[]|c")
+  
   ### (ab) means that "ab has been deleted" (e.g. using backspace)
   (string->gb "(ab)|")
   #=> @{:gap-stop 2 :caret 0 :gap-start 0 :text @"ab" :gap @""}

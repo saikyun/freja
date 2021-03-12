@@ -19,7 +19,7 @@
 
 (comment
   (replace-content gb-data "")
-  (let [_ (load-file gb-data "src/main.janet")]
+  (let [_ (load-file gb-data "src/test_main.janet")]
     :ok)
   
   (let [_ (load-file2 text-data "src/main.janet")]

@@ -52,8 +52,7 @@
                      (when (meta-down?)
                        (reset-blink props)
                        
-                       #(paste props)
-                       ))})
+                       (paste props)))})
 
 ## bindings from key to function
 (def gb-binds @{:end (comment (fn [props]
@@ -79,7 +78,7 @@
                           
                           (or (key-down? :left-alt)
                               (key-down? :right-alt)) 
-                          (backward-word! props)
+                          (backward-word props)
                           
                           (or (key-down? :left-shift)
                               (key-down? :right-shift))
@@ -99,7 +98,7 @@
                            
                            (or (key-down? :left-alt)
                                (key-down? :right-alt))
-                           (forward-word! props)
+                           (forward-word props)
                            
                            (or (key-down? :left-shift)
                                (key-down? :right-shift))
@@ -112,7 +111,7 @@
                           
                           (cond (or (key-down? :left-alt)
                                     (key-down? :right-alt))
-                            (comment (delete-word-after props))
+                            (kill-word-forward! props)
                             
                             (comment (forward-delete props)))) 
                 
@@ -125,13 +124,12 @@
                      (when (meta-down?)
                        (reset-blink props)
                        
-                       #(cut props)
+                       (cut props)
                        ))
 
                 :i (fn [props]
                      (when (meta-down?)
-                       #(copy props)
-                       ))
+                       (copy props)))
                 
                 :. (kw->f :paste)
                 
@@ -151,7 +149,7 @@
                              
                              (cond (or (key-down? :left-alt)
                                        (key-down? :right-alt))
-                               (comment (delete-word-before props))
+                               (kill-word-backward! props)
                                
                                (backspace props)))
                 
@@ -293,14 +291,16 @@
   (def {:lines lines
         :y-poses y-poses
         :offset offset
+        :conf conf
         :scroll scroll
         :position position} props)
+  
+  (def {:mult mult} conf)
   
   (def [x-pos y-pos] position) 
   (def [ox oy] offset)
   
   (def y-offset (+ y-pos oy scroll))
-  (def x-offset (+ x-pos ox))
   
   (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare my (+ $ y-offset)))))
         row-start-pos (if (= 0 line-index)
@@ -313,7 +313,7 @@
     (index-passing-middle-max-width props
                                     row-start-pos
                                     row-end-pos
-                                    (- mx ox))))
+                                    (- mx (* mult ox)))))
 
 (varfn handle-mouse
   [mouse-data props]
@@ -402,8 +402,6 @@
         (put mouse-data :just-down false))
       
       (print "y-offset: " y-offset)
-      
-      
       
       (let [down-pos (get-mouse-pos props (mouse-data :down-pos)) 
             curr-pos (get-mouse-pos props pos)]

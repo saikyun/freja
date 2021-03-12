@@ -306,7 +306,7 @@ Returns `nil` if the max width is never exceeded."
 (varfn current-line
   [gb]
   (def {:lines lines} gb)
-  (def i (caret-pos gb))
+  (def i (gb :caret))
   (let [line-index (max 0 (binary-search-closest
                             lines
                             |(compare i $)))]
@@ -349,11 +349,12 @@ Returns `nil` if the max width is never exceeded."
 
 (varfn move-up!
   [gb]
-  (put-gap-pos! gb (index-above-cursor gb)))
+  (print "new pos: " (index-above-cursor gb))
+  (put-caret gb (index-above-cursor gb)))
 
 (varfn move-down!
   [gb]
-  (put-gap-pos! gb (index-below-cursor gb)))
+  (put-caret gb (index-below-cursor gb)))
 
 (comment
   (index-above-cursor gb-data)
@@ -371,12 +372,10 @@ Returns `nil` if the max width is never exceeded."
                                 lines
                                 |(compare index $)))
                        (min (max 0 (dec (length lines)))))
-        _ (print line-index)
-        _ (pp lines)
-        x (tracev (width-between
-                    gb
-                    (get lines (dec line-index) 0)
-                    index))
+        x (width-between
+            gb
+            (get lines (dec line-index) 0)
+            index)
         y (y-poses line-index)]
     
     (when (dyn :debug)
@@ -460,7 +459,7 @@ Returns `nil` if the max width is never exceeded."
         (when changed-x-pos
           (put props :memory-of-caret-x-pos (get-in props [:caret-pos 0])))
         
-        (pp (ez-gb props))
+        #        (pp (ez-gb props))
         
         (put props :changed false)
         (put props :changed-x-pos false)
