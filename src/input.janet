@@ -74,7 +74,7 @@
                                    (key-down? :right-alt))
                                (or (key-down? :left-shift)
                                    (key-down? :right-shift)))
-                          (comment (select-word-before props))
+                          (select-backward-word props)
                           
                           (or (key-down? :left-alt)
                               (key-down? :right-alt)) 
@@ -94,7 +94,7 @@
                                     (key-down? :right-alt))
                                 (or (key-down? :left-shift)
                                     (key-down? :right-shift)))
-                           (comment (select-word-after props))
+                           (select-forward-word props)
                            
                            (or (key-down? :left-alt)
                                (key-down? :right-alt))
@@ -117,8 +117,7 @@
                 
                 :a (fn [props]
                      (when (meta-down?)
-                       #(select-all props)
-                       ))  
+                       (select-all props)))  
                 
                 :b (fn [props]
                      (when (meta-down?)
@@ -205,6 +204,145 @@
                              #(page-down props)
                              )})
 
+(def file-open-binds @{:end (comment (fn [props]
+                                       (if (or (key-down? :left-shift)
+                                               (key-down? :right-shift))
+                                         (select-until-end-of-line props)
+                                         (move-to-end-of-line props))))
+                       
+                       :s (fn [props]
+                            (when (meta-down?)
+                              ((props :open-file) props)))
+                       
+                       :left (fn [props]
+                               (reset-blink props)
+                               
+                               (cond
+                                 ## select whole words
+                                 (and (or (key-down? :left-alt)
+                                          (key-down? :right-alt))
+                                      (or (key-down? :left-shift)
+                                          (key-down? :right-shift)))
+                                 (select-backward-word props)
+                                 
+                                 (or (key-down? :left-alt)
+                                     (key-down? :right-alt)) 
+                                 (backward-word props)
+                                 
+                                 (or (key-down? :left-shift)
+                                     (key-down? :right-shift))
+                                 (select-backward-char! props)
+                                 
+                                 (backward-char! props)))
+                       
+                       :right (fn [props]
+                                (reset-blink props)
+                                
+                                (cond 
+                                  (and (or (key-down? :left-alt)
+                                           (key-down? :right-alt))
+                                       (or (key-down? :left-shift)
+                                           (key-down? :right-shift)))
+                                  (select-forward-word props)
+                                  
+                                  (or (key-down? :left-alt)
+                                      (key-down? :right-alt))
+                                  (forward-word props)
+                                  
+                                  (or (key-down? :left-shift)
+                                      (key-down? :right-shift))
+                                  (select-forward-char! props)
+                                  
+                                  (forward-char! props)))
+                       
+                       :delete (fn [props]
+                                 (reset-blink props)
+                                 
+                                 (cond (or (key-down? :left-alt)
+                                           (key-down? :right-alt))
+                                   (kill-word-forward! props)
+                                   
+                                   (comment (forward-delete props)))) 
+                       
+                       :a (fn [props]
+                            (when (meta-down?)
+                              (select-all props)))  
+                       
+                       :b (fn [props]
+                            (when (meta-down?)
+                              (reset-blink props)
+                              
+                              (cut props)
+                              ))
+
+                       :i (fn [props]
+                            (when (meta-down?)
+                              (copy props)))
+                       
+                       :. (kw->f :paste)
+                       
+                       :f (fn [props]
+                            (when (meta-down?)
+                              (reset-blink props)
+                              
+                              (print "formatting!")
+                              
+                              (format-code props)))
+                       
+                       :e (fn [props]
+                            (when (meta-down?)
+                              (eval-it (props :data) (last (peg/match sexp-grammar (props :text))))))   
+                       
+                       :backspace (fn [props] (reset-blink props)
+                                    
+                                    (cond (or (key-down? :left-alt)
+                                              (key-down? :right-alt))
+                                      (kill-word-backward! props)
+                                      
+                                      (backspace props)))
+                       
+                       :q (fn [props]
+                            (when (or (key-down? :left-control)
+                                      (key-down? :right-control))
+                              (put (props :data) :quit true)))
+                       
+                       
+                       :home (fn [props]
+                               (reset-blink props)
+                               
+                               # (if (or (key-down? :left-shift)
+                               #         (key-down? :right-shift))
+                               #   (select-until-beginning-of-line props)
+                               #   (move-to-beginning-of-line props))
+                               
+                               )
+                       
+                       :enter (fn [props]
+                                (reset-blink props)
+                                ((props :on-enter) props (string ((commit! props) :text))))
+                       
+                       :up   (fn [props]
+                               (reset-blink props)
+                               (move-up! props))
+                       :down (fn [props]
+                               (reset-blink props)
+                               (move-down! props))
+                       
+                       #:up (vertical-move previous-row (fn [_] 0))
+                       
+                       # :down (vertical-move
+                       #         next-row
+                       #         |(length (content $)))
+                       
+                       
+                       :page-up (fn [props]
+                                  #(page-up props)
+                                  )             
+                       
+                       :page-down (fn [props]
+                                    #(page-down props)
+                                    )})
+
 (comment
   (put gb-data :binds gb-binds)
   )
@@ -290,17 +428,17 @@
   
   (def {:lines lines
         :y-poses y-poses
+        :position position
         :offset offset
         :conf conf
-        :scroll scroll
-        :position position} props)
+        :scroll scroll} props)
   
   (def {:mult mult} conf)
   
   (def [x-pos y-pos] position) 
   (def [ox oy] offset)
   
-  (def y-offset (+ y-pos oy scroll))
+  (def y-offset (+ oy scroll))
   
   (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare my (+ $ y-offset)))))
         row-start-pos (if (= 0 line-index)

@@ -247,27 +247,29 @@ Returns `nil` if the max width is never exceeded."
             :white))))))
 
 (varfn render-lines
-  [sizes conf gb lines start y h y-limit]
-  (var y y)
+  [sizes conf gb lines start-index start-y h y-limit]
+  (def {:screen-scale screen-scale} gb)  
+  (def [x-scale y-scale] screen-scale)
+  
+  (def start-y (* y-scale start-y))
+  
+  (var y start-y)
   
   (when debug
     (print "rendering lines")
-    (print "from " start " to ")
+    (print "from " start-index " to ")
     (pp lines))
   
-  (var last start)
+  (var last start-index)
   
   (var s (buffer/new 1))
   
   (var x 0)
   
-  (def {:screen-scale screen-scale} gb)
-  (def [x-scale _] screen-scale) 
-  
   (var i 0)
   
   (loop [l :in lines]
-    (when (> y (- h))
+    (when (> y (- start-y h))
       (do (set x 0) 
         
         (++ i)
@@ -291,9 +293,10 @@ Returns `nil` if the max width is never exceeded."
               (print (length s))
               #(print "x: " x " - y: " y)
               )
-            (draw-text*2 conf s [(+ 30 x) y] (if (in-selection? gb i)
-                                               :blue
-                                               :black)
+            (draw-text*2 conf s [(+ 30 x)
+                                 y] (if (in-selection? gb i)
+                                      :blue
+                                      :black)
                          x-scale)
             (+= x (* x-scale w))))))
     (+= y h)
@@ -391,9 +394,9 @@ Returns `nil` if the max width is never exceeded."
     (index->pos gb-data (gb-data :caret)))
   )
 
-(varfn gb-render-text
-  [props]
-  (def {:w w
+(varfn gb-pre-render
+  [gb]
+  (def {:position position
         :offset offset
         :sizes sizes
         :size size
@@ -407,31 +410,34 @@ Returns `nil` if the max width is never exceeded."
         :lines lines
         :y-poses y-poses
         :scroll scroll}
-    props)
-  
-  (def gb props)
+    gb)
   
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
   
-  (def w (* x-scale (get-screen-width)))
-  (def h (* y-scale (get-screen-height)))
+  (def [x y] position)
+  (def [w h] size)
   
-  (when (not (props :texture))
-    (put props :texture (load-render-texture w h)))
+  (def screen-w (* x-scale (get-screen-width)))
+  (def screen-h (* y-scale (get-screen-height)))
+  
+  (when (not (gb :texture))
+    (put gb :texture (load-render-texture (* x-scale w)
+                                          (* y-scale h) #screen-w screen-h
+                                          )))
   
   (when (or changed changed-nav changed-selection)
     (test/timeit
       (do
         (def lines (or lines @[]))
-        (put props :lines lines)      
+        (put gb :lines lines)      
         
         (def y-poses (or y-poses @[]))
-        (put props :y-poses y-poses)      
+        (put gb :y-poses y-poses)      
         
         (def lines (if changed
                      (let [sizes sizes]
                        (word-wrap-gap-buffer
-                         props
+                         gb
                          sizes
                          lines
                          y-poses
@@ -439,62 +445,96 @@ Returns `nil` if the max width is never exceeded."
                          0 (gb-length gb)
                          (size 0)
                          14
-                         0
+                         y
                          (- (size 1) (* y-scale scroll))))
                      lines))
         
         (when (or changed changed-selection)
-          (begin-texture-mode (props :texture))
+          (begin-texture-mode (gb :texture))
           
-          (clear-background    #:blue
-                               (colors :background)
-                               )
+          (rl-push-matrix)
+          (clear-background (or (gb :background)
+                                (colors :background)
+                                #:blue
+                                )
+                            #(colors :background)
+                            )
           
-          (render-lines sizes conf gb lines 0 (* y-scale scroll) (* y-scale 14) (size 1))
+          (render-lines sizes conf gb lines 0 (+ y scroll) (* y-scale 14) (size 1))
+          (rl-pop-matrix)
           
           (end-texture-mode))
         
-        (put props :caret-pos (index->pos props (props :caret)))
+        (put gb :caret-pos (index->pos gb (gb :caret)))
         
         (when changed-x-pos
-          (put props :memory-of-caret-x-pos (get-in props [:caret-pos 0])))
+          (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
         
-        #        (pp (ez-gb props))
+        #        (pp (ez-gb gb))
         
-        (put props :changed false)
-        (put props :changed-x-pos false)
-        (put props :changed-nav false)
-        (put props :changed-selection false)))
+        (put gb :changed false)
+        (put gb :changed-x-pos false)
+        (put gb :changed-nav false)
+        (put gb :changed-selection false)))
     
     
     #(:texture (gb-data :texture))
     )             # Reset internal modelview matrix  
+  )
+
+(varfn gb-render-text
+  [gb]
+  (def {:position position
+        :offset offset
+        :sizes sizes
+        :size size
+        :conf conf
+        :colors colors
+        :scroll scroll
+        :changed changed
+        :changed-x-pos changed-x-pos
+        :changed-nav changed-nav
+        :changed-selection changed-selection
+        :lines lines
+        :y-poses y-poses
+        :scroll scroll}
+    gb)
   
-  (rl-load-identity)             # Reset internal modelview matrix  
-  (rl-mult-matrixf-screen-scale)              
+  
+  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
+  
+  (def [x y] position)
+  (def [w h] size)
+  
+  (def screen-w (* x-scale (get-screen-width)))
+  (def screen-h (* y-scale (get-screen-height)))
+  
+  (rl-push-matrix)
+  (rl-mult-matrixf-screen-scale)
   
   (draw-texture-pro
-    (get-render-texture (props :texture))
-    [0 0 w (- h)]
-    [0 0 (/ w x-scale) (/ h y-scale)]
+    (get-render-texture (gb :texture))
+    [0 0 (* x-scale w)
+     (* y-scale (- h)) # (- h) #screen-w (- screen-h)
+     ]
+    [0 0 w h  #(/ screen-w x-scale) (/ screen-h y-scale)
+     ]
     [0 0]
     0
     :white)
   
-  (+= (props :blink) 1.1)
-  (when (> (props :blink) 60) (set (props :blink) 0))
+  (+= (gb :blink) 1.1)
+  (when (> (gb :blink) 60) (set (gb :blink) 0))
   
-  (when-let [[x y] (and (< (props :blink) 30)
-                        (props :caret-pos))]
+  (when-let [[x y] (and (< (gb :blink) 30)
+                        (gb :caret-pos))]
     (draw-line-ex
       [(+ (* (conf :mult) (offset 0)) x) (+ y scroll)]
       [(+ (* (conf :mult) (offset 0)) x) (+ y 14 scroll)]
       1
-      (get-in props [:colors :caret])))
+      (get-in gb [:colors :caret])))
   
-  
-  #  DrawTextureRec(target.texture, (Rectangle) { 0, 0, target.texture.width, -target.texture.height }, (Vector2) { 0, 0 }, WHITE);
-  )
+  (rl-pop-matrix))
 
 (comment
   (do (def gb {:text @"a b c "

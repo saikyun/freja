@@ -70,7 +70,37 @@
                :scroll 0
                :blink 0
                
+               :open-file (fn [props]
+                            (focus-other props :open-file))
+               
                :binds gb-binds})
+
+(var file-open-data @{})
+
+(merge-into file-open-data
+            @{:text @""
+              :gap-start 0
+              :gap-stop 0
+              :gap @""
+              :caret 0
+              
+              :selection nil
+              
+              :size [800 14]
+              :position [0 0]
+              :offset [30 0]
+              
+              :changed true
+              :scroll 0
+              :blink 0
+              
+              :on-enter (fn [props path]
+                          (load-file gb-data path)
+                          (focus-other props :main))
+              
+              :binds file-open-binds})
+
+(put gb-data :position [0 30])
 
 (var mouse-data (new-mouse-data))
 (var conf nil)
@@ -122,16 +152,24 @@
   (def w (* x-scale (get-screen-width)))  
   (def h (* y-scale (get-screen-height)))  
   
+  (gb-pre-render gb-data)
+  
+  (when (= (data :focus) :open-file)
+    (gb-pre-render file-open-data))
+  
   (begin-drawing)
   
-  (rl-viewport 0 0 w h)  
-  (rl-matrix-mode :rl-projection)  
-  (rl-load-identity)  
-  (rl-ortho 0 w h 0 0 1)         # Recalculate internal projection matrix  
-  (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix  
-  (rl-load-identity)             # Reset internal modelview matrix  
+  (rl-viewport 0 0 w h)    
+  (rl-matrix-mode :rl-projection)    
+  (rl-load-identity)    
+  (rl-ortho 0 w h 0 0 1)         # Recalculate internal projection matrix    
+  (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix    
+  (rl-load-identity)             # Reset internal modelview matrix
   
   (gb-render-text gb-data)
+  
+  (when (= (data :focus) :open-file)
+    (gb-render-text file-open-data))
   
   (clear-background (colors :background))
   
@@ -147,13 +185,22 @@
   (end-drawing)
   
   (try
-    (do (handle-keyboard data gb-data dt))
+    (if (= (data :focus) :main)
+      (handle-keyboard data gb-data dt)
+      (handle-keyboard data file-open-data dt))
     
     ([err fib]
       (print "kbd")
       (put data :latest-res (string "Error: " err))
       (print (debug/stacktrace fib err))
-      ))
+      )))
+
+(comment
+  (ez-gb file-open-data)
+  (ez-gb gb-data)
+  
+  (focus {:context data :id :main})
+  
   )
 
 (defn loop-it
@@ -227,10 +274,14 @@
                   :spacing 2}]
         
         (set conf (load-font gb-data tc))
-        
         (put gb-data :context data)
         (put gb-data :screen-scale [x-scale y-scale])
         (put gb-data :colors colors)
+        
+        (set conf2 (load-font file-open-data tc))
+        (put file-open-data :context data)
+        (put file-open-data :screen-scale [x-scale y-scale])
+        (put file-open-data :colors colors)
         
         (set-target-fps 60)
         

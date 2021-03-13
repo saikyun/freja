@@ -449,6 +449,13 @@ Does bounds check as well."
         (put :changed-selection true))
     gb))
 
+(varfn select-all
+  [gb]
+  (-> gb
+      (put-caret (gb-length gb))
+      (put :selection 0)
+      (put :changed-selection true)))
+
 (varfn update-gap-pos!
   "Commits then puts `(f (gb :gap-start))` into :gap-start & :gap-stop.
 Does bounds check as well."
@@ -585,8 +592,6 @@ Does bounds check as well."
 (varfn backspace
   [gb]
   (def {:selection selection} gb)
-  
-  (print "bs!" selection)
   
   (cond selection
     (remove-selection! gb)
@@ -753,12 +758,38 @@ Does bounds check as well."
       (put-caret (end-of-next-word gb))
       (put :changed-x-pos true)))
 
+(varfn select-forward-word
+  [gb]
+  
+  (unless (gb :selection)
+    (put gb :selection (gb :caret)))
+  
+  (-> gb
+      (put-caret (end-of-next-word gb))
+      (put :changed-x-pos true)
+      (put :changed-selection true)))
+
 (varfn backward-word
   [gb]
-  (-> gb
-      deselect
-      (put-caret (start-of-previous-word gb))
-      (put :changed-x-pos true)))
+  (deselect gb)
+  
+  (if-let [start (start-of-previous-word gb)]
+    (-> gb
+        (put-caret start)
+        (put :changed-x-pos true))
+    gb))
+
+(varfn select-backward-word
+  [gb]
+  (if-let [start (start-of-previous-word gb)]
+    (do (unless (gb :selection)
+          (put gb :selection (gb :caret)))
+      
+      (-> gb
+          (put-caret (start-of-previous-word gb))
+          (put :changed-x-pos true)
+          (put :changed-selection true)))
+    gb))
 
 ###TODO: Implement (varfn gb-subs)
 
