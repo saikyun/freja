@@ -54,26 +54,33 @@
   (set delay-left @{})
   (put context :focus id))
 
-(var gb-data @{:text @""
-               :gap-start 0
-               :gap-stop 0
-               :gap @""
-               :caret 0
-               
-               :selection nil
-               
-               :size [800 800]
-               :position [0 0]
-               :offset [30 0]
-               
-               :changed true
-               :scroll 0
-               :blink 0
-               
-               :open-file (fn [props]
-                            (focus-other props :open-file))
-               
-               :binds gb-binds})
+(var gb-data @{})
+
+(merge-into gb-data
+            @{:text @""
+              :gap-start 0
+              :gap-stop 0
+              :gap @""
+              :caret 0
+              
+              :selection nil
+              
+              :size [800 800]
+              :position [0 0]
+              :offset [10 0]
+              
+              :changed true
+              :scroll 0
+              :blink 0
+              
+              :open-file (fn [props]
+                           (focus-other props :open-file))
+              :save-file (fn [props]
+                           (if-let [path (props :path)]
+                             (save-file props path)
+                             (print "no path!")))
+              
+              :binds gb-binds})
 
 (var file-open-data @{})
 
@@ -96,6 +103,7 @@
               
               :on-enter (fn [props path]
                           (load-file gb-data path)
+                          (put gb-data :path path)
                           (focus-other props :main))
               
               :binds file-open-binds})

@@ -11,7 +11,11 @@
 
 (varfn load-file
   [props path]
-  (replace-content props (read-file path)))
+  (-> props
+      (replace-content (read-file path))
+      (put :caret 0)
+      (put :scroll 0)
+      (put :selection nil)))
 
 (varfn load-file2
   [props path]

@@ -87,13 +87,38 @@ Returns `nil` if the max width is never exceeded."
   (array/clear lines)
   (array/clear y-poses)
   
+  (defn check-if-word-is-too-wide
+    [old-w i c]
+    (if (> (+ x old-w) width) ## we went outside the max width
+      (do ## so rowbreak before the word
+        (when (not= beginning-of-word-i 0)
+          (array/push lines beginning-of-word-i)
+          (array/push y-poses y)
+          (+= y h))
+        (set x old-w)
+        
+        (when (> (+ x old-w) width)
+          ## then we need to break up the word
+          (var break-i beginning-of-word-i)
+          (while (set break-i (index-passing-max-width
+                                gb
+                                break-i
+                                i
+                                width))
+            (array/push lines break-i)
+            (array/push y-poses y)
+            (+= y h))))
+      
+      (+= x (+ old-w (first (sizes c))))))
+  
   (gb-iterate
     gb
     start stop
     i c
-    
     (case c newline
-      (do (array/push lines i)
+      (do (check-if-word-is-too-wide w i c)
+
+        (array/push lines i)
         (array/push y-poses y)
         (+= y h)
         (set x 0)
@@ -104,27 +129,7 @@ Returns `nil` if the max width is never exceeded."
       (let [old-w w]
         (set w 0)
         
-        (if (> (+ x old-w) width) ## we went outside the max width
-          (do               ## so rowbreak before the word
-            (when (not= beginning-of-word-i 0)
-              (array/push lines beginning-of-word-i)
-              (array/push y-poses y)
-              (+= y h))
-            (set x old-w)
-            
-            (when (> (+ x old-w) width)
-              ## then we need to break up the word
-              (var break-i beginning-of-word-i)
-              (while (set break-i (index-passing-max-width
-                                    gb
-                                    break-i
-                                    i
-                                    width))
-                (array/push lines break-i)
-                (array/push y-poses y)
-                (+= y h))))
-          
-          (+= x (+ old-w (first (sizes c)))))
+        (check-if-word-is-too-wide old-w i c)
         
         (set beginning-of-word-i (inc i)))
       
@@ -208,6 +213,7 @@ Returns `nil` if the max width is never exceeded."
         :caret caret
         :sizes sizes
         :offset offset
+        :width-of-last-line-number width-of-last-line-number
         :screen-scale screen-scale} gb)
   (def [x-scale y-scale] screen-scale)
   (when selection
@@ -243,15 +249,19 @@ Returns `nil` if the max width is never exceeded."
                    stop-x)
           
           (draw-rectangle-rec 
-            [(+ (offset 0) start-x) y (- stop-x start-x) (* y-scale line-h)]
+            [(+ (offset 0)
+                width-of-last-line-number
+                start-x) y (- stop-x start-x) (* y-scale line-h)]
             :white))))))
 
 (varfn render-lines
   [sizes conf gb lines start-index start-y h y-limit]
-  (def {:screen-scale screen-scale} gb)  
+  (def {:screen-scale screen-scale
+        :offset offset} gb)  
   (def [x-scale y-scale] screen-scale)
   
   (def start-y (* y-scale start-y))
+  (def [x-offset _] offset)
   
   (var y start-y)
   
@@ -277,9 +287,14 @@ Returns `nil` if the max width is never exceeded."
         ## TODO: If line in selection, draw selection box here
         (render-selection-box gb last l y)
         
-        (def s2 (string/format "%d" i))
-        
-        (draw-text*2 conf s2 [0 y] :gray x-scale)
+        (let [lns (string/format "%d" i)
+              lns-offset (defn measure-text
+                           [tc text]
+                           (measure-text-ex (tc :font) 
+                                            text
+                                            (math/floor (* (tc :mult) (tc :size)))
+                                            (* (tc :mult) (tc :spacing))))]
+          (draw-text*2 conf lns [0 y] :gray x-scale))
         
         (gb-iterate
           gb
@@ -293,10 +308,13 @@ Returns `nil` if the max width is never exceeded."
               (print (length s))
               #(print "x: " x " - y: " y)
               )
-            (draw-text*2 conf s [(+ 30 x)
-                                 y] (if (in-selection? gb i)
-                                      :blue
-                                      :black)
+            (draw-text*2 conf s [(+ x-offset
+                                    (gb :width-of-last-line-number)
+                                    x)
+                                 y]
+                         (if (in-selection? gb i)
+                           :blue
+                           :black)
                          x-scale)
             (+= x (* x-scale w))))))
     (+= y h)
@@ -407,6 +425,7 @@ Returns `nil` if the max width is never exceeded."
         :changed-x-pos changed-x-pos
         :changed-nav changed-nav
         :changed-selection changed-selection
+        :width-of-last-line-number width-of-last-line-number
         :lines lines
         :y-poses y-poses
         :scroll scroll}
@@ -448,6 +467,11 @@ Returns `nil` if the max width is never exceeded."
                          y
                          (- (size 1) (* y-scale scroll))))
                      lines))
+        
+        (put gb :width-of-last-line-number
+             (* x-scale
+                (first (measure-text conf (string/format "%d" (length lines))))))
+        (print "aoelh: " (gb :width-of-last-line-number))
         
         (when (or changed changed-selection)
           (begin-texture-mode (gb :texture))
@@ -495,6 +519,7 @@ Returns `nil` if the max width is never exceeded."
         :changed-x-pos changed-x-pos
         :changed-nav changed-nav
         :changed-selection changed-selection
+        :width-of-last-line-number width-of-last-line-number
         :lines lines
         :y-poses y-poses
         :scroll scroll}
@@ -527,10 +552,12 @@ Returns `nil` if the max width is never exceeded."
   (when (> (gb :blink) 60) (set (gb :blink) 0))
   
   (when-let [[x y] (and (< (gb :blink) 30)
-                        (gb :caret-pos))]
+                        (gb :caret-pos))
+             cx (+ (* (conf :mult) (offset 0))
+                   (* (conf :mult) width-of-last-line-number) x)]
     (draw-line-ex
-      [(+ (* (conf :mult) (offset 0)) x) (+ y scroll)]
-      [(+ (* (conf :mult) (offset 0)) x) (+ y 14 scroll)]
+      [cx (+ y scroll)]
+      [cx (+ y 14 scroll)]
       1
       (get-in gb [:colors :caret])))
   

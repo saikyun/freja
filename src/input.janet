@@ -64,8 +64,12 @@
                 :s (fn [props]
                      (when (meta-down?)
                        ((props :open-file) props)))
-                
-                :left (fn [props]
+
+                (keyword ";") (fn [props]
+                       (when (meta-down?)
+			 ((props :save-file) props)))
+
+		:left (fn [props]
                         (reset-blink props)
                         
                         (cond
@@ -409,7 +413,6 @@
       (print "wat?")
       ((game-binds k))))
   
-  
   (loop [k :keys pressed-game-binds]
     (when (key-pressed? k)
       (print "wat 2?")
@@ -431,6 +434,7 @@
         :position position
         :offset offset
         :conf conf
+:width-of-last-line-number width-of-last-line-number
         :scroll scroll} props)
   
   (def {:mult mult} conf)
@@ -451,7 +455,8 @@
     (index-passing-middle-max-width props
                                     row-start-pos
                                     row-end-pos
-                                    (- mx (* mult ox)))))
+                                    (- mx (* mult ox)
+				       (* mult width-of-last-line-number)))))
 
 (varfn handle-mouse
   [mouse-data props]
@@ -536,12 +541,13 @@
       
       (if (= nil (mouse-data :just-down))
         (do (put mouse-data :just-down true)
-          (put mouse-data :down-pos [x y]))
+          (put mouse-data :down-pos [x y])
+          (put mouse-data :down-index (get-mouse-pos props pos)))
         (put mouse-data :just-down false))
       
       (print "y-offset: " y-offset)
       
-      (let [down-pos (get-mouse-pos props (mouse-data :down-pos)) 
+      (let [down-pos (mouse-data :down-index)
             curr-pos (get-mouse-pos props pos)]
         
         (print "dp: " down-pos " - cp: " curr-pos)
