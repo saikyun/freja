@@ -210,12 +210,15 @@ Returns `nil` if the max width is never exceeded."
 (varfn render-selection-box
   [gb start stop y]
   (def {:selection selection
+        :colors colors
+        :conf conf
         :caret caret
         :sizes sizes
         :offset offset
         :width-of-last-line-number width-of-last-line-number
         :screen-scale screen-scale} gb)
   (def [x-scale y-scale] screen-scale)
+
   (when selection
     (let [sel-start (min selection caret)
           sel-stop  (max selection caret)]
@@ -248,11 +251,16 @@ Returns `nil` if the max width is never exceeded."
         (when (and start-x
                    stop-x)
           
+          (print "colors")
+          (pp colors)
+          
           (draw-rectangle-rec 
             [(+ (offset 0)
                 width-of-last-line-number
                 start-x) y (- stop-x start-x) (* y-scale line-h)]
-            :white))))))
+            (colors :selected-text-background)
+            #:blue
+            ))))))
 
 (varfn render-lines
   [sizes conf gb lines start-index start-y h y-limit]

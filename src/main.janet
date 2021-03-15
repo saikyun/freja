@@ -63,6 +63,8 @@
               :gap @""
               :caret 0
               
+              :actions @[]
+              
               :selection nil
               
               :size [800 800]
@@ -91,6 +93,7 @@
               :gap @""
               :caret 0
               
+              :actions @[]
               :selection nil
               
               :size [800 14]

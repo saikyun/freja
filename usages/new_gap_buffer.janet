@@ -1,4 +1,5 @@
 (import ../src/new_gap_buffer :prefix "")
+(import ../src/new_gap_buffer_util :prefix "")
 (import spork/test)
 
 ### iterators
@@ -322,6 +323,39 @@
     (deep= (string s1) (string/reverse s2)))
   #=> true
   )
+
+
+
+
+
+
+### removal
+(comment
+  (defn select-keys
+    [t ks]
+    (def nt (table/new (length ks)))
+    (loop [k :in ks
+           :let [v (t k)]]
+      (put nt k v))
+    nt)
+  
+  ### when removing selection, we commit and adjust the caret position
+  (-> (remove-selection!
+        @{:text @"" :selection 0 :gap-stop 0 :caret 1 :gap-start 0 :gap @"a"})
+      (select-keys [:gap :caret :text]))
+  #=> @{:text @"" :caret 0 :gap @""}
+  
+  (-> (remove-selection!
+        @{:text @"" :selection 0 :gap-stop 0 :caret 0 :selection 1 :gap-start 0 :gap @"a"})
+      (select-keys [:gap :caret :text]))
+  #=>  @{:text @"" :caret 0 :gap @""}
+  
+  )
+
+
+
+
+
 
 ### gb-nth
 (comment
