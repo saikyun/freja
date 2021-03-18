@@ -1,4 +1,5 @@
 (import ../src/new_gap_buffer :prefix "")
+(import ../src/new_gap_buffer_util :prefix "")
 (import spork/test)
 
 (comment
@@ -22,11 +23,13 @@
   
   
   (deep= (string->gb gb-s)
-         @{:gap-stop 2
+         @{:actions @[]
            :caret 2
+           :gap @"c"
            :gap-start 2
-           :text @"ab"
-           :gap @"c"})
+           :gap-stop 2
+           :redo-queue @[]
+           :text @"ab"})
   #=> true
   
   
@@ -36,71 +39,143 @@
   ### ----- Caret
   
   ### | means "caret"
-  (string->gb "ab|c")
-  #=> @{:gap-stop 2 :caret 2 :gap-start 2 :text @"abc" :gap @""}
+  (deep= (string->gb "ab|c")
+         @{:actions @[]
+           :caret 2
+           :gap @""
+           :gap-start 2
+           :gap-stop 2
+           :redo-queue @[]
+           :text @"abc"})
+  #=> true
   
   ### if there is no |, assume the caret is at the end of the string
-  (string->gb "abc")
-  #=>  @{:gap-stop 3 :caret 3 :gap-start 3 :text @"abc" :gap @""}
+  (-> (string->gb "abc")
+      render)
+  #=> "abc|"
   
   
   ### ----- Selection
   
   # * means "start of selection"
   # in this case, we select from right to left
-  (string->gb "ab|c*")
-  #=> @{:gap-stop 2 :caret 2 :gap-start 2 :text @"abc" :selection 3 :gap @""}
+  (deep= (string->gb "ab|c*")
+         @{:actions @[]
+           :caret 2
+           :gap @""
+           :gap-start 2
+           :gap-stop 2
+           :redo-queue @[]
+           :selection 3
+           :text @"abc"})
+  #=> true
   
   #...and select from left to right
-  (string->gb "ab*c|")
-  #=> @{:gap-stop 3 :caret 3 :gap-start 3 :text @"abc" :selection 2 :gap @""}
+  (deep= (string->gb "ab*c|")
+         @{:actions @[]
+           :caret 3
+           :gap @""
+           :gap-start 3
+           :gap-stop 3
+           :redo-queue @[]
+           :selection 2
+           :text @"abc"})
+  #=> true
   
   
   ### ----- Gap
   
   ### [xyz] means "xyz is currently in the gap
-  (string->gb "a[xyz]b|")
-  #=> @{:gap-stop 1 :caret 5 :gap-start 1 :text @"ab" :gap @"xyz"}
+  (deep= (string->gb "a[xyz]b|")
+         @{:actions @[]
+           :caret 5
+           :gap @"xyz"
+           :gap-start 1
+           :gap-stop 1
+           :redo-queue @[]
+           :text @"ab"})
+  #=> true
   
   ### if there is no |, but there is a gap, assume the caret is at the end of the gap
-  (string->gb "a[xyz]b")
-  #=>  @{:gap-stop 1 :caret 5 :gap-start 1 :text @"ab" :gap @"xyz"}
+  (deep= (string->gb "a[xyz]b")
+         @{:actions @[]
+           :caret 5
+           :gap @"xyz"
+           :gap-start 1
+           :gap-stop 1
+           :redo-queue @[]
+           :text @"ab"})
+  #=> true
   
   ### if there is no [] but there is a |, that means there's an empty gap at the position of the caret
   (string->gb     "ab|c")
   #=> (string->gb "ab[]|c")
   
   ### (ab) means that "ab has been deleted" (e.g. using backspace)
-  (string->gb "(ab)|")
-  #=> @{:gap-stop 2 :caret 0 :gap-start 0 :text @"ab" :gap @""}
+  (deep= (string->gb "(ab)|")
+         @{:actions @[]
+           :caret 0
+           :gap @""
+           :gap-start 0
+           :gap-stop 2
+           :redo-queue @[]
+           :text @"ab"})
+  #=> true
   
-  # this is more apparent when running `commit!`
-  (commit! (string->gb "(ab)|"))
-  #=> @{:gap-stop 0 :caret 0 :gap-start 0 :text @"" :gap @""}
+  # this is more apparent when running `commit!` and `render`
+  (-> (string->gb "(ab)|")
+      commit!
+      render)
+  #=> "|"
   
   ### (ab[123]cd) means ab and cd has been deleted, while 123 is in the buffer
-  (string->gb "(ab[123]cd)")
-  #=> @{:gap-stop 4 :caret 3 :gap-start 0 :text @"abcd" :gap @"123"}
+  (deep= (string->gb "(ab[123]cd)")
+         @{:actions @[]
+           :caret 3
+           :gap @"123"
+           :gap-start 0
+           :gap-stop 4
+           :redo-queue @[]
+           :text @"abcd"})
+  #=> true
+
   
-  (commit! (string->gb "(ab[123]cd)"))
-  #=> @{:gap-stop 3 :caret 3 :gap-start 3 :text @"123" :gap @""}
+  (-> (string->gb "(ab[123]cd)")
+      commit!
+      render)
+  #=> "123|"
   
   
   ### ----- More examples
   
   # we can combine the notation to create more complicated buffers
-  (string->gb "ab*[ca|ca]")
-  #=> @{:gap-stop 2 :caret 4 :gap-start 2 :text @"ab" :selection 2 :gap @"caca"}
   
-  # running commit can make it easier to understand
-  (commit! (string->gb "ab*[ca|ca]"))
-  #=> @{:gap-stop 6 :caret 4 :gap-start 6 :text @"abcaca" :selection 2 :gap @""}
+  (deep= (string->gb "ab*[ca|ca]")
+         @{:actions @[]
+           :caret 4
+           :gap @"caca"
+           :gap-start 2
+           :gap-stop 2
+           :redo-queue @[]
+           :selection 2
+           :text @"ab"})
+  #=> true
   
-  (string->gb "1(ab[23]cd)|")
+  # running commit and render can make it easier to understand
+  (-> (string->gb "ab*[ca|ca]")
+      commit!
+      render)
+  #=> "ab*ca|ca"
   
-  (string->gb "1(ignored[23|45]ignored)6*")
-  #=> @{:gap-stop 15 :caret 3 :gap-start 1 :text @"1ignoredignored6" :selection 6 :gap @"2345"}
-  
-
+  (deep= (string->gb "1(ignored[23|45]ignored)6*")
+         @{:actions @[]
+           :caret 3
+           :gap @"2345"
+           :gap-start 1
+           :gap-stop 15
+           :redo-queue @[]
+           :selection 6
+           :text @"1ignoredignored6"})
+  #=> true
   )
 

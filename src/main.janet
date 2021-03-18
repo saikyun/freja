@@ -5,14 +5,16 @@
 (import ./text_rendering :prefix "")
 (import ./text_rendering_ints :prefix "" :fresh true)
 (import ../build/text-rendering :prefix "")
-(import ./text_api :prefix "")
 (import ./input :prefix "")
 (import ./file_handling :prefix "")
 (import ./find_row_etc :prefix "")
 (import ./highlight :prefix "")
 (import ./new_gap_buffer :prefix "")
+(import ./new_gap_buffer_util :prefix "")
 (import ./render_new_gap_buffer :prefix "")
 (import spork/netrepl)
+
+(setdyn :pretty-format "%.40M")
 
 (defmacro defonce
   "Define a value once."
@@ -64,6 +66,7 @@
               :caret 0
               
               :actions @[]
+              :redo-queue @[]
               
               :selection nil
               
@@ -94,6 +97,7 @@
               :caret 0
               
               :actions @[]
+              :redo-queue @[]
               :selection nil
               
               :size [800 14]
@@ -229,7 +233,8 @@
                            ([err fib]
                              (let [path "text_experiment_dump"]
                                (debug/stacktrace fib err)
-                               (dump-state path gb-data)
+                               ## TODO:  Dump-state
+                               #(dump-state path gb-data)
                                (print "Dumped state to " path))
                              (print (debug/stacktrace fib err))
                              (ev/sleep 1))))))))
@@ -304,7 +309,8 @@
       (debug/stacktrace fib err)
       
       (let [path "text_experiment_dump"]
-        (dump-state path gb-data)
+        ## TODO:  Dump-state
+        #(dump-state path gb-data)
         (print "Dumped state to " path))
       
       (close-window))))

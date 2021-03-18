@@ -52,7 +52,7 @@
   )
 
 (varfn replace-content
-  "Remove current content and loads new content."
+  "Delete current content and loads new content."
   [props new]
   (def {:selected selected :text text :after after} props)
   (put props :changed true)
@@ -344,7 +344,7 @@
   (refresh-caret-pos props))
 
 (varfn backspace
-  "Removes a single character before the cursor.
+  "Deletes a single character before the cursor.
   If text is selected deletes the selection instead."
   [props]
   (def {:selected selected :text text :after after :debug debug} props)
@@ -356,7 +356,7 @@
   (refresh-caret-pos props))
 
 (varfn forward-delete
-  "Removes a single character after the cursor.
+  "Deletes a single character after the cursor.
   If text is selected deletes the selection instead."
   [props]
   (def {:selected selected :text text :after after} props)

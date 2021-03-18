@@ -111,45 +111,6 @@
     res)
   
   
-  (def f (fiber/new (fn [] (text-iterator3 @{:text @"abc"
-                                             :gap-start 1
-                                             :gap-stop 1
-                                             :gap @""})))) 
-  
-  (seq [c :iterate (resume f)]
-    c)
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 1
-                            :gap-stop 1
-                            :gap @""})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  #=> "abc"
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 0
-                            :gap-stop 0
-                            :gap @"123"})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 1
-                            :gap-stop 1
-                            :gap @"123"})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  #=> "a123bc"
-  
-  (let [it (text-iterator @{:text @"abc"
-                            :gap-start 0
-                            :gap-stop 1
-                            :gap @"123"})]
-    (string/from-bytes ;(seq [c :iterate (it)]
-                          c)))
-  #=> "123bc"
-  
   )
 
 (comment
@@ -179,12 +140,14 @@
     gb))
 
 (comment
-  (gb-iterate-whole @{:text @"abc"
-                      :gap-start 2
-                      :gap-stop 3
-                      :gap @"123"}
-                    i c
-                    (print "c: " c " - i: " i))
+  (let [gb @{:text @"abc"
+             :gap-start 2
+             :gap-stop 3
+             :gap @"123"}]
+    (gb-iterate gb
+                0 (gb-length gb)
+                i c
+                (print "c: " c " - i: " i)))
   
   (let [gb @{:text @"abcefg"
              :gap-start 0
@@ -326,29 +289,17 @@
 
 
 
-
-
-
 ### removal
 (comment
-  (defn select-keys
-    [t ks]
-    (def nt (table/new (length ks)))
-    (loop [k :in ks
-           :let [v (t k)]]
-      (put nt k v))
-    nt)
+  (-> (string->gb "*[a]|")
+      delete-selection!
+      render)
+  #=> "|"
   
-  ### when removing selection, we commit and adjust the caret position
-  (-> (remove-selection!
-        @{:text @"" :selection 0 :gap-stop 0 :caret 1 :gap-start 0 :gap @"a"})
-      (select-keys [:gap :caret :text]))
-  #=> @{:text @"" :caret 0 :gap @""}
-  
-  (-> (remove-selection!
-        @{:text @"" :selection 0 :gap-stop 0 :caret 0 :selection 1 :gap-start 0 :gap @"a"})
-      (select-keys [:gap :caret :text]))
-  #=>  @{:text @"" :caret 0 :gap @""}
+  (-> (string->gb "|[a]*")
+      delete-selection!
+      render)
+  #=> "|"
   
   )
 
@@ -359,229 +310,114 @@
 
 ### gb-nth
 (comment
-  (= (do (def gb @{:text @"abc"
-                   :gap-start 0
-                   :gap-stop 0
-                   :gap @"123"})
+  (= (let [gb @{:text @"abc"
+                :gap-start 0
+                :gap-stop 0
+                :gap @"123"}]
        (gb-nth gb 3))
-     (first "a"))
+     (chr "a"))
   #=> true
   )
 
-### insert-char
+### insert-char!
 (comment
-  (insert-char @{:text @""
-                 :gap-start 0
-                 :gap-stop 0
-                 :gap @""}
-               (first "a"))
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"a" :changed true :changed-x-pos true}
+  (-> (string->gb "|")
+      (insert-char! (chr "a")) 
+      render)
+  #=> "a|"
   
-  (-> (insert-char @{:text @""
-                     :gap-start 0
-                     :gap-stop 0
-                     :gap @""}
-                   (first "a"))
-      commit!)
-  #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @"" :changed true :changed-x-pos true}
+  (-> (string->gb "*a|")
+      (insert-char! (chr "b")) 
+      render)
+  #=> "b|"
   )
 
-### backspace
+### backspace!
 (comment
-  (backspace @{:text @""
-               :gap-start 0
-               :gap-stop 0
-               :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed true}
+  (-> (string->gb "|")
+      backspace!
+      render)
+  #=> "|"
   
-  (backspace @{:text @"a"
-               :gap-start 0
-               :gap-stop 0
-               :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @"" :changed true}
+  (-> (string->gb "|a")
+      backspace!
+      render)
+  #=> "|a"
   
-  (backspace @{:text @"a"
-               :gap-start 1
-               :gap-stop 1
-               :gap @""})
-  #=> @{:gap-start 0 :gap-stop 1 :text @"a" :gap @"" :changed true}
+  (-> (string->gb "a|")
+      backspace!
+      render)
+  #=> "|"
   
-  (backspace @{:text @""
-               :gap-start 0
-               :gap-stop 0
-               :gap @"a"})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed true}
+  (-> (string->gb "|[a]")
+      backspace!
+      render)  
+  #=> "|a"
   )
 
-### delete
+### forward-char
 (comment
-  (delete @{:text @""
-            :gap-start 0
-            :gap-stop 0
-            :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""}
+  (-> (string->gb "|")
+      forward-char
+      render)
+  #=> "|"
   
-  (delete @{:text @"a"
-            :gap-start 0
-            :gap-stop 0
-            :gap @""})
-  #=> @{:gap-start 0 :gap-stop 1 :text @"a" :gap @""}
+  (-> (string->gb "|a")
+      forward-char
+      render)
+  #=> "a|"
   
-  (delete @{:text @"a"
-            :gap-start 1
-            :gap-stop 1
-            :gap @""})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @""}
+  (-> (string->gb "|[b]")
+      forward-char
+      render)
+  #=> "b|"
   
-  (delete @{:text @""
-            :gap-start 0
-            :gap-stop 0
-            :gap @"a"})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"a"}
-  
-  
-  (-> @{:text @"abcd"
-        :gap-start 0
-        :gap-stop 0
-        :gap @""}
-      delete
-      delete
-      delete
-      delete
-      commit!)
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @""}
+  (-> (string->gb "|[b]012")
+      forward-char
+      render)
+  #=> "b|012"
   )
 
-### forward-char!
+### backward-char
 (comment
-  (let [t (math/rng-buffer (math/rng) (* 1000 1000 10))]
-    (-> (test/timeit
-          (forward-char! @{:text t
-                           :gap-start 0
-                           :caret 0
-                           :gap-stop 0
-                           :gap t}))
-        (get :gap-start)))
+  (-> (string->gb "a|")
+      backward-char
+      render)
+  #=> "|a"
   
-  (forward-char! @{:text @""
-                   :gap-start 0
-                   :caret 0
-                   :gap-stop 0
-                   :gap @""})
-  #=> @{:gap-start 0 :gap-stop 0 :text @"" :gap @"" :changed-nav true :changed-x-pos true}
+  (-> (string->gb "ab|")
+      backward-char
+      backward-char
+      render)
+  #=> "|ab"
   
-  (forward-char! @{:text @"a"
-                   :gap-start 0
-                   :caret 0
-                   :gap-stop 0
-                   :gap @""})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"a" :gap @"" :changed-nav true :changed-x-pos true}
-  
-  (forward-char! @{:text @""
-                   :gap-start 0
-                   :caret 0
-                   :gap-stop 0
-                   :gap @"b"})
-  #=> @{:gap-start 1 :gap-stop 1 :text @"b" :gap @"" :changed-nav true :changed-x-pos true}
-  
-  (forward-char! @{:text @"012"
-                   :gap-start 0
-                   :caret 0
-                   :gap-stop 0
-                   :gap @"b"})
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b012" :gap @"" :changed-nav true :changed-x-pos true}
-  
-  (-> @{:text @"012"
-        :gap-start 0
-        :caret 0
-        :gap-stop 0
-        :gap @"b"}
-      delete
-      forward-char!
-      commit!)
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b12" :gap @"" :changed-nav true :changed-x-pos true}
-  
-  (-> @{:text @"012"
-        :gap-start 0
-        :caret 0
-        :gap-stop 0
-        :gap @"b"}
-      forward-char!
-      delete
-      delete
-      commit!)
-  #=> @{:gap-start 2 :gap-stop 2 :text @"b0" :gap @"" :changed-nav true :changed-x-pos true}
-  )
-
-### backward-char!
-(comment
-  (backward-char! @{:text @"a"
-                    :gap-start 1
-                    :gap-stop 1
-                    :gap @""})  
-  #=> @{:gap-start 0 :gap-stop 0 :text @"a" :gap @"" :changed-nav true :changed-x-pos true}
-  
-  (-> @{:text @"ab"
-        :gap-start 2
-        :gap-stop 2
-        :gap @""}
-      backward-char!
-      backward-char!)
-  #=> @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @"" :changed-nav true :changed-x-pos true}
-  
-  (-> @{:text @"ab"
-        :gap-start 1
-        :gap-stop 1
-        :gap @""}
-      backward-char!
-      backward-char!)
-  #=>  @{:gap-start 0 :gap-stop 0 :text @"ab" :gap @"" :changed-nav true :changed-x-pos true}
+  (-> (string->gb "a|b")
+      backward-char
+      backward-char
+      render)
+  #=> "|ab"
   )
 
 
-### select-forward-char!
+### select-forward-char
 (comment
   ## making the selection bigger
-  (select-forward-char! @{:text @"a"
-                          :gap-start 1
-                          :gap-stop 1
-                          :gap @""})
-  #=> @{:gap-stop 1 :changed-selection true :gap-start 1 :text @"a" :selection 2 :gap @""}
+  (-> (string->gb "|abc")
+      select-forward-char
+      render)
+  #=> "*a|bc"
   
-  (select-forward-char! @{:gap-stop 1 
-                          :changed-selection true
-                          :gap-start 1
-                          :text @"a"
-                          :selection 2
-                          :gap @""})
-  #=> @{:gap-stop 1 :changed-selection true :gap-start 1 :text @"a" :selection 3 :gap @""}
+  (-> (string->gb "*a|bc")
+      select-forward-char
+      render)
+  #=> "*ab|c"
   
   
   ## making the selection smaller
-  (select-forward-char! @{:gap-stop 2
-                          :gap-start 2
-                          :text @"abc"
-                          :selection 2
-                          :caret 0
-                          :gap @""})
-  #=> @{:gap-stop 2 :changed-selection true :gap-start 2 :text @"abc" :selection 2 :caret 1 :gap @""}
-  
-  )
-
-
-### caret-pos
-(comment
-  (caret-pos @{:text @"abc def"
-               :gap-start 3
-               :gap-stop 5
-               :gap @"123"})
-  #=> 6
-
-  (caret-pos @{:text @"abc def"
-               :gap-start 5
-               :gap-stop 5
-               :gap @""})
-  #=> 5
+  (-> (string->gb "|ab*c")
+      select-forward-char
+      render) 
+  #=> "a|b*c"
   )
 
 ### backward-word!
@@ -599,24 +435,23 @@
   )
 
 ### render
-
-
 (comment
-  (render @{:text @"abc"
-            :gap-start 0
-            :gap-stop 1
-            :gap @"123"})
-  #=> @"123bc"
+  (render (string->gb "(a[123])bc"))
+  #=> "123bc|"
   
   (let [gb @{:text @"abc"
              :gap-start 0
              :gap-stop 1
              :gap @"123"}]
-    (deep= (render gb)      ## need to use deep= when comparing buffers
+    (deep= (render gb)
            (-> gb
                commit!
                render)))
   #=> true
+  
+  
+  (render (string->gb "a|bc*"))
+  #=> "a|bc*"
   )
 
 
@@ -624,7 +459,7 @@
 ### string->gb
 (comment
   (-> (string->gb "ab|c")
-      forward-char!
+      forward-char
       render) 
   #=> "abc|"
 
@@ -633,4 +468,145 @@
       render)
   #=> "ab|"
   
+  )
+
+
+
+
+
+
+
+### cut / copy / paste
+(comment
+  (get-selection (string->gb "*(a[b]c)|"))
+  #=> @"b"
+  )
+
+
+
+### undo
+
+(comment
+  (-> (string->gb "ab|")
+      (insert-char! :1)
+      (insert-char! :2)
+      (insert-char! :3)
+      (|(do (print (render $)) $))
+      undo!
+      undo!
+      undo!
+      render)
+  #=> "ab|"
+  
+  (-> (string->gb "ab|")
+      (insert-char! :1)
+      (insert-char! :2)
+      (insert-char! :3)
+      (|(do (print (render $)) $))
+      undo!
+      undo!
+      (|(do (print (render $)) $))
+      undo!
+      (|(do (print (render $)) $))
+      redo!
+      (|(do (print (render $)) $))
+      redo!
+      (|(do (print (render $)) $))
+      redo!
+      render)
+  
+  (-> (string->gb "ab|")
+      (insert-char! :1)
+      (insert-char! :2)
+      (|(do (pp $) $))
+      (|(do (print (render $)) $))
+      undo!
+      undo!
+      (|(do (pp $) $))
+      (|(do (print (render $)) $))
+      redo!
+      redo!
+      (|(do (pp $) $))
+      render)
+
+  (-> (string->gb "abcd|")
+      (delete-region! 0 2)
+      (|(do (print (render $)) $))
+      undo!
+      render)
+
+  (-> (string->gb "abcd|")
+      (|(do (print (render $)) $))
+      (delete-region! 0 2)
+      (|(do (print (render $)) $))
+      (delete-region! 0 2)
+      (|(do (print (render $)) $))
+      undo!
+      (|(do (print (render $)) $))
+      undo!
+      (|(do (print (render $)) $))
+      redo!
+      (|(do (print (render $)) $))
+      redo!
+      render
+      print)
+  )
+
+
+### undo test for every part of the highest level of the api
+(comment
+  # delete-selection!
+  (def s "ab*cd|")
+  (-> (string->gb s)
+      (delete-selection!)
+      undo!
+      render)
+  #=> s
+  
+  (gb-slice (string->gb "abc(d)|") 3 4)
+  
+  # delete-before-caret!
+  (def s "abcd|")  
+  (-> (string->gb s)
+      delete-before-caret!
+      undo!
+      render)  
+  #=> s
+  
+  # delete-word-forward!
+  (def s "abcd[1|]")
+  (-> (string->gb s)
+      delete-before-caret!
+      undo!
+      render)
+  #=> (render (string->gb s))
+  ## ^ need to render because the gap is removed from the original `s`
+  
+  # delete-word-backward!
+  # backspace!
+  
+  # insert-char!
+  # insert-char-upper!
+  
+  # cut!
+  # paste!
+  )
+
+
+
+
+
+### render
+(comment
+  (deep= (-> (string->gb "ab|c")
+             forward-char
+             render) 
+         "abc|")
+  #=> true
+  
+  (deep= (-> (string->gb "ab(c)|")
+             commit!
+             render)
+         "ab|")
+  #=> true
   )

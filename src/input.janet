@@ -52,7 +52,7 @@
                      (when (meta-down?)
                        (reset-blink props)
                        
-                       (paste props)))})
+                       (paste! props)))})
 
 ## bindings from key to function
 (def gb-binds @{})
@@ -73,8 +73,14 @@
                        
                        :/
                        (fn [props]
-                         (when (meta-down?)
-                           (undo props)))
+                         (cond
+                           (and (or (key-down? :left-shift)
+                                    (key-down? :right-shift))
+                                (meta-down?))
+                           (redo! props)
+                           
+                           (meta-down?)
+                           (undo! props)))
 
                        :left (fn [props]
                                (reset-blink props)
@@ -93,9 +99,9 @@
                                  
                                  (or (key-down? :left-shift)
                                      (key-down? :right-shift))
-                                 (select-backward-char! props)
+                                 (select-backward-char props)
                                  
-                                 (backward-char! props)))
+                                 (backward-char props)))
                        
                        :right (fn [props]
                                 (reset-blink props)
@@ -113,16 +119,16 @@
                                   
                                   (or (key-down? :left-shift)
                                       (key-down? :right-shift))
-                                  (select-forward-char! props)
+                                  (select-forward-char props)
                                   
-                                  (forward-char! props)))
+                                  (forward-char props)))
                        
                        :delete (fn [props]
                                  (reset-blink props)
                                  
                                  (cond (or (key-down? :left-alt)
                                            (key-down? :right-alt))
-                                   (kill-word-forward! props)
+                                   (delete-word-forward! props)
                                    
                                    (comment (forward-delete props)))) 
                        
@@ -134,7 +140,7 @@
                             (when (meta-down?)
                               (reset-blink props)
                               
-                              (cut props)
+                              (cut! props)
                               ))
 
                        :i (fn [props]
@@ -159,9 +165,9 @@
                                     
                                     (cond (or (key-down? :left-alt)
                                               (key-down? :right-alt))
-                                      (kill-word-backward! props)
+                                      (delete-word-backward! props)
                                       
-                                      (backspace props)))
+                                      (backspace! props)))
                        
                        :q (fn [props]
                             (when (or (key-down? :left-control)
@@ -191,7 +197,7 @@
                                                   (string/reverse (props :after))))
                                     (eval-it (props :data) code))
                                   
-                                  (insert-char props (first "\n"))))
+                                  (insert-char! props (first "\n"))))
                        
                        :up   (fn [props]
                                (reset-blink props)
@@ -242,9 +248,9 @@
                                  
                                  (or (key-down? :left-shift)
                                      (key-down? :right-shift))
-                                 (select-backward-char! props)
+                                 (select-backward-char props)
                                  
-                                 (backward-char! props)))
+                                 (backward-char props)))
                        
                        :right (fn [props]
                                 (reset-blink props)
@@ -262,16 +268,16 @@
                                   
                                   (or (key-down? :left-shift)
                                       (key-down? :right-shift))
-                                  (select-forward-char! props)
+                                  (select-forward-char props)
                                   
-                                  (forward-char! props)))
+                                  (forward-char props)))
                        
                        :delete (fn [props]
                                  (reset-blink props)
                                  
                                  (cond (or (key-down? :left-alt)
                                            (key-down? :right-alt))
-                                   (kill-word-forward! props)
+                                   (delete-word-forward! props)
                                    
                                    (comment (forward-delete props)))) 
                        
@@ -283,7 +289,7 @@
                             (when (meta-down?)
                               (reset-blink props)
                               
-                              (cut props)
+                              (cut! props)
                               ))
 
                        :i (fn [props]
@@ -308,9 +314,9 @@
                                     
                                     (cond (or (key-down? :left-alt)
                                               (key-down? :right-alt))
-                                      (kill-word-backward! props)
+                                      (delete-word-backward! props)
                                       
-                                      (backspace props)))
+                                      (backspace! props)))
                        
                        :q (fn [props]
                             (when (or (key-down? :left-control)
@@ -388,9 +394,9 @@
     
     (cond (or (key-down? :left-shift)
               (key-down? :right-shift))
-      (insert-char-upper props k)
+      (insert-char-upper! props k)
       
-      (insert-char props k))
+      (insert-char! props k))
     
     (scroll-to-focus props)
     

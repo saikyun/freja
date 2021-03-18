@@ -62,8 +62,8 @@
 (defmacro- path/decl-last-sep
   [pre sep]
   ~(def- ,(symbol pre "/last-sep-peg")
-    (peg/compile '{:back (> -1 (+ (* ,sep ($)) :back))
-                   :main (+ :back (constant 0))})))
+     (peg/compile '{:back (> -1 (+ (* ,sep ($)) :back))
+                    :main (+ :back (constant 0))})))
 
 (defmacro- path/decl-dirname
   [pre]
@@ -112,7 +112,7 @@
                (? (* :sep (constant ""))))})
   (def peg (peg/compile grammar))
   ~(defn ,(symbol pre "/normalize")
-     "Normalize a path. This removes . and .. in the
+     "Normalize a path. This deletes . and .. in the
      path, as well as empty path elements."
      [path]
      (def accum @[])
@@ -284,15 +284,15 @@
 (def- jpm/sep (if jpm/is-win "\\" "/"))
 
 (defn jpm/rm
-  "Remove a directory and all sub directories."
+  "Delete a directory and all sub directories."
   [path]
   (case (os/lstat path :mode)
     :directory (do
-      (each subpath (os/dir path)
-        (jpm/rm (string path jpm/sep subpath)))
-      (os/rmdir path))
+                 (each subpath (os/dir path)
+                   (jpm/rm (string path jpm/sep subpath)))
+                 (os/rmdir path))
     nil nil # do nothing if file does not exist
-    # Default, try to remove
+    # Default, try to delete
     (os/rm path)))
 
 (def- jpm/path-splitter
@@ -322,7 +322,7 @@
 (defn jpm/pslurp
   [cmd]
   (string/trim (with [f (file/popen cmd)]
-                     (:read f :all))))
+                 (:read f :all))))
 
 (defn jpm/create-dirs
   "Create all directories needed for a file (mkdir -p)."
@@ -369,20 +369,20 @@
     :root0 (choice :value :comment)
     #
     :value (sequence
-            (any (choice :s :readermac))
-            :raw-value
-            (any :s))
+             (any (choice :s :readermac))
+             :raw-value
+             (any :s))
     #
     :readermac (set "',;|~")
     #
     :raw-value (choice
-                :constant :number
-                :symbol :keyword
-                :string :buffer
-                :long-string :long-buffer
-                :parray :barray
-                :ptuple :btuple
-                :struct :table)
+                 :constant :number
+                 :symbol :keyword
+                 :string :buffer
+                 :long-string :long-buffer
+                 :parray :barray
+                 :ptuple :btuple
+                 :struct :table)
     #
     :comment (sequence (any :s)
                        "#"
@@ -392,19 +392,19 @@
     :constant (choice "false" "nil" "true")
     #
     :number (drop (cmt
-                   (capture :token)
-                   ,scan-number))
+                    (capture :token)
+                    ,scan-number))
     #
     :token (some :symchars)
     #
     :symchars (choice
-               (range "09" "AZ" "az" "\x80\xFF")
-               # XXX: see parse.c's is_symbol_char which mentions:
-               #
-               #        \, ~, and |
-               #
-               #      but tools/symcharsgen.c does not...
-               (set "!$%&*+-./:<?=>@^_"))
+                (range "09" "AZ" "az" "\x80\xFF")
+                # XXX: see parse.c's is_symbol_char which mentions:
+                #
+                #        \, ~, and |
+                #
+                #      but tools/symcharsgen.c does not...
+                (set "!$%&*+-./:<?=>@^_"))
     #
     :keyword (sequence ":" (any :symchars))
     #
@@ -428,15 +428,15 @@
     :long-string :long-bytes
     #
     :long-bytes {:main (drop (sequence
-                              :open
-                              (any (if-not :close 1))
-                              :close))
+                               :open
+                               (any (if-not :close 1))
+                               :close))
                  :open (capture :delim :n)
                  :delim (some "`")
                  :close (cmt (sequence
-                              (not (look -1 "`"))
-                              (backref :n)
-                              (capture :delim))
+                               (not (look -1 "`"))
+                               (backref :n)
+                               (capture :delim))
                              ,=)}
     #
     :long-buffer (sequence "@" :long-bytes)
@@ -508,7 +508,7 @@
   (peg/match grammar/janet "[:a :b] 1")
   # => @[]
 
- )
+  )
 (defn validate/valid-code?
   [form-bytes]
   (let [p (parser/new)
@@ -668,7 +668,7 @@
 
     )
     ``)
-    # => result
+  # => result
 
   )
 
@@ -721,7 +721,7 @@
   (pegs/parse-comment-block comment-in-comment-str)
   # => @["" "(comment\n\n     (+ 1 1)\n     # => 2\n\n   )\n"]
 
-)
+  )
 
 # recognize next top-level form, returning a map
 # modify a copy of grammar/janet
@@ -1172,13 +1172,13 @@
 
     (comment
 
-      (+ a 1)
-      # => 2
+    (+ a 1)
+    # => 2
 
-      (def b 3)
+    (def b 3)
 
-      (- b a)
-      # => 2
+    (- b a)
+    # => 2
 
     )
     ``)
@@ -1482,7 +1482,7 @@
                         (some :h)
                         "-"
                         "judge-gen")
-    (judges/make-results-dir-path ""))
+             (judges/make-results-dir-path ""))
   # => @[]
 
   )
@@ -1690,7 +1690,7 @@
       (print (string name/prog-name " is starting..."))
       (print)
       (display/print-dashes)
-      # remove old judge directory
+      # delete old judge directory
       (prin "Cleaning out: " judge-root " ... ")
       (jpm/rm judge-root)
       # make a fresh judge directory

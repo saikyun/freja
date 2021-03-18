@@ -148,7 +148,7 @@
       (buffer/popn after l))))
 
 (defn backspace
-  "Removes a single character before the cursor.
+  "Deletes a single character before the cursor.
   If text is selected deletes the selection instead."
   [text-data]
   (def {:selected selected :text text :after after} text-data)
@@ -157,7 +157,7 @@
     (buffer/popn text 1)))
 
 (defn forward-delete
-  "Removes a single character after the cursor.
+  "Deletes a single character after the cursor.
   If text is selected deletes the selection instead."
   [text-data]
   (def {:selected selected :text text :after after} text-data)

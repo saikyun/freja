@@ -48,7 +48,8 @@
   (def gap-eat @"")
   (def gb @{:gap @""
             :text @""
-            :actions @[]})
+            :actions @[]
+            :redo-queue @[]})
   (loop [v :in (peg/match gb-text s)]
     (if (string? v)
       (update gb :text buffer/push-string v)
@@ -93,3 +94,5 @@
   (update gb :gap buffer)
   
   gb)
+
+

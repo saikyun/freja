@@ -15,7 +15,7 @@
   
   (insert-char stuff (first "a"))
   (backspace stuff)
-  (forward-char! stuff)
+  (forward-char stuff)
   
   (do (test/timeit (commit! stuff))
     :ok)
@@ -48,6 +48,19 @@
              :gap-stop 4
              :gap @"123"})
   
+  (defn test-blit
+    [gb]
+    (def {:text text
+          :gap-start gap-start
+          :gap-stop gap-stop
+          :gap gap} gb)
+    (def b (buffer/new (gb-length gb)))
+    (buffer/blit b text 0          0 gap-start)
+    (buffer/blit b gap  (length b)            )
+    (buffer/blit b text (length b)   gap-stop  )
+    b
+    )
+  
   (test-blit {:text @"aoeu"
               :gap-start 1
               :gap-stop 1
@@ -74,35 +87,9 @@
                  (buffer/push-byte b2 c))))
 
 (print (= (do (def b2 (buffer/new (* size 2)))
-            (print "generator")
-            (test/timeit
-              (let [f (fiber/new (fn [] (text-iterator3 stuff)))] 
-                (loop [c :iterate (resume f)]
-                  (buffer/push-byte b2 c))))
-            (freeze b2))
-          
-          (do (def b2 (buffer/new (* size 2)))
-            (print "cond")
-            (test/timeit
-              (let [it (text-iterator stuff)]
-                (loop [c :iterate (it)]
-                  (buffer/push-byte b2 c))))
-            (freeze b2))
-          
-          (do (def b2 (buffer/new (* size 2)))
-            (print "state machine")
-            (test/timeit
-              (let [it (text-iterator2 stuff)]
-                (loop [c :iterate (it)]
-                  (buffer/push-byte b2 c))))
-            (freeze b2))
-
-
-
-          (do (def b2 (buffer/new (* size 2)))
             (print "macro")
             (test/timeit
-              (gb-iterate-whole stuff _ c (buffer/push-byte b2 c)))
+              (gb-iterate stuff 0 (gb-length stuff) _ c (buffer/push-byte b2 c)))
             
             (freeze b2))
           
