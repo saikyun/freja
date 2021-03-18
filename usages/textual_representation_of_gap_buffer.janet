@@ -177,5 +177,17 @@
            :selection 6
            :text @"1ignoredignored6"})
   #=> true
+  
+  
+  ## spaces hould work
+  (deep= (string->gb "a b|")
+         @{:actions @[]
+           :caret 3
+           :gap @""
+           :gap-start 3
+           :gap-stop 3
+           :redo-queue @[]
+           :text @"a b"})
+  #=> true
   )
 

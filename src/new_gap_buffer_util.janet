@@ -40,7 +40,7 @@
                   ")"
                   (/ ($) ,(fn [stop] [:gap-stop stop])))
       
-      :string :w*
+      :string (any (+ :w :s))
       :markers (+ :caret :selection :gap-content)
       :main (any (+ :gap-eat :markers (<- :string)))})
   

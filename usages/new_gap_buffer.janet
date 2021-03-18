@@ -1,3 +1,4 @@
+(use jaylib)
 (import ../src/new_gap_buffer :prefix "")
 (import ../src/new_gap_buffer_util :prefix "")
 (import spork/test)
@@ -578,18 +579,78 @@
   (-> (string->gb s)
       delete-before-caret!
       undo!
-      render)
+      render)  
   #=> (render (string->gb s))
   ## ^ need to render because the gap is removed from the original `s`
   
   # delete-word-backward!
+  (def s "oeau abcd a|")
+  (-> (string->gb s)
+      delete-word-backward!
+      undo!
+      render)
+  #=> s
+  
+  (def s "oeau abcd[1|]")
+  (-> (string->gb s)
+      delete-word-backward!
+      undo!
+      render)    
+  #=> (render (string->gb s))
+  ## ^ need to render because the gap is removed from the original `s`
+  
   # backspace!
+  (def s "hej lul|")  
+  (-> (string->gb s)
+      backspace!
+      undo!
+      render)  
+  #=> s
   
   # insert-char!
+  (def s "hello ther|")  
+  (-> (string->gb s)
+      (insert-char! (chr "e"))
+      undo!
+      render)  
+  #=> s
+  
   # insert-char-upper!
+  (def s "i said HELLO THER|")  
+  (-> (string->gb s)
+      (insert-char-upper! (chr "e"))
+      undo!
+      render)    
+  #=> s
+  
   
   # cut!
+  (def s "i said [*HELLO THER|]")
+  (-> (string->gb s)
+      cut! 
+      undo!
+      render)
+  #=> (render (string->gb s))
+  
   # paste!
+
+  ## this only works with a jaylib window
+  ## so I have it disabled by default
+  
+  # (init-window 1200 700
+  #              "Textfield")
+  
+  # (def s "i said [*HELLO THER|]")
+  # (def gb (-> (string->gb s)
+  #             cut!))
+  # (def s2 (render gb))
+  # (deep= (-> gb
+  #            paste!
+  #            undo!
+  #            render)
+  #        s2)
+  
+  # (close-window)
   )
 
 
