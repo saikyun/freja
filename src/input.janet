@@ -1,4 +1,5 @@
 (use jaylib)
+(import ./eval :prefix "")
 (import ./new_gap_buffer :prefix "")
 (import ./render_new_gap_buffer :prefix "")
 (import ./file_handling :prefix "")
@@ -65,6 +66,10 @@
                        :s (fn [props]
                             (when (meta-down?)
                               ((props :open-file) props)))
+                       
+                       :p (fn [props]
+                            (when (meta-down?)
+                              (save-and-dofile props)))
                        
                        (keyword ";")
                        (fn [props]
@@ -190,12 +195,8 @@
                                 
                                 (cond
                                   (or (key-down? :left-control)
-                                      (key-down? :right-control))    
-                                  (do (def code (string
-                                                  (props :text)
-                                                  (props :selected)
-                                                  (string/reverse (props :after))))
-                                    (eval-it (props :data) code))
+                                      (key-down? :right-control))
+                                  (eval-last-sexp props)
                                   
                                   (insert-char! props (first "\n"))))
                        

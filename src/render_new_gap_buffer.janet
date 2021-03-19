@@ -250,10 +250,6 @@ Returns `nil` if the max width is never exceeded."
         
         (when (and start-x
                    stop-x)
-          
-          (print "colors")
-          (pp colors)
-          
           (draw-rectangle-rec 
             [(+ (offset 0)
                 width-of-last-line-number
@@ -453,8 +449,6 @@ Returns `nil` if the max width is never exceeded."
                                           )))
   
   (when (or changed changed-nav changed-selection)
-    (test/timeit
-      (do
         (def lines (or lines @[]))
         (put gb :lines lines)      
         
@@ -508,11 +502,6 @@ Returns `nil` if the max width is never exceeded."
         (put gb :changed-x-pos false)
         (put gb :changed-nav false)
         (put gb :changed-selection false)))
-    
-    
-    #(:texture (gb-data :texture))
-    )             # Reset internal modelview matrix  
-  )
 
 (varfn gb-render-text
   [gb]

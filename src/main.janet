@@ -80,6 +80,7 @@
               
               :open-file (fn [props]
                            (focus-other props :open-file))
+
               :save-file (fn [props]
                            (if-let [path (props :path)]
                              (save-file props path)
@@ -187,7 +188,7 @@
     (gb-render-text file-open-data))
   
   (clear-background (colors :background))
-  
+
   (comment
     (try
       (frame dt)

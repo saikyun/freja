@@ -4,10 +4,12 @@
 (varfn read-file
   [path]
   (def f (file/open path))
-  (when (not f) (error (string "File " path " not found.")))
-  (with [f f]
-    (def text (file/read f :all))
-    text))
+  (if (not f) #(error (string "File " path " not found."))
+    (do (print "File " path " not found -- saving will create a new file.")
+      "")
+    (with [f f]
+      (def text (file/read f :all))
+      text)))
 
 (varfn load-file
   [props path]
@@ -43,8 +45,25 @@
                       (get :text)))
     (file/flush f)))
 
+(varfn save-and-dofile
+  [props]
+  (def path (props :path))
+  (save-file props path)
+  (def env (make-env (get-in props [:context :top-env])))
+  (try
+    (do
+      (dofile path
+              #             :env (fiber/getenv (fiber/current))
+              :env env)
+      (merge-into (get-in props [:context :top-env]) env))
+    ([err fib]
+      (print "nope")
+      (print (debug/stacktrace fib err))))
+  (print "loaded file: " path))
+
 
 (comment
+
   (dofile "/Users/test/programmering/janet/textfield/src/text_rendering_ints.janet"
           :env (fiber/getenv (fiber/current)))
   
