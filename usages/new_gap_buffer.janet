@@ -559,7 +559,7 @@
   # delete-selection!
   (def s "ab*cd|")
   (-> (string->gb s)
-      (delete-selection!)
+      delete-selection!
       undo!
       render)
   #=> s
