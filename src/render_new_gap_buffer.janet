@@ -117,7 +117,7 @@ Returns `nil` if the max width is never exceeded."
                                 gb
                                 break-i
                                 i
-                                (tracev treshold))) # hotheotehtehomoa
+                                treshold)) # hotheotehtehomoa
             (array/push lines break-i)
             (array/push y-poses y)
             (+= y h))))
@@ -378,22 +378,43 @@ Returns `nil` if the max width is never exceeded."
          :memory-of-caret-x-pos mocxp} gb
         next-line (inc (current-line gb))]
     (if (< next-line (length lines))
-      (or (tracev (index-passing-max-width
-                    gb
-                    (get lines (dec next-line) 0) ## start of next line
-                    (lines next-line)             ## end of next line
-                    mocxp))                        ## current x position
+      (or (index-passing-max-width
+            gb
+            (get lines (dec next-line) 0) ## start of next line
+            (lines next-line)             ## end of next line
+            mocxp)                        ## current x position
           (lines next-line))
       (gb-length gb))))
 
 (varfn move-up!
   [gb]
-  (print "new pos: " (index-above-cursor gb))
-  (put-caret gb (index-above-cursor gb)))
+  (-> gb
+      deselect
+      (put-caret (index-above-cursor gb))))
+
+(varfn select-move-up!
+  [gb]
+  (unless (gb :selection)
+    (put gb :selection (gb :caret)))
+  
+  (-> gb
+      (put-caret (index-above-cursor gb))
+      (put :changed-selection true)))
 
 (varfn move-down!
   [gb]
-  (put-caret gb (index-below-cursor gb)))
+  (-> gb
+      deselect
+      (put-caret (index-below-cursor gb))))
+
+(varfn select-move-down!
+  [gb]
+  (unless (gb :selection)
+    (put gb :selection (gb :caret)))
+  
+  (-> gb
+      (put-caret (index-below-cursor gb))
+      (put :changed-selection true)))
 
 (comment
   (index-above-cursor gb-data)

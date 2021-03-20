@@ -212,10 +212,24 @@
                        
                        :up   (fn [props]
                                (reset-blink props)
-                               (move-up! props))
+                               
+                               (cond
+                                 (or (key-down? :left-shift)
+                                     (key-down? :right-shift))
+                                 (select-move-up! props)
+                                 
+                                 (move-up! props)))
+                       
                        :down (fn [props]
                                (reset-blink props)
-                               (move-down! props))
+                               
+                               
+                               (cond
+                                 (or (key-down? :left-shift)
+                                     (key-down? :right-shift))
+                                 (select-move-down! props)
+                                 
+                                 (move-down! props)))
                        
                        #:up (vertical-move previous-row (fn [_] 0))
                        
@@ -474,8 +488,6 @@
                         (lines (dec line-index)))
         row-end-pos (lines line-index)]
     
-    (print "li: " line-index)
-    
     (index-passing-middle-max-width props
                                     row-start-pos
                                     row-end-pos
@@ -569,12 +581,8 @@
           (put mouse-data :down-index (get-mouse-pos props pos)))
         (put mouse-data :just-down false))
       
-      (print "y-offset: " y-offset)
-      
       (let [down-pos (mouse-data :down-index)
             curr-pos (get-mouse-pos props pos)]
-        
-        (print "dp: " down-pos " - cp: " curr-pos)
         
         (if (not= down-pos curr-pos)
           (-> props

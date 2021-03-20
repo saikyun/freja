@@ -414,6 +414,7 @@ Is to `update` what `put-caret` is to `put`.
   
   (-> gb
       (update-caret inc)
+      (put :changed-x-pos true)
       (put :changed-selection true)))
 
 (varfn select-backward-char
@@ -428,6 +429,7 @@ Is to `update` what `put-caret` is to `put`.
   
   (-> gb
       (update-caret dec)
+      (put :changed-x-pos true)
       (put :changed-selection true)))
 
 ### gap movement
@@ -798,6 +800,7 @@ Otherwise moves the caret backward one character."
   (-> gb
       delete-selection!
       (insert-string-at-caret! (get-clipboard-text))
+      (put :changed-x-pos true)
       (put :changed true)))
 
 
