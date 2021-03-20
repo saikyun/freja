@@ -32,6 +32,15 @@
       (put data :latest-res err)))
   (pp (data :latest-res)))
 
+(varfn eval-it2
+  [env code]
+  (print "Eval! " code)
+  (try (do (fiber/setenv (fiber/current) env)
+         (def res (eval-string code))
+         (pp res))
+    ([err fib]
+      (debug/stacktrace fib err))))
+
 (varfn meta-down?
   []
   (if (= :macos (os/which))
@@ -196,7 +205,8 @@
                                 (cond
                                   (or (key-down? :left-control)
                                       (key-down? :right-control))
-                                  (eval-last-sexp props)
+                                  (eval-it2 (get-in props [:context :top-env])
+                                            (gb-get-last-sexp props))
                                   
                                   (insert-char! props (first "\n"))))
                        
@@ -456,7 +466,7 @@
   (def [x-pos y-pos] position) 
   (def [ox oy] offset)
   
-  (def y-offset (+ oy scroll))
+  (def y-offset (+ oy y-pos scroll))
   
   (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare my (+ $ y-offset)))))
         row-start-pos (if (= 0 line-index)

@@ -87,20 +87,14 @@ ouae
         last
         string/reverse))
 
-# (pp (get-last-sexp s))
 
-(varfn eval-last-sexp
+(varfn gb-get-last-sexp
   [gb]
   (-> gb
       commit!
       (get :text)
       (string/slice 0 (gb :caret))
-      get-last-sexp
-      eval-string
-      pp)
-
-  #  (print "huh?")
-)
+      get-last-sexp))
 
 #(eval-last-sexp gb-data)
 #(pp (gb-data :caret))

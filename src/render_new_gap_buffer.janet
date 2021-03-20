@@ -5,6 +5,15 @@
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
 
+(varfn get-size
+  [sizes c]
+  (let [sz (get sizes c)]
+    (if-not sz
+      (let [sz (first (values sizes))]
+        (print "no size for char " c ", using first sizes instead." sz)
+        sz)
+      sz)))
+
 (varfn index-passing-max-width
   "Returns the index of the char exceeding the max width.
 Returns `nil` if the max width is never exceeded."
@@ -18,7 +27,7 @@ Returns `nil` if the max width is never exceeded."
     gb
     start stop
     i c
-    (let [[w h] (sizes c)]
+    (let [[w h] (get-size sizes c)]
       (+= acc-w w)
       (when (dyn :debug)
         (print "i: " i " - c: " c " - " "acc-w: " acc-w))
@@ -81,15 +90,19 @@ Returns `nil` if the max width is never exceeded."
   (var s (buffer/new 1))
   (var beginning-of-word-i 0)
   
-  (def {:screen-scale screen-scale} gb)
+  (def {:screen-scale screen-scale
+        :offset offset
+        :width-of-last-line-number width-of-last-line-number} gb)
   (def [x-scale _] screen-scale)
   
   (array/clear lines)
   (array/clear y-poses)
   
+  (def treshold (- width (offset 0) (or width-of-last-line-number 0)))
+  
   (defn check-if-word-is-too-wide
     [old-w i c]
-    (if (> (+ x old-w) width) ## we went outside the max width
+    (if (> (+ x old-w) treshold) ## we went outside the max width
       (do ## so rowbreak before the word
         (when (not= beginning-of-word-i 0)
           (array/push lines beginning-of-word-i)
@@ -97,19 +110,19 @@ Returns `nil` if the max width is never exceeded."
           (+= y h))
         (set x old-w)
         
-        (when (> (+ x old-w) width)
+        (when (> (+ x old-w) treshold)
           ## then we need to break up the word
           (var break-i beginning-of-word-i)
           (while (set break-i (index-passing-max-width
                                 gb
                                 break-i
                                 i
-                                width))
+                                (tracev treshold))) # hotheotehtehomoa
             (array/push lines break-i)
             (array/push y-poses y)
             (+= y h))))
       
-      (+= x (+ old-w (first (sizes c))))))
+      (+= x (+ old-w (first (get-size sizes c))))))
   
   (gb-iterate
     gb
@@ -117,7 +130,7 @@ Returns `nil` if the max width is never exceeded."
     i c
     (case c newline
       (do (check-if-word-is-too-wide w i c)
-
+        
         (array/push lines i)
         (array/push y-poses y)
         (+= y h)
@@ -133,7 +146,8 @@ Returns `nil` if the max width is never exceeded."
         
         (set beginning-of-word-i (inc i)))
       
-      (let [new-w (+ w (first (sizes c)))]
+      
+      (let [new-w (+ w (first (get-size sizes c)))]
         (set w new-w)))
     
     (when (> y y-limit)
@@ -304,7 +318,7 @@ Returns `nil` if the max width is never exceeded."
           gb
           last l
           i c
-          (let [[w h] (sizes c)]
+          (let [[w h] (get-size sizes c)]
             (put s 0 c)
             (when debug
               (print "last: " last " - l: " l)
@@ -364,11 +378,11 @@ Returns `nil` if the max width is never exceeded."
          :memory-of-caret-x-pos mocxp} gb
         next-line (inc (current-line gb))]
     (if (< next-line (length lines))
-      (or (index-passing-max-width
-            gb
-            (get lines (dec next-line) 0) ## start of next line
-            (lines next-line)             ## end of next line
-            mocxp)                        ## current x position
+      (or (tracev (index-passing-max-width
+                    gb
+                    (get lines (dec next-line) 0) ## start of next line
+                    (lines next-line)             ## end of next line
+                    mocxp))                        ## current x position
           (lines next-line))
       (gb-length gb))))
 
@@ -449,59 +463,58 @@ Returns `nil` if the max width is never exceeded."
                                           )))
   
   (when (or changed changed-nav changed-selection)
-        (def lines (or lines @[]))
-        (put gb :lines lines)      
-        
-        (def y-poses (or y-poses @[]))
-        (put gb :y-poses y-poses)      
-        
-        (def lines (if changed
-                     (let [sizes sizes]
-                       (word-wrap-gap-buffer
-                         gb
-                         sizes
-                         lines
-                         y-poses
-                         gb
-                         0 (gb-length gb)
-                         (size 0)
-                         14
-                         y
-                         (- (size 1) (* y-scale scroll))))
-                     lines))
-        
-        (put gb :width-of-last-line-number
-             (* x-scale
-                (first (measure-text conf (string/format "%d" (length lines))))))
-        (print "aoelh: " (gb :width-of-last-line-number))
-        
-        (when (or changed changed-selection)
-          (begin-texture-mode (gb :texture))
-          
-          (rl-push-matrix)
-          (clear-background (or (gb :background)
-                                (colors :background)
-                                #:blue
-                                )
-                            #(colors :background)
+    (def lines (or lines @[]))
+    (put gb :lines lines)      
+    
+    (def y-poses (or y-poses @[]))
+    (put gb :y-poses y-poses)      
+    
+    (def lines (if changed
+                 (let [sizes sizes]
+                   (word-wrap-gap-buffer
+                     gb
+                     sizes
+                     lines
+                     y-poses
+                     gb
+                     0 (gb-length gb)
+                     (size 0)
+                     14
+                     y
+                     (- (size 1) (* y-scale scroll))))
+                 lines))
+    
+    (put gb :width-of-last-line-number
+         (* x-scale
+            (first (measure-text conf (string/format "%d" (length lines))))))
+    
+    (when (or changed changed-selection)
+      (begin-texture-mode (gb :texture))
+      
+      (rl-push-matrix)
+      (clear-background (or (gb :background)
+                            (colors :background)
+                            #:blue
                             )
-          
-          (render-lines sizes conf gb lines 0 (+ y scroll) (* y-scale 14) (size 1))
-          (rl-pop-matrix)
-          
-          (end-texture-mode))
-        
-        (put gb :caret-pos (index->pos gb (gb :caret)))
-        
-        (when changed-x-pos
-          (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
-        
-        #        (pp (ez-gb gb))
-        
-        (put gb :changed false)
-        (put gb :changed-x-pos false)
-        (put gb :changed-nav false)
-        (put gb :changed-selection false)))
+                        #(colors :background)
+                        )
+      
+      (render-lines sizes conf gb lines 0 (+ y scroll) (* y-scale 14) (size 1))
+      (rl-pop-matrix)
+      
+      (end-texture-mode))
+    
+    (put gb :caret-pos (index->pos gb (gb :caret)))
+    
+    (when changed-x-pos
+      (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
+    
+    #        (pp (ez-gb gb))
+    
+    (put gb :changed false)
+    (put gb :changed-x-pos false)
+    (put gb :changed-nav false)
+    (put gb :changed-selection false)))
 
 (varfn gb-render-text
   [gb]
@@ -531,7 +544,7 @@ Returns `nil` if the max width is never exceeded."
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
   
-  (rl-push-matrix)
+  (rl-push-matrix)  
   (rl-mult-matrixf-screen-scale)
   
   (draw-texture-pro
@@ -539,22 +552,47 @@ Returns `nil` if the max width is never exceeded."
     [0 0 (* x-scale w)
      (* y-scale (- h)) # (- h) #screen-w (- screen-h)
      ]
-    [0 0 w h  #(/ screen-w x-scale) (/ screen-h y-scale)
+    [x y w h  #(/ screen-w x-scale) (/ screen-h y-scale)
      ]
     [0 0]
     0
     :white)
   
+  (rl-pop-matrix))
+
+(varfn render-cursor
+  [gb]
+  (def {:position position
+        :offset offset
+        :sizes sizes
+        :size size
+        :conf conf
+        :colors colors
+        :scroll scroll
+        :changed changed
+        :changed-x-pos changed-x-pos
+        :changed-nav changed-nav
+        :changed-selection changed-selection
+        :width-of-last-line-number width-of-last-line-number
+        :lines lines
+        :y-poses y-poses
+        :scroll scroll} gb)
+  (rl-push-matrix)  
+  (rl-mult-matrixf-screen-scale)
+  
   (+= (gb :blink) 1.1)
-  (when (> (gb :blink) 60) (set (gb :blink) 0))
+  (when (> (gb :blink) 60) (set (gb :blink) 0))  
   
   (when-let [[x y] (and (< (gb :blink) 30)
                         (gb :caret-pos))
-             cx (+ (* (conf :mult) (offset 0))
-                   (* (conf :mult) width-of-last-line-number) x)]
+             cx (+ (* (position 0))
+                   (* (conf :mult) (offset 0))
+                   (* (conf :mult) width-of-last-line-number)
+                   x)]
+    
     (draw-line-ex
-      [cx (+ y scroll)]
-      [cx (+ y 14 scroll)]
+      [cx (+ (position 1) y scroll)]
+      [cx (+ (position 1) y 14 scroll)]
       1
       (get-in gb [:colors :caret])))
   
