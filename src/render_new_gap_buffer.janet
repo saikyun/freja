@@ -73,8 +73,11 @@ Returns `nil` if the max width is never exceeded."
   [props
    
    sizes
+   
    lines
    y-poses
+   line-flags   
+   
    gb
    start
    stop
@@ -97,6 +100,7 @@ Returns `nil` if the max width is never exceeded."
   
   (array/clear lines)
   (array/clear y-poses)
+  (array/clear line-flags)
   
   (def treshold (- width (offset 0) (or width-of-last-line-number 0)))
   
@@ -107,19 +111,22 @@ Returns `nil` if the max width is never exceeded."
         (when (not= beginning-of-word-i 0)
           (array/push lines beginning-of-word-i)
           (array/push y-poses y)
+          (array/push line-flags :wordwrap)
           (+= y h))
         (set x old-w)
         
         (when (> (+ x old-w) treshold)
           ## then we need to break up the word
           (var break-i beginning-of-word-i)
-          (while (set break-i (index-passing-max-width
-                                gb
-                                break-i
-                                i
-                                treshold)) # hotheotehtehomoa
+          (while (set break-i (-?> (index-passing-max-width
+                                     gb
+                                     break-i
+                                     i
+                                     treshold)
+                                   dec)) # hotheotehtehomoa
             (array/push lines break-i)
             (array/push y-poses y)
+            (array/push line-flags :wordwrap)
             (+= y h))))
       
       (+= x (+ old-w (first (get-size sizes c))))))
@@ -133,6 +140,7 @@ Returns `nil` if the max width is never exceeded."
         
         (array/push lines i)
         (array/push y-poses y)
+        (array/push line-flags :regular)
         (+= y h)
         (set x 0)
         (set w 0)
@@ -158,29 +166,33 @@ Returns `nil` if the max width is never exceeded."
     (let [old-w w]
       (set w 0)
       
-      (if (> (+ x old-w) width) ## we went outside the max width
+      (if (> (+ x old-w) treshold) ## we went outside the max width
         (do                     ## so rowbreak before the word
           (when (not= beginning-of-word-i 0)
             (array/push lines beginning-of-word-i)
             (array/push y-poses y)
+            (array/push line-flags :word-wrap)
             (+= y h))
           (set x old-w)
           
           ## is the word also longer than the line?
-          (when (> (+ x old-w) width)
+          (when (> (+ x old-w) treshold)
             ## then we need to break up the word
             (var break-i beginning-of-word-i)
-            (while (set break-i (index-passing-max-width
-                                  gb
-                                  break-i
-                                  stop
-                                  width))
+            (while (set break-i (-?> (index-passing-max-width
+                                       gb
+                                       break-i
+                                       stop
+                                       treshold)
+                                     dec))
               (array/push lines break-i)
               (array/push y-poses y)
+              (array/push line-flags :word-wrap)
               (+= y h))))))
     
     (array/push lines stop)
-    (array/push y-poses y))
+    (array/push y-poses y)
+    (array/push line-flags :regular))
   
   lines)
 
@@ -342,15 +354,26 @@ Returns `nil` if the max width is never exceeded."
     
     (set last l)))
 
-(varfn current-line
-  [gb]
-  (def {:lines lines} gb)
-  (def i (gb :caret))
+(varfn line-of-i
+  [gb i]
+  (def {:lines lines
+        :line-flags line-flags
+        :stickiness stickiness} gb)
+
   (let [line-index (max 0 (binary-search-closest
                             lines
-                            |(compare i $)))]
+                            |(compare i $)))
+        line-flag (line-flags line-index)]
     
-    line-index))
+    (if (and (= i (lines line-index)) ## end of line
+             (= line-flag :wordwrap)
+             (= stickiness :down))
+      (inc line-index)
+      line-index)))
+
+(varfn current-line
+  [gb]
+  (line-of-i gb (gb :caret)))
 
 (comment
   (current-line gb-data)
@@ -385,6 +408,33 @@ Returns `nil` if the max width is never exceeded."
             mocxp)                        ## current x position
           (lines next-line))
       (gb-length gb))))
+
+(varfn index-start-of-line
+  [gb]
+  (let [{:lines lines
+         :line-flags line-flags} gb
+        prev-line (dec (current-line gb))]
+    (if (<= 0 prev-line)
+      (if (= :regular (line-flags prev-line))
+        (inc (lines prev-line))
+        (lines prev-line))
+      0)))
+
+(varfn move-to-start-of-line
+  [gb]
+  (-> gb
+      deselect
+      (put-caret (index-start-of-line gb))
+      (put :stickiness :down)
+      (put :changed-x-pos true)))
+
+(varfn move-to-end-of-line
+  [gb]
+  (-> gb
+      deselect
+      (put-caret (tracev ((gb :lines) (current-line gb))))
+      (put :stickiness :right)
+      (put :changed-x-pos true)))
 
 (varfn move-up!
   [gb]
@@ -428,10 +478,11 @@ Returns `nil` if the max width is never exceeded."
   (def {:lines lines
         :y-poses y-poses
         :conf conf} gb)
-  (let [line-index (-> (max 0 (binary-search-closest
-                                lines
-                                |(compare index $)))
-                       (min (max 0 (dec (length lines)))))
+  (let [# line-index (-> (max 0 (binary-search-closest
+        #                         lines
+        #                         |(compare index $)))
+        #                (min (max 0 (dec (length lines)))))
+        line-index (line-of-i gb index)
         x (width-between
             gb
             (get lines (dec line-index) 0)
@@ -467,9 +518,9 @@ Returns `nil` if the max width is never exceeded."
         :width-of-last-line-number width-of-last-line-number
         :lines lines
         :y-poses y-poses
+        :line-flags line-flags
         :scroll scroll}
     gb)
-  
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
   
   (def [x y] position)
@@ -485,10 +536,13 @@ Returns `nil` if the max width is never exceeded."
   
   (when (or changed changed-nav changed-selection)
     (def lines (or lines @[]))
-    (put gb :lines lines)      
+    (put gb :lines lines)
     
     (def y-poses (or y-poses @[]))
-    (put gb :y-poses y-poses)      
+    (put gb :y-poses y-poses)
+    
+    (def line-flags (or line-flags @[]))
+    (put gb :line-flags line-flags)
     
     (def lines (if changed
                  (let [sizes sizes]
@@ -497,6 +551,7 @@ Returns `nil` if the max width is never exceeded."
                      sizes
                      lines
                      y-poses
+                     line-flags
                      gb
                      0 (gb-length gb)
                      (size 0)
@@ -555,8 +610,6 @@ Returns `nil` if the max width is never exceeded."
         :y-poses y-poses
         :scroll scroll}
     gb)
-  
-  
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
   
   (def [x y] position)
@@ -571,9 +624,9 @@ Returns `nil` if the max width is never exceeded."
   (draw-texture-pro
     (get-render-texture (gb :texture))
     [0 0 (* x-scale w)
-     (* y-scale (- h)) # (- h) #screen-w (- screen-h)
+     (* y-scale (- h))   # (- h) #screen-w (- screen-h)
      ]
-    [x y w h  #(/ screen-w x-scale) (/ screen-h y-scale)
+    [x y w h         #(/ screen-w x-scale) (/ screen-h y-scale)
      ]
     [0 0]
     0

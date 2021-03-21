@@ -232,6 +232,8 @@
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)))
   
+  
+  #(when changed (print "pre-render"))
   (gb-pre-render gb-data)
   
   (when changed
@@ -265,7 +267,10 @@
   (gb-render-text gb-data)
   (render-cursor gb-data)
   
+  #(when changed (print "render"))
   (gb-render-text debug-data)
+  
+  #(print)
   
   (when (= (data :focus) :open-file)
     (gb-render-text file-open-data))
@@ -273,7 +278,7 @@
   #(draw-frame dt)
   
   (end-drawing)
-
+  
   (try
     (if (= (data :focus) :main)
       (handle-keyboard data gb-data dt)

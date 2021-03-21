@@ -66,11 +66,19 @@
 
 ## bindings from key to function
 (def gb-binds @{})
-(merge-into gb-binds @{:end (comment (fn [props]
-                                       (if (or (key-down? :left-shift)
-                                               (key-down? :right-shift))
-                                         (select-until-end-of-line props)
-                                         (move-to-end-of-line props))))
+(merge-into gb-binds @{:home (fn [props]
+                               (reset-blink props)
+                               
+                               (if (or (key-down? :left-shift)
+                                       (key-down? :right-shift))
+                                 (move-to-start-of-line props)
+                                 (move-to-start-of-line props)))
+                       
+                       :end (fn [props]
+                              (if (or (key-down? :left-shift)
+                                      (key-down? :right-shift))
+                                (move-to-end-of-line props)
+                                (move-to-end-of-line props)))
                        
                        :s (fn [props]
                             (when (meta-down?)
@@ -188,16 +196,6 @@
                                       (key-down? :right-control))
                               (put (props :data) :quit true)))
                        
-                       
-                       :home (fn [props]
-                               (reset-blink props)
-                               
-                               # (if (or (key-down? :left-shift)
-                               #         (key-down? :right-shift))
-                               #   (select-until-beginning-of-line props)
-                               #   (move-to-beginning-of-line props))
-                               
-                               )
                        
                        :enter (fn [props]
                                 (reset-blink props)
@@ -469,6 +467,7 @@
   
   (def {:lines lines
         :y-poses y-poses
+        :line-flags line-flags
         :position position
         :offset offset
         :conf conf
@@ -486,13 +485,20 @@
         row-start-pos (if (= 0 line-index)
                         0
                         (lines (dec line-index)))
-        row-end-pos (lines line-index)]
+        row-end-pos (lines line-index)
+        char-i (index-passing-middle-max-width props
+                                               row-start-pos
+                                               row-end-pos
+                                               (- mx (* mult ox)
+                                                  (* mult width-of-last-line-number)))
+        
+        flag (line-flags (max 0 (dec line-index)))]
     
-    (index-passing-middle-max-width props
-                                    row-start-pos
-                                    row-end-pos
-                                    (- mx (* mult ox)
-                                       (* mult width-of-last-line-number)))))
+    (cond (and (= flag :regular)
+               (= row-start-pos char-i))  ## to the left of \n
+      (inc char-i)
+      
+      char-i)))
 
 (varfn handle-mouse
   [mouse-data props]
@@ -594,6 +600,7 @@
         
         (-> props
             (put :caret curr-pos)
+            (put :stickiness (if (< x x-offset) :down :right))
             (put :changed-nav true)))
       
       (comment
