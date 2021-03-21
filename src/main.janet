@@ -88,6 +88,7 @@
 
 (def debug-data @{})
 
+
 (merge-into debug-data
             @{:text @"ok"
               :gap-start 0
@@ -120,31 +121,38 @@
 
 (var file-open-data @{})
 
-(merge-into file-open-data
-            @{:text @""
-              :gap-start 0
-              :gap-stop 0
-              :gap @""
-              :caret 0
-              
-              :actions @[]
-              :redo-queue @[]
-              :selection nil
-              
-              :size [800 14]
-              :position [0 0]
-              :offset [30 0]
-              
-              :changed true
-              :scroll 0
-              :blink 0
-              
-              :on-enter (fn [props path]
-                          (load-file gb-data path)
-                          (put gb-data :path path)
-                          (focus-other props :main))
-              
-              :binds file-open-binds})
+(do (merge-into file-open-data
+                @{:text @""
+                  :gap-start 0
+                  :gap-stop 0
+                  :gap @""
+                  :caret 0
+                  
+                  :actions @[]
+                  :redo-queue @[]
+                  :selection nil
+                  
+                  :size [800 14]
+                  :position [0 0]
+                  :offset [30 0]
+                  
+                  :changed true
+                  :scroll 0
+                  :blink 0
+                  
+                  :on-enter
+                  (fn [props path]
+                    (when-let [i (tracev (gb-find gb-data (tracev (string (content props)))))]
+                      (put-caret gb-data i))
+                    (focus-other props :main))
+                  
+                  # (fn [props path]
+                  #                          (load-file gb-data path)             
+                  #                          (put gb-data :path path)             
+                  #                          (focus-other props :main))
+                  
+                  :binds file-open-binds})
+  :ok)
 
 (var mouse-data (new-mouse-data))
 (var conf nil)

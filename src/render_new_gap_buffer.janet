@@ -359,7 +359,7 @@ Returns `nil` if the max width is never exceeded."
   (def {:lines lines
         :line-flags line-flags
         :stickiness stickiness} gb)
-
+  
   (let [line-index (max 0 (binary-search-closest
                             lines
                             |(compare i $)))
@@ -428,12 +428,34 @@ Returns `nil` if the max width is never exceeded."
       (put :stickiness :down)
       (put :changed-x-pos true)))
 
+(varfn select-to-start-of-line
+  [gb]
+  (unless (gb :selection)
+    (put gb :selection (gb :caret)))
+  
+  (-> gb
+      (put-caret (index-start-of-line gb))
+      (put :stickiness :down)
+      (put :changed-selection true)
+      (put :changed-x-pos true)))
+
 (varfn move-to-end-of-line
   [gb]
   (-> gb
       deselect
-      (put-caret (tracev ((gb :lines) (current-line gb))))
+      (put-caret ((gb :lines) (current-line gb)))
       (put :stickiness :right)
+      (put :changed-x-pos true)))
+
+(varfn select-to-end-of-line
+  [gb]
+  (unless (gb :selection)
+    (put gb :selection (gb :caret)))
+  
+  (-> gb
+      (put-caret ((gb :lines) (current-line gb)))
+      (put :stickiness :right)
+      (put :changed-selection true)
       (put :changed-x-pos true)))
 
 (varfn move-up!

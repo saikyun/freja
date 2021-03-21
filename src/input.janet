@@ -71,13 +71,13 @@
                                
                                (if (or (key-down? :left-shift)
                                        (key-down? :right-shift))
-                                 (move-to-start-of-line props)
+                                 (select-to-start-of-line props)
                                  (move-to-start-of-line props)))
                        
                        :end (fn [props]
                               (if (or (key-down? :left-shift)
                                       (key-down? :right-shift))
-                                (move-to-end-of-line props)
+                                (select-to-end-of-line props)
                                 (move-to-end-of-line props)))
                        
                        :s (fn [props]

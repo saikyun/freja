@@ -872,6 +872,27 @@ Otherwise moves the caret backward one character."
       gb)
     gb))
 
+(varfn content
+  [gb]
+  (-> gb
+      commit!
+      (get :text)))
+
+### search
+(varfn finder
+  [str]
+  (peg/compile ~(any (+ (* ($) ,str) 1))))
+
+(varfn gb-find
+  [gb peg]
+  (-?> (peg/match (finder peg) (content gb))
+       first))
+
+(comment
+  (gb-find (string->gb "abc\n123 hej WAT") "hej")
+  
+  )
+
 
 
 ### render
