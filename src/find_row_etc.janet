@@ -29,4 +29,4 @@
   (binary-search-closest [0 1 2] (partial compare 1.5)) #=> 2
   ``
   [vs c]
-  (binary-search-closest* vs 0 (dec (length vs)) c))
+  (binary-search-closest* vs 0 (length vs) c))

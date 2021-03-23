@@ -301,6 +301,98 @@ Is to `update` what `put-caret` is to `put`.
   (or (= c space)
       (= c newline)))
 
+(varfn search-forward
+  "Gets the position of the end of the word after the start.
+Doesn't skip delimiters in the beginning."
+  [gb pred start]
+  (var target-i -1)
+  
+  (def f (fiber/new (fn [] (index-char-start gb start))))  
+  
+  (loop [[i c] :iterate (resume f)]
+    (when (word-delimiter? c)
+      (break))
+    
+    (set target-i i))
+  
+  (cond (= -1 target-i)
+    start
+    
+    (> target-i (gb-length gb))
+    (gb-length gb)
+    
+    # the i we got was the position of the char  
+    # the caret position should be one higher than that    
+    # i.e. to the right of the char    
+    (inc target-i)))
+
+(comment
+  (search-forward (string->gb "12|34 67") word-delimiter? 3)
+  #=> 4
+  
+  (search-forward (string->gb "12|34 67") word-delimiter? 5)
+  #=> 7
+  
+  (search-forward (string->gb "12|34 67") word-delimiter? 4)
+  #=> 4
+  
+  (search-forward (string->gb "12|34 67") word-delimiter? 7)
+  #=> 7
+  )
+
+(varfn search-backward
+  "Gets the position of the start of the word before start.
+Doesn't skip delimiters in the beginning."
+  [gb pred start]
+  (var target-i -1)
+  
+  (def f (fiber/new (fn [] (index-char-backward-start gb (max 0 (dec start))))))
+  
+  (loop [[i c] :iterate (resume f)]
+    (when (word-delimiter? c)
+      (break))
+    
+    (set target-i i))
+  
+  (cond (= -1 target-i)
+    start
+    
+    (> target-i (gb-length gb))
+    (gb-length gb)
+    
+    target-i))
+
+(comment
+  (search-backward (string->gb "12|34 67") word-delimiter? 5)
+  #=> 5
+  
+  (search-backward (string->gb "12|34 67") word-delimiter? 1)
+  #=> 0
+  
+  (search-backward (string->gb "12|34 67") word-delimiter? 4)
+  #=> 0
+  
+  (search-backward (string->gb "12|34 67") word-delimiter? 0)
+  #=> 0
+  )
+
+(varfn word-at-index
+  [gb i]
+  (let [start (search-backward gb word-delimiter? i)
+        stop  (search-forward gb word-delimiter? i)]
+    [start stop]))
+
+(comment
+  (word-at-index (string->gb "12|34 67") 0) #=> [0 4]
+  (word-at-index (string->gb "12|34 67") 1) #=> [0 4]
+  (word-at-index (string->gb "12|34 67") 2) #=> [0 4]
+  (word-at-index (string->gb "12|34 67") 3) #=> [0 4]
+  (word-at-index (string->gb "12|34 67") 4) #=> [0 4]
+  (word-at-index (string->gb "12|34 67") 5) #=> [5 7]
+  (word-at-index (string->gb "12|34 67") 6) #=> [5 7]
+  (word-at-index (string->gb "12|34 67") 7) #=> [5 7]
+  )
+
 (varfn end-of-next-word
   "Gets the position of the end of the word after the caret."
   [gb]
@@ -377,6 +469,14 @@ Is to `update` what `put-caret` is to `put`.
   (-> gb
       (put-caret (gb-length gb))
       (put :selection 0)
+      (put :changed-selection true)))
+
+(varfn select-region
+  "Selects region."
+  [gb start stop]
+  (-> gb
+      (put-caret stop)
+      (put :selection start)
       (put :changed-selection true)))
 
 (varfn select-forward-word
@@ -881,15 +981,84 @@ Otherwise moves the caret backward one character."
 ### search
 (varfn finder
   [str]
-  (peg/compile ~(any (+ (* ($) ,str) 1))))
+  (peg/compile ~(any (+ (/ (* ($) ,str ($)) ,(fn [& args] args)) 1))))
 
-(varfn gb-find
+(varfn find-paragraphs
+  [s]
+  (peg/match ~{:double-newline (at-least 2 "\n")
+               :other (if-not :double-newline 1)
+               :main (any (* (+ (* ""
+                                   (not :double-newline))
+                                (* (any :other)
+                                   :double-newline))
+                             (/ (* ($)
+                                   (some :other)
+                                   ($))
+                                ,tuple)
+                             (+ (* (not :double-newline)
+                                   -1)
+                                (* (any :other)
+                                   :double-newline))))}
+             s))
+
+(comment
+  (find-paragraphs "aoe\n\naohnetsnhtsoae\n\nao\ne")
+  #=> @[(0 3) (5 19) (21 25)]
+  
+  (find-paragraphs "\n\naoe\n\n")
+  #=> @[(2 5)]
+  
+  (find-paragraphs "\n\naoe")
+  #=> @[(2 5)]
+  
+  (find-paragraphs "aoe")
+  #=> @[(0 3)]
+  
+  (find-paragraphs "aoe\n\n")
+  #=> @[(0 3)]
+  )
+
+(varfn gb-find-surrounding-paragraph!
+  [gb index]
+  # if index is before the first paragraph, we want the first paragraph
+  (def pgs (find-paragraphs (content gb)))
+  (var res (first pgs))
+  (loop [pg :in pgs
+         :let [[start stop] pg]
+         :until (> start index)]
+    (set res pg))
+  res)
+
+(comment
+  (def gb (string->gb "\n\naoe\n\naohnetsnhtsoae\n\naoe"))
+  
+  (find-paragraphs (content gb))
+  
+  (gb-find-surrounding-paragraph! gb 3)
+  
+  )
+
+(varfn gb-find!
   [gb peg]
   (-?> (peg/match (finder peg) (content gb))
        first))
 
+(varfn gb-find-forward!
+  [gb peg]
+  (-?> (peg/match (finder peg) (content gb) (gb :caret))
+       first
+       last))
+
+(varfn gb-find-backward!
+  [gb peg]
+  (-?> (peg/match (finder peg) (string/slice (content gb) 0 (gb :caret)))
+       last
+       first))
+
 (comment
-  (gb-find (string->gb "abc\n123 hej WAT") "hej")
+  (gb-find! (string->gb "abc\n123 hej WAT") "hej")
+  
+  (peg/match (finder "a") "bac" 0)
   
   )
 

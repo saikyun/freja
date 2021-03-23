@@ -161,13 +161,12 @@ Returns `nil` if the max width is never exceeded."
     (when (> y y-limit)
       (return stop-gb-iterate)))
   
-  
   (when (not (> y y-limit))
     (let [old-w w]
       (set w 0)
       
       (if (> (+ x old-w) treshold) ## we went outside the max width
-        (do                     ## so rowbreak before the word
+        (do                        ## so rowbreak before the word
           (when (not= beginning-of-word-i 0)
             (array/push lines beginning-of-word-i)
             (array/push y-poses y)
@@ -218,7 +217,7 @@ Returns `nil` if the max width is never exceeded."
     gb 
     start stop
     i c
-    (let [[w h] (sizes c)] (+= acc-w w)))
+    (let [[w h] (get-size sizes c)] (+= acc-w w)))
   
   acc-w)
 
@@ -261,7 +260,7 @@ Returns `nil` if the max width is never exceeded."
           gb
           start stop
           i c
-          (let [[w h] (sizes c)]
+          (let [[w h] (get-size sizes c)]
             (when (and (nil? start-x)
                        (>= i sel-start))
               (set start-x acc-w))
@@ -285,6 +284,9 @@ Returns `nil` if the max width is never exceeded."
             ))))))
 
 (varfn render-lines
+  "Renders the lines in gap buffer.
+Also renders selection boxes.
+Render lines doesn't modify anything in gb."
   [sizes conf gb lines start-index start-y h y-limit]
   (def {:screen-scale screen-scale
         :offset offset} gb)  
@@ -343,7 +345,7 @@ Returns `nil` if the max width is never exceeded."
                                     x)
                                  y]
                          (if (in-selection? gb i)
-                           :blue
+                           :white
                            :black)
                          x-scale)
             (+= x (* x-scale w))))))
@@ -360,9 +362,11 @@ Returns `nil` if the max width is never exceeded."
         :line-flags line-flags
         :stickiness stickiness} gb)
   
-  (let [line-index (max 0 (binary-search-closest
-                            lines
-                            |(compare i $)))
+  (let [line-index (->> (binary-search-closest lines |(compare i $))
+                        (max 0)
+                        ## binary-search-closest returns length of 
+                        ## array when outside length of array
+                        (min (dec (length lines))))
         line-flag (line-flags line-index)]
     
     (if (and (= i (lines line-index)) ## end of line
@@ -458,6 +462,29 @@ Returns `nil` if the max width is never exceeded."
       (put :changed-selection true)
       (put :changed-x-pos true)))
 
+(varfn focus-pos
+  [gb pos]
+  (-> gb
+      (put :scroll (-> (- (tracev (- (pos 1)))
+                          ((gb :offset) 1)
+                          ((gb :position) 1)
+                          (- (* 0.5 (- (min (get-screen-height)
+                                            ((gb :size) 1))
+                                       ((gb :offset) 1)
+                                       ((gb :position) 1)))))
+                       (min 0)))
+      (put :changed-scroll true)))
+
+(varfn focus-caret
+  [gb]
+  (let [[x y] (gb :caret-pos)
+        y y # (+ y
+        #  (- ((gb :y-poses) (line-of-i (gb :caret)))
+        #     (get (gb :y-poses) (max (length (gb :y-poses))
+        #                             (inc (line-of-i (gb :caret)))))))
+        ]
+    (focus-pos gb [x y])))
+
 (varfn move-up!
   [gb]
   (-> gb
@@ -495,6 +522,74 @@ Returns `nil` if the max width is never exceeded."
   (move-down! gb-data)
   )
 
+(varfn index->pos!
+  "Recalculates position and returns it.
+This function is pretty expensive since it redoes all word wrapping."
+  
+  #### tldr this function is ridiculous
+  
+  # a possible improvement would be to store the min / max indexes
+  # used during the last word wrap calculation
+  # then if the index is outside that, redo the calculation
+  # another alternative would be to generally to rendering
+  # relative to indexes rather than having a global scroll which
+  # is dependent on all lines before it
+  [gb index]
+  
+  (def lines (gb :lines))
+  (def y-poses (gb :y-poses))
+  (def line-flags (gb :line-flags))
+  
+  (word-wrap-gap-buffer
+    gb
+    (gb :sizes)
+    lines
+    y-poses
+    line-flags
+    gb
+    0 index
+    ((gb :size) 0)
+    14
+    0
+    99999999)
+  
+  (let [pos [(width-between
+               gb
+               (get lines (dec (line-of-i gb index)) 0)
+               index)
+             (last y-poses)]]
+    (word-wrap-gap-buffer
+      gb
+      (gb :sizes)
+      lines
+      y-poses
+      line-flags
+      gb
+      0 (gb-length gb)
+      ((gb :size) 0)
+      14
+      0
+      pos)
+    
+    [(width-between
+       gb
+       (get lines (dec (line-of-i gb index)) 0)
+       index)
+
+     (get y-poses (line-of-i gb index))]))
+
+(comment
+  (index->pos! gb-data 11000)
+  
+  (do (put gb-data :scroll
+           (+ (- (last (index->pos! gb-data
+                                    (gb-data :caret))))
+              (* 0.25 ((gb-data :size) 1))
+              ))
+    (put gb-data :changed-selection true)
+    :ok)
+  )
+
 (varfn index->pos
   [gb index]
   (def {:lines lines
@@ -524,7 +619,7 @@ Returns `nil` if the max width is never exceeded."
     (index->pos gb-data (gb-data :caret)))
   )
 
-(varfn gb-pre-render
+(varfn generate-texture
   [gb]
   (def {:position position
         :offset offset
@@ -543,20 +638,64 @@ Returns `nil` if the max width is never exceeded."
         :line-flags line-flags
         :scroll scroll}
     gb)
+  
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
   
-  (def [x y] position)
-  (def [w h] size)
+  (def [x y] position)  
+  (def [w h] size)  
   
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
+  
+  (begin-texture-mode (gb :texture))    
+  
+  (rl-push-matrix)            
+  (clear-background (or (gb :background)
+                        (colors :background)
+                        #:blue
+                        )
+                    #(colors :background)
+                    )            
+  
+  (render-lines sizes conf gb (gb :lines) 0 (+ y (gb :scroll)) (* y-scale 14) (size 1))            
+  (rl-pop-matrix)            
+  
+  (end-texture-mode))
+
+(varfn gb-pre-render
+  [gb]
+  (def {:position position
+        :offset offset
+        :sizes sizes
+        :size size
+        :conf conf
+        :colors colors
+        :scroll scroll
+        :changed changed
+        :changed-x-pos changed-x-pos
+        :changed-nav changed-nav
+        :changed-selection changed-selection
+        :changed-scroll changed-scroll
+        :width-of-last-line-number width-of-last-line-number
+        :lines lines
+        :y-poses y-poses
+        :line-flags line-flags
+        :scroll scroll}
+    gb)
+  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
+  
+  (def [x y] position)  
+  (def [w h] size)  
+  
+  (def screen-w (* x-scale (get-screen-width)))  
+  (def screen-h (* y-scale (get-screen-height)))  
   
   (when (not (gb :texture))
     (put gb :texture (load-render-texture (* x-scale w)
                                           (* y-scale h) #screen-w screen-h
                                           )))
   
-  (when (or changed changed-nav changed-selection)
+  (when (or changed changed-nav changed-selection changed-scroll)
     (def lines (or lines @[]))
     (put gb :lines lines)
     
@@ -566,7 +705,7 @@ Returns `nil` if the max width is never exceeded."
     (def line-flags (or line-flags @[]))
     (put gb :line-flags line-flags)
     
-    (def lines (if changed
+    (var lines (if (or changed changed-scroll)
                  (let [sizes sizes]
                    (word-wrap-gap-buffer
                      gb
@@ -586,32 +725,42 @@ Returns `nil` if the max width is never exceeded."
          (* x-scale
             (first (measure-text conf (string/format "%d" (length lines))))))
     
-    (when (or changed changed-selection)
-      (begin-texture-mode (gb :texture))
-      
-      (rl-push-matrix)
-      (clear-background (or (gb :background)
-                            (colors :background)
-                            #:blue
-                            )
-                        #(colors :background)
-                        )
-      
-      (render-lines sizes conf gb lines 0 (+ y scroll) (* y-scale 14) (size 1))
-      (rl-pop-matrix)
-      
-      (end-texture-mode))
-    
-    (put gb :caret-pos (index->pos gb (gb :caret)))
+    (put gb :caret-pos (index->pos gb (gb :caret)))        
     
     (when changed-x-pos
-      (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
+      (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))    
+    
+    (when (or changed changed-nav)
+      (let [caret-y ((gb :caret-pos) 1)
+            scroll  (- (gb :scroll))]
+        (when (< caret-y scroll)     ### fix so this works going down as well
+          (focus-caret gb))
+        
+        (when (>= caret-y
+                  (- (+ scroll
+                        (min (get-screen-height) (size 1)))
+                     (offset 1)
+                     (position 1)
+                     14))
+          
+          ## index->pos! recalculates lines etc
+          ## in order to find the "real" position of the caret
+          ## this function shouldn't be called needlessly
+          (focus-pos gb (do (print "caret-pos")
+                          (tracev (index->pos! gb (gb :caret)))))
+          )))
+    
+    (when (or changed
+              changed-selection
+              (gb :changed-scroll))
+      (generate-texture gb))
     
     #        (pp (ez-gb gb))
     
     (put gb :changed false)
     (put gb :changed-x-pos false)
     (put gb :changed-nav false)
+    (put gb :changed-scroll false)
     (put gb :changed-selection false)))
 
 (varfn gb-render-text

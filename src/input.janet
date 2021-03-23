@@ -460,7 +460,7 @@
   (let [move (get-mouse-wheel-move)]
     (when (not= move 0)
       (update props :scroll |(min 0 (+ $ (* move 10))))
-      (put props :changed true))))
+      (put props :changed-scroll true))))
 
 (varfn get-mouse-pos
   [props [mx my]]
@@ -511,7 +511,7 @@
   
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
-  (def pos (get-mouse-position))
+  (def pos(get-mouse-position))
   (def [x y] pos)
   
   (def y-offset (+ y-pos oy scroll))
@@ -563,12 +563,14 @@
       (put mouse-data :down-time2 (get-time))))
   
   (cond (mouse-data :just-triple-clicked) 
-    (comment (select-all props))
+    (select-region props ;(gb-find-surrounding-paragraph!
+                            props
+                            (mouse-data :down-index)))
     
     (and (mouse-data :just-double-clicked)
          (not (key-down? :left-shift))
          (not (key-down? :right-shift)))
-    (comment (select-surrounding-word props))
+    (select-region props ;(word-at-index props (mouse-data :down-index)))
     
     (or (mouse-data :recently-double-clicked)
         (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again

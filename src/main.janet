@@ -142,7 +142,7 @@
                   
                   :on-enter
                   (fn [props path]
-                    (when-let [i (tracev (gb-find gb-data (tracev (string (content props)))))]
+                    (when-let [i (tracev (gb-find-forward! gb-data (tracev (string (content props)))))]
                       (put-caret gb-data i))
                     (focus-other props :main))
                   
@@ -151,7 +151,19 @@
                   #                          (put gb-data :path path)             
                   #                          (focus-other props :main))
                   
-                  :binds file-open-binds})
+                  :binds (merge-into @{}
+                                     file-open-binds
+                                     @{(keyword ";") 
+                                       (fn [props]
+                                         (when-let [i (tracev (gb-find-forward! gb-data (tracev (string (content props)))))]
+                                           (reset-blink gb-data)
+                                           (put-caret gb-data i)))
+                                       
+                                       :o
+                                       (fn [props]
+                                         (when-let [i (tracev (gb-find-backward! gb-data (tracev (string (content props)))))]
+                                           (reset-blink gb-data)
+                                           (put-caret gb-data i)))})})
   :ok)
 
 (var mouse-data (new-mouse-data))
@@ -238,7 +250,8 @@
   (def h (* y-scale (get-screen-height)))
   
   (def changed (or (gb-data :changed)
-                   (gb-data :changed-nav)))
+                   (gb-data :changed-nav)
+                   (gb-data :changed-scroll)))
   
   
   #(when changed (print "pre-render"))
@@ -252,7 +265,14 @@
                                 :context
                                 :colors
                                 :sizes
-                                :data))
+                                :data
+                                
+                                :lines
+                                :y-poses
+                                :line-flags
+                                
+                                :redo-queue
+                                :text))
          (string/format "%.40m")
          (replace-content debug-data)))
   
