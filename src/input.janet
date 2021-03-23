@@ -500,6 +500,42 @@
       
       char-i)))
 
+(varfn handle-shift-mouse-down
+  [props]
+  (def {:lines lines
+        :offset offset
+        :position position
+        :y-poses y-poses
+        :sizes sizes
+        :scroll scroll} props)
+  
+  (def [ox oy] offset)  
+  (def [x-pos y-pos] position)  
+  (def pos (get-mouse-position))  
+  (def [x y] pos)  
+  
+  (def y-offset (+ y-pos oy scroll))  
+  (def x-offset (+ x-pos ox))
+
+  (if (nil? (props :selection))
+    (-> props
+        (put :selection (props :caret))
+        (put-caret (get-mouse-pos props pos))
+        (put :stickiness (if (< x x-offset) :down :right))
+        (put :changed-selection true))
+    
+    (let [curr-pos (get-mouse-pos props pos)
+          start (min (props :selection) (props :caret))
+          stop  (max (props :selection) (props :caret))]
+      (-> props
+          (put :selection
+               (if (> curr-pos start)
+                 start
+                 stop))
+          (put-caret curr-pos)
+          (put :stickiness (if (< x x-offset) :down :right))
+          (put :changed-selection true)))))
+
 (varfn handle-mouse
   [mouse-data props]
   (def {:lines lines
@@ -509,12 +545,12 @@
         :sizes sizes
         :scroll scroll} props)
   
-  (def [ox oy] offset)
-  (def [x-pos y-pos] position)
-  (def pos(get-mouse-position))
-  (def [x y] pos)
+  (def [ox oy] offset)  
+  (def [x-pos y-pos] position)  
+  (def pos (get-mouse-position))  
+  (def [x y] pos)  
   
-  (def y-offset (+ y-pos oy scroll))
+  (def y-offset (+ y-pos oy scroll))  
   (def x-offset (+ x-pos ox))
   
   (put mouse-data :just-double-clicked false)  
@@ -589,21 +625,26 @@
           (put mouse-data :down-index (get-mouse-pos props pos)))
         (put mouse-data :just-down false))
       
-      (let [down-pos (mouse-data :down-index)
-            curr-pos (get-mouse-pos props pos)]
+
+      (if (or (key-down? :left-shift)
+              (key-down? :right-shift))
+        (handle-shift-mouse-down props)
         
-        (if (not= down-pos curr-pos)
+        (let [down-pos (mouse-data :down-index)
+              curr-pos (get-mouse-pos props pos)]
+          
+          (if (not= down-pos curr-pos)
+            (-> props
+                (put :selection down-pos)
+                (put :changed-selection true))
+            (-> props
+                (put :selection nil)
+                (put :changed-selection true)))
+          
           (-> props
-              (put :selection down-pos)
-              (put :changed-selection true))
-          (-> props
-              (put :selection nil)
-              (put :changed-selection true)))
-        
-        (-> props
-            (put :caret curr-pos)
-            (put :stickiness (if (< x x-offset) :down :right))
-            (put :changed-nav true)))
+              (put :caret curr-pos)
+              (put :stickiness (if (< x x-offset) :down :right))
+              (put :changed-nav true))))
       
       (comment
         (var moved-caret false)
