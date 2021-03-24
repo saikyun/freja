@@ -1044,7 +1044,8 @@ e.g. when at the end / right after a word wrapped line."
 
 (varfn reset-blink
   [props]
-  (set (props :blink) 0))
+  (set (props :blink) 0)
+  props)
 
 (varfn scroll-to-focus
   [props]

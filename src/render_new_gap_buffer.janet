@@ -83,11 +83,11 @@ Returns `nil` if the max width is never exceeded."
    stop
    width
    h
-   y
+   y-offset
    y-limit]
   
   (var x 0)
-  (var y y)
+  (var y 0)
   (var w 0)
   
   (var s (buffer/new 1))
@@ -158,10 +158,10 @@ Returns `nil` if the max width is never exceeded."
       (let [new-w (+ w (first (get-size sizes c)))]
         (set w new-w)))
     
-    (when (> y y-limit)
+    (when (> (+ y y-offset) y-limit)
       (return stop-gb-iterate)))
   
-  (when (not (> y y-limit))
+  (when (not (> (+ y y-offset) y-limit))
     (let [old-w w]
       (set w 0)
       
@@ -289,11 +289,12 @@ Also renders selection boxes.
 Render lines doesn't modify anything in gb."
   [sizes conf gb lines start-index start-y h y-limit]
   (def {:screen-scale screen-scale
-        :offset offset} gb)  
+        :offset offset
+        :debug debug} gb)  
   (def [x-scale y-scale] screen-scale)
   
-  (def start-y (* y-scale start-y))
-  (def [x-offset _] offset)
+  (def start-y start-y)
+  (def [x-offset y-offset] offset)
   
   (var y start-y)
   
@@ -349,6 +350,7 @@ Render lines doesn't modify anything in gb."
                            :black)
                          x-scale)
             (+= x (* x-scale w))))))
+    
     (+= y h)
     
     (when debug
@@ -465,7 +467,7 @@ Render lines doesn't modify anything in gb."
 (varfn focus-pos
   [gb pos]
   (-> gb
-      (put :scroll (-> (- (tracev (- (pos 1)))
+      (put :scroll (-> (- (- (pos 1))
                           ((gb :offset) 1)
                           ((gb :position) 1)
                           (- (* 0.5 (- (min (get-screen-height)
@@ -500,11 +502,28 @@ Render lines doesn't modify anything in gb."
       (put-caret (index-above-cursor gb))
       (put :changed-selection true)))
 
+(varfn i-at-beginning-of-line?
+  [gb i]
+  (let [l (dec (line-of-i gb i))
+        lf (get-in gb [:line-flags l])]
+    (= (if (= :wordwrap lf)
+         i
+         (dec i))
+       (get-in gb [:lines l]))))
+
 (varfn move-down!
   [gb]
-  (-> gb
-      deselect
-      (put-caret (index-below-cursor gb))))
+  
+  (deselect gb)
+  
+  ### this part is done to set stickiness to down
+  # when the caret is at the far left of a line
+  
+  (if (i-at-beginning-of-line? gb (gb :caret))
+    (put gb :stickiness :down)
+    (put gb :stickiness :right))
+  
+  (put-caret gb (index-below-cursor gb)))
 
 (varfn select-move-down!
   [gb]
@@ -642,6 +661,7 @@ This function is pretty expensive since it redoes all word wrapping."
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))  
   
   (def [x y] position)  
+  (def [ox oy] offset)  
   (def [w h] size)  
   
   (def screen-w (* x-scale (get-screen-width)))
@@ -657,7 +677,13 @@ This function is pretty expensive since it redoes all word wrapping."
                     #(colors :background)
                     )            
   
-  (render-lines sizes conf gb (gb :lines) 0 (+ y (gb :scroll)) (* y-scale 14) (size 1))            
+  (render-lines sizes 
+                conf 
+                gb 
+                (gb :lines)
+                0 
+                (+ (offset 1) (gb :scroll))
+                (* y-scale 14) (size 1))            
   (rl-pop-matrix)            
   
   (end-texture-mode))
@@ -714,7 +740,8 @@ This function is pretty expensive since it redoes all word wrapping."
                      y-poses
                      line-flags
                      gb
-                     0 (gb-length gb)
+                     0
+                     (gb-length gb)
                      (size 0)
                      14
                      y
@@ -725,7 +752,7 @@ This function is pretty expensive since it redoes all word wrapping."
          (* x-scale
             (first (measure-text conf (string/format "%d" (length lines))))))
     
-    (put gb :caret-pos (index->pos gb (gb :caret)))        
+    (put gb :caret-pos (index->pos gb (gb :caret)))
     
     (when changed-x-pos
       (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))    
@@ -746,9 +773,8 @@ This function is pretty expensive since it redoes all word wrapping."
           ## index->pos! recalculates lines etc
           ## in order to find the "real" position of the caret
           ## this function shouldn't be called needlessly
-          (focus-pos gb (do (print "caret-pos")
-                          (tracev (index->pos! gb (gb :caret)))))
-          )))
+          (put gb :caret-pos (index->pos! gb (gb :caret)))
+          (focus-caret gb))))
     
     (when (or changed
               changed-selection
@@ -797,6 +823,7 @@ This function is pretty expensive since it redoes all word wrapping."
     [0 0 (* x-scale w)
      (* y-scale (- h))   # (- h) #screen-w (- screen-h)
      ]
+    
     [x y w h         #(/ screen-w x-scale) (/ screen-h y-scale)
      ]
     [0 0]
@@ -836,8 +863,8 @@ This function is pretty expensive since it redoes all word wrapping."
                    x)]
     
     (draw-line-ex
-      [cx (+ (position 1) y scroll)]
-      [cx (+ (position 1) y 14 scroll)]
+      [cx (+ (offset 1) (position 1) y scroll)]
+      [cx (+ (offset 1) (position 1) y 14 scroll)]
       1
       (get-in gb [:colors :caret])))
   

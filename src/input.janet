@@ -158,36 +158,41 @@
                             (when (meta-down?)
                               (select-all props)))  
                        
-                       :b (fn [props]
+                       :x (fn [props]
                             (when (meta-down?)
                               (reset-blink props)
                               
                               (cut! props)
                               ))
-
-                       :i (fn [props]
+                       
+                       :c (fn [props]
                             (when (meta-down?)
                               (copy props)))
                        
-                       :. (kw->f :paste)
+                       :v (kw->f :paste)
                        
                        :f (fn [props]
-                            (when (meta-down?)
-                              (reset-blink props)
+                            (reset-blink props)
+                            
+                            (cond (or (key-down? :left-control)
+                                      (key-down? :right-control))
+                              (do (print "formatting!")
+                                (format-code props))
                               
-                              (print "formatting!")
-                              
-                              (format-code props)))
+                              (when (meta-down?)
+                                ((props :search) props))))
                        
                        :e (fn [props]
                             (when (meta-down?)
                               (eval-it (props :data) (last (peg/match sexp-grammar (props :text))))))   
                        
-                       :backspace (fn [props] (reset-blink props)
+                       :backspace (fn [props]
+
+                                    (reset-blink props)
                                     
                                     (cond (or (key-down? :left-alt)
                                               (key-down? :right-alt))
-                                      (delete-word-backward! props)
+                                      delete-word-backward!
                                       
                                       (backspace! props)))
                        
@@ -453,7 +458,6 @@
     (when (key-pressed? k)
       (print "wat 2?")
       ((pressed-game-binds k)))))
-
 
 (varfn handle-scroll
   [props]

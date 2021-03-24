@@ -54,30 +54,20 @@
   (set delay-left @{})
   (put context :focus id))
 
-(var gb-data @{})
+(var gb-data (new-gap-buffer))
 
 (merge-into gb-data
-            @{:text @""
-              :gap-start 0
-              :gap-stop 0
-              :gap @""
-              :caret 0
-
-              :actions @[]
-              :redo-queue @[]
-
-              :selection nil
-
-              :size [500 800]
+            @{:size [500 800]
               :position [0 30]
               :offset [10 0]
               
-              :changed true
-              :scroll 0
-              :blink 0
+              :debug true
               
               :open-file (fn [props]
                            (focus-other props :open-file))
+
+              :search (fn [props]
+                        (focus-other props :search))
               
               :save-file (fn [props]
                            (if-let [path (props :path)]
@@ -86,29 +76,13 @@
               
               :binds gb-binds})
 
-(def debug-data @{})
-
+(def debug-data (new-gap-buffer))
 
 (merge-into debug-data
-            @{:text @"ok"
-              :gap-start 0
-              :gap-stop 0
-              :gap @""
-              :caret 0
-              
-              :actions @[]
-              :redo-queue @[]
-              
-              :selection nil
-              
-              :size [500 800]
+            @{:size [500 800]
               :position [500 30]
               :offset [10 0]
               
-              :changed true
-              :scroll 0
-              :blink 0
-              
               :open-file (fn [props]
                            (focus-other props :open-file))
               
@@ -119,52 +93,57 @@
               
               :binds gb-binds})
 
-(var file-open-data @{})
+(var file-open-data (new-gap-buffer))
 
-(do (merge-into file-open-data
-                @{:text @""
-                  :gap-start 0
-                  :gap-stop 0
-                  :gap @""
-                  :caret 0
-                  
-                  :actions @[]
-                  :redo-queue @[]
-                  :selection nil
-                  
-                  :size [800 14]
-                  :position [0 0]
-                  :offset [30 0]
-                  
-                  :changed true
-                  :scroll 0
-                  :blink 0
-                  
-                  :on-enter
-                  (fn [props path]
-                    (when-let [i (tracev (gb-find-forward! gb-data (tracev (string (content props)))))]
-                      (put-caret gb-data i))
-                    (focus-other props :main))
-                  
-                  # (fn [props path]
-                  #                          (load-file gb-data path)             
-                  #                          (put gb-data :path path)             
-                  #                          (focus-other props :main))
-                  
-                  :binds (merge-into @{}
-                                     file-open-binds
-                                     @{(keyword ";") 
-                                       (fn [props]
-                                         (when-let [i (tracev (gb-find-forward! gb-data (tracev (string (content props)))))]
-                                           (reset-blink gb-data)
-                                           (put-caret gb-data i)))
-                                       
-                                       :o
-                                       (fn [props]
-                                         (when-let [i (tracev (gb-find-backward! gb-data (tracev (string (content props)))))]
-                                           (reset-blink gb-data)
-                                           (put-caret gb-data i)))})})
-  :ok)
+(merge-into file-open-data
+            @{:size [800 28]
+              :position [0 0]
+              :offset [30 0]
+              
+              :binds file-open-binds
+              
+              :on-enter
+              (fn [props path]
+                (load-file gb-data path)             
+                (put gb-data :path path)             
+                (focus-other props :main))})
+
+(var search-data (new-gap-buffer))
+
+(merge-into search-data
+            @{:size [800 28]
+              :position [0 0]
+              :offset [30 0]
+              
+              :on-enter
+              (fn [props path]
+                (when-let [i (gb-find-forward! gb-data (string (content props)))]
+                  (put-caret gb-data i))
+                (focus-other props :main))
+              
+              :binds (merge-into @{}
+                                 file-open-binds
+                                 @{:f
+                                   (fn [props]
+                                     (when (meta-down?)
+                                       (let [search-term (string (content props))]
+                                         (when-let [i (gb-find-forward! gb-data search-term)]
+                                           (-> gb-data
+                                               (reset-blink)
+                                               (put-caret i)
+                                               (put :selection (gb-find-backward! gb-data search-term))
+                                               (put :changed-selection true))))))
+                                   
+                                   :b
+                                   (fn [props]
+                                     (when (meta-down?)
+                                       (let [search-term (string (content props))]
+                                         (when-let [i (gb-find-backward! gb-data search-term)]
+                                           (-> gb-data
+                                               (reset-blink)
+                                               (put-caret i)
+                                               (put :selection (gb-find-forward! gb-data search-term))
+                                               (put :changed-selection true))))))})})
 
 (var mouse-data (new-mouse-data))
 (var conf nil)
@@ -216,10 +195,10 @@
   
   (rl-pop-matrix)
   (end-texture-mode)
-
+  
   (rl-push-matrix)
   (rl-mult-matrixf-screen-scale)
-
+  
   (draw-texture-pro
     (get-render-texture texture)
     [0
@@ -238,9 +217,13 @@
 
 (varfn internal-frame
   []
-  (handle-mouse mouse-data gb-data)
-  
-  (handle-scroll gb-data)
+
+  (let [active-data   (case (data :focus)
+                        :main gb-data
+                        :open-file file-open-data
+                        :search search-data)]
+    (handle-mouse mouse-data active-data)
+    (handle-scroll active-data))
   
   (def dt (get-frame-time))
   
@@ -252,7 +235,6 @@
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)
                    (gb-data :changed-scroll)))
-  
   
   #(when changed (print "pre-render"))
   (gb-pre-render gb-data)
@@ -276,10 +258,19 @@
          (string/format "%.40m")
          (replace-content debug-data)))
   
+  
+  
   (gb-pre-render debug-data)
   
-  (when (= (data :focus) :open-file)
-    (gb-pre-render file-open-data))
+  (case (data :focus)
+    
+    :open-file
+    (gb-pre-render file-open-data)
+    
+    :search
+    (gb-pre-render search-data)
+
+    nil)
   
   (begin-drawing)
   
@@ -289,6 +280,7 @@
   (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
   (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
   (rl-load-identity) # Reset internal modelview matrix
+  
   
   (clear-background (colors :background))
   
@@ -300,18 +292,32 @@
   
   #(print)
   
-  (when (= (data :focus) :open-file)
-    (gb-render-text file-open-data))
+  #(print)
+  
+  (case (data :focus)
+
+    :open-file
+    (gb-render-text file-open-data)
+
+    :search
+    (gb-render-text search-data))
   
   #(draw-frame dt)
   
   (end-drawing)
   
   (try
-    (if (= (data :focus) :main)
-      (handle-keyboard data gb-data dt)
-      (handle-keyboard data file-open-data dt))
+    (case (data :focus)
 
+      :main
+      (handle-keyboard data gb-data dt)
+      
+      :open-file
+      (handle-keyboard data file-open-data dt)
+
+      :search
+      (handle-keyboard data search-data dt))
+    
     ([err fib]
       (print "kbd")
       (put data :latest-res (string "Error: " err))
@@ -320,7 +326,7 @@
 (comment
   (ez-gb file-open-data)
   (ez-gb gb-data)
-
+  
   (focus {:context data :id :main}))
 
 (defn loop-it
@@ -349,12 +355,12 @@
   (let [font (load-font-ex (opts :font-path) (opts :size) (opts :glyphs))]
 
     (put opts :font font)
-
+    
     (def t (freeze opts))
 
     (put text-data :conf t)
     (put text-data :sizes (glyphs->size-struct t (t :glyphs)))
-
+    
     {:text t
      :colors colors}))
 
@@ -403,14 +409,19 @@
         (put debug-data :context data)
         (put debug-data :screen-scale [x-scale y-scale])
         (put debug-data :colors colors)        
-
+        
+        (set conf (load-font search-data tc))
+        (put search-data :context data)
+        (put search-data :screen-scale [x-scale y-scale])
+        (put search-data :colors colors)                
+        
         (set conf2 (load-font file-open-data tc))
         (put file-open-data :context data)
         (put file-open-data :screen-scale [x-scale y-scale])
         (put file-open-data :colors colors)
-
+        
         (set-target-fps 60)
-
+        
         (run-init-file)
         
         (set texture (load-render-texture 500 500))
