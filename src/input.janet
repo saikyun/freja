@@ -80,20 +80,20 @@
                                 (select-to-end-of-line props)
                                 (move-to-end-of-line props)))
                        
-                       :s (fn [props]
+                       :o (fn [props]
                             (when (meta-down?)
                               ((props :open-file) props)))
                        
-                       :p (fn [props]
+                       :l (fn [props]
                             (when (meta-down?)
                               (save-and-dofile props)))
                        
-                       (keyword ";")
+                       :s
                        (fn [props]
                          (when (meta-down?)
                            ((props :save-file) props)))
                        
-                       :/
+                       :z
                        (fn [props]
                          (cond
                            (and (or (key-down? :left-shift)
