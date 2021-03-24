@@ -56,25 +56,24 @@
 
 (var gb-data (new-gap-buffer))
 
-(merge-into gb-data
-            @{:size [500 800]
-              :position [0 30]
-              :offset [10 0]
-              
-              :debug true
-              
-              :open-file (fn [props]
-                           (focus-other props :open-file))
-
-              :search (fn [props]
-                        (focus-other props :search))
-              
-              :save-file (fn [props]
-                           (if-let [path (props :path)]
-                             (save-file props path)
-                             (print "no path!")))
-              
-              :binds gb-binds})
+(do (merge-into gb-data
+                @{:size [500 800]
+                  :position [0 30]
+                  :offset [10 0]
+                  
+                  :open-file (fn [props]
+                               (focus-other props :open-file))
+                  
+                  :search (fn [props]
+                            (focus-other props :search))
+                  
+                  :save-file (fn [props]
+                               (if-let [path (props :path)]
+                                 (save-file props path)
+                                 (print "no path!")))
+                  
+                  :binds gb-binds})
+  :ok)
 
 (def debug-data (new-gap-buffer))
 
@@ -95,55 +94,74 @@
 
 (var file-open-data (new-gap-buffer))
 
-(merge-into file-open-data
-            @{:size [800 28]
-              :position [0 0]
-              :offset [30 0]
-              
-              :binds file-open-binds
-              
-              :on-enter
-              (fn [props path]
-                (load-file gb-data path)             
-                (put gb-data :path path)             
-                (focus-other props :main))})
+(do (merge-into file-open-data
+                @{:size [800 28]
+                  :position [0 0]
+                  :offset [30 0]
+                  
+                  :binds (merge-into @{}
+                                     file-open-binds
+                                     @{:escape 
+                                       (fn [props]
+                                         (deselect gb-data)
+                                         (focus-other props :main))})
+                  
+                  :on-enter
+                  (fn [props path]
+                    (load-file gb-data path)             
+                    (put gb-data :path path)             
+                    (focus-other props :main))})
+  :ok)
 
 (var search-data (new-gap-buffer))
 
-(merge-into search-data
-            @{:size [800 28]
-              :position [0 0]
-              :offset [30 0]
-              
-              :on-enter
-              (fn [props path]
-                (when-let [i (gb-find-forward! gb-data (string (content props)))]
-                  (put-caret gb-data i))
-                (focus-other props :main))
-              
-              :binds (merge-into @{}
-                                 file-open-binds
-                                 @{:f
-                                   (fn [props]
-                                     (when (meta-down?)
-                                       (let [search-term (string (content props))]
-                                         (when-let [i (gb-find-forward! gb-data search-term)]
-                                           (-> gb-data
-                                               (reset-blink)
-                                               (put-caret i)
-                                               (put :selection (gb-find-backward! gb-data search-term))
-                                               (put :changed-selection true))))))
-                                   
-                                   :b
-                                   (fn [props]
-                                     (when (meta-down?)
-                                       (let [search-term (string (content props))]
-                                         (when-let [i (gb-find-backward! gb-data search-term)]
-                                           (-> gb-data
-                                               (reset-blink)
-                                               (put-caret i)
-                                               (put :selection (gb-find-forward! gb-data search-term))
-                                               (put :changed-selection true))))))})})
+(varfn search
+  [props]
+  (let [search-term (string (content props))]
+    (put-caret gb-data (if (gb-data :selection)
+                         (max (gb-data :selection)
+                              (gb-data :caret))
+                         (gb-data :caret)))
+    (when-let [i (gb-find-forward! gb-data search-term)]
+      (-> gb-data
+          (reset-blink)
+          (put-caret i)
+          (put :selection (gb-find-backward! gb-data search-term))
+          (put :changed-selection true)))))
+
+(do (merge-into search-data
+                @{:size [800 28]
+                  :position [0 0]
+                  :offset [30 0]
+                  
+                  :on-enter (fn [props _] (search props))
+                  
+                  :binds (-> (merge-into @{}
+                                         file-open-binds
+                                         @{:escape 
+                                           (fn [props]
+                                             (deselect gb-data)
+                                             (focus-other props :main))
+                                           
+                                           :f (fn [props]
+                                                (when (meta-down?)
+                                                  (search props)))
+                                           
+                                           :b
+                                           (fn [props]
+                                             (when (meta-down?)
+                                               (let [search-term (string (content props))]
+                                                 (put-caret gb-data (if (gb-data :selection)
+                                                                      (min (gb-data :selection)
+                                                                           (gb-data :caret))
+                                                                      (gb-data :caret)))
+                                                 (when-let [i (gb-find-backward! gb-data search-term)]
+                                                   (-> gb-data
+                                                       (reset-blink)
+                                                       (put-caret i)
+                                                       (put :selection (gb-find-forward! gb-data search-term))
+                                                       (put :changed-selection true))))))}))})
+  :ok)
 
 (var mouse-data (new-mouse-data))
 (var conf nil)
@@ -285,7 +303,6 @@
   (clear-background (colors :background))
   
   (gb-render-text gb-data)
-  (render-cursor gb-data)
   
   #(when changed (print "render"))
   (gb-render-text debug-data)
@@ -295,12 +312,17 @@
   #(print)
   
   (case (data :focus)
-
+    
     :open-file
     (gb-render-text file-open-data)
-
+    
     :search
     (gb-render-text search-data))
+
+  (render-cursor (case (data :focus)
+                   :main gb-data
+                   :open-file file-open-data
+                   :search search-data))
   
   #(draw-frame dt)
   
@@ -381,10 +403,12 @@
   (try
     (do (set-config-flags :vsync-hint)
       (set-config-flags :window-resizable)
-
+      
       (init-window 1200 700
                    "Textfield")
-
+      
+      (set-exit-key :f12) ### doing this because I don't have KEY_NULL
+      
       (let [[x-scale _ _ _ _ y-scale] (get-screen-scale) # must be run after `init-window`
             tc @{:font-path "./assets/fonts/Monaco.ttf"
                  :size (* 14 x-scale)
