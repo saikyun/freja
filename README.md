@@ -17,7 +17,11 @@ jpm deps
 janet src/main.janet
 ```
 
-## License
+## Thanks
+
+Thanks to sogaiu and rhine for initial testing. <3
+
+## License (applies to all but the font which is from google fonts)
 
 Copyright 2020 Jona Ekenberg
 
