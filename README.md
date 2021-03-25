@@ -14,6 +14,7 @@ Janet -- https://janet-lang.org/
 git clone https://github.com/Saikyun/text-experiment
 cd text-experiment
 jpm deps
+jpm build
 janet src/main.janet
 ```
 
