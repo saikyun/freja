@@ -324,7 +324,7 @@
                    :open-file file-open-data
                    :search search-data))
   
-  #(draw-frame dt)
+  (draw-frame dt)
   
   (end-drawing)
   

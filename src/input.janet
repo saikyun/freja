@@ -483,7 +483,7 @@
   (def [x-pos y-pos] position) 
   (def [ox oy] offset)
   
-  (def y-offset (+ oy y-pos scroll))
+  (def y-offset (+ oy y-pos (* (conf :mult) scroll)))
   
   (let [line-index (max 0 (dec (binary-search-closest y-poses |(compare my (+ $ y-offset)))))
         row-start-pos (if (= 0 line-index)
@@ -511,6 +511,7 @@
         :position position
         :y-poses y-poses
         :sizes sizes
+        :conf conf
         :scroll scroll} props)
   
   (def [ox oy] offset)  
@@ -518,7 +519,7 @@
   (def pos (get-mouse-position))  
   (def [x y] pos)  
   
-  (def y-offset (+ y-pos oy scroll))  
+  (def y-offset (+ y-pos oy (* (conf :mult) scroll)))  
   (def x-offset (+ x-pos ox))
 
   (if (nil? (props :selection))
@@ -547,6 +548,7 @@
         :position position
         :y-poses y-poses
         :sizes sizes
+        :conf conf
         :scroll scroll} props)
   
   (def [ox oy] offset)  
@@ -554,7 +556,7 @@
   (def pos (get-mouse-position))  
   (def [x y] pos)  
   
-  (def y-offset (+ y-pos oy scroll))  
+  (def y-offset (+ y-pos oy (* (conf :mult) scroll)))  
   (def x-offset (+ x-pos ox))
   
   (put mouse-data :just-double-clicked false)  

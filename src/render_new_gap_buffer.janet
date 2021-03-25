@@ -467,14 +467,16 @@ Render lines doesn't modify anything in gb."
 (varfn focus-pos
   [gb pos]
   (-> gb
-      (put :scroll (-> (- (- (pos 1))
-                          ((gb :offset) 1)
-                          ((gb :position) 1)
-                          (- (* 0.5 (- (min (get-screen-height)
-                                            ((gb :size) 1))
-                                       ((gb :offset) 1)
-                                       ((gb :position) 1)))))
-                       (min 0)))
+      (put :scroll (/ (-> (- (- (pos 1))
+                             ((gb :offset) 1)
+                             ((gb :position) 1)
+                             (- (* 0.5 (- (min (get-screen-height)
+                                               ((gb :size) 1))
+                                          ((gb :offset) 1)
+                                          ((gb :position) 1)))))
+                          (min 0))
+
+                      (get-in gb [:conf :mult])))
       (put :changed-scroll true)))
 
 (varfn focus-caret
@@ -549,7 +551,7 @@ This function is pretty expensive since it redoes all word wrapping."
   
   # a possible improvement would be to store the min / max indexes
   # used during the last word wrap calculation
-  # then if the index is outside that, redo the calculation
+  # then if the index is oeoahnsehontsahetnsoautside that, redo the calculation
   # another alternative would be to generally to rendering
   # relative to indexes rather than having a global scroll which
   # is dependent on all lines before it
@@ -745,7 +747,7 @@ This function is pretty expensive since it redoes all word wrapping."
                      (size 0)
                      14
                      y
-                     (- (size 1) (* y-scale scroll))))
+                     (- (size 1) scroll)))
                  lines))
     
     (put gb :width-of-last-line-number
@@ -759,7 +761,7 @@ This function is pretty expensive since it redoes all word wrapping."
     
     (when (or changed changed-nav)
       (let [caret-y ((gb :caret-pos) 1)
-            scroll  (- (gb :scroll))]
+            scroll  (* (conf :mult) (- (gb :scroll)))]
         (when (< caret-y scroll)     ### fix so this works going down as well
           (focus-caret gb))
         
@@ -863,8 +865,11 @@ This function is pretty expensive since it redoes all word wrapping."
                    x)]
     
     (draw-line-ex
-      [cx (+ (offset 1) (position 1) y scroll)]
-      [cx (+ (offset 1) (position 1) y 14 scroll)]
+      [cx (+ (offset 1)
+             (position 1)
+             y
+             (* (conf :mult) scroll))]
+      [cx (+ (offset 1) (position 1) y 14 (* (conf :mult) scroll))]
       1
       (get-in gb [:colors :caret])))
   
