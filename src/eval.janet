@@ -1,16 +1,5 @@
 (use ./new_gap_buffer)
 
-(def backward-texp-grammar
-  ~{:symchars (+ (range "09" "AZ" "az" "\x80\xFF") (set "!$%&*+-./:<?=>@^_"))
-    :token (some :symchars)
-    :ptuple (* ")" (any (if-not "(" 1)) "(")
-    :table (* "}" (any (if-not "{" 1)) "{@")
-    :table (* "]" (any (if-not "[" 1)) "{@")
-    :struct (* "}" (any (if-not "{" 1)) "{")
-    :symbol :token
-    :texp (+ :symbol :table :ptuple :struct)
-    :main (* (any (not :texp)) (<- :texp))})
-
 (def grammar
   ~{:ws (set " \t\r\f\n\0\v")
     :readermac (set "';~,|")
