@@ -1,0 +1,1 @@
+(add-bind :v :paste)

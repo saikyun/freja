@@ -16,8 +16,8 @@
 
 (defn rand-pos [xs] (math/floor (* (length xs) (math/random))))
 
-#(def active weak)
-(def active strong)
+(def active weak)
+#(def active strong)
 (var new (rand-pos active))
 
 (while (= last new)
