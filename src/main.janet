@@ -30,9 +30,9 @@
 (var loop-fiber nil)
 
 (def colors
-  {:text [0.396 0.478 0.514]
+  {:text (map |(/ $ 255) [71 93 101])
    :border [0.396 0.478 0.514]
-   :background (map |(/ $ 255) [230 227 213]) #[0.992 0.965 0.89]
+   :background (map |(/ $ 255) [253 246 227])
    :textarea [0.992 0.965 0.89]
    :selected-text [0.992 0.965 0.89]
    :selected-text-background :blue
@@ -40,9 +40,10 @@
 
    :game-bg (map |(/ $ 255) [134 173 173])
 
+   :call (map |(/ $ 255) [38 139 210])
    :special-symbol (map |(/ $ 255) [133 153 0])
    :string (map |(/ $ 255) [42 161 151])
-   :keyword (map |(/ $ 255) [38 138 210])})
+   :keyword (map |(/ $ 255) [181 137 0])})
 
 (varfn focus
   [{:id id :context context}]
@@ -258,9 +259,13 @@
                    (gb-data :changed-scroll)))
 
   #(when changed (print "pre-render"))
-  (gb-pre-render gb-data)
 
-  (when changed
+  (if (gb-data :changed)
+    (test/timeit
+      (gb-pre-render gb-data))
+    (gb-pre-render gb-data))
+
+  (when (and false changed)
     (->> (remove-keys gb-data
                       (dumb-set :actions
                                 :conf
