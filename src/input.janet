@@ -5,7 +5,6 @@
 (import ./file_handling :prefix "")
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
-(import ./highlight :prefix "")
 (import ./find_row_etc :prefix "")
 
 (varfn new-mouse-data
@@ -101,13 +100,13 @@
                                     (key-down? :right-shift))
                                 (meta-down?))
                            (redo! props)
-
+                           
                            (meta-down?)
                            (undo! props)))
 
                        :left (fn [props]
                                (reset-blink props)
-
+                               
                                (cond
                                  ## select whole words
                                  (and (or (key-down? :left-alt)
@@ -115,20 +114,20 @@
                                       (or (key-down? :left-shift)
                                           (key-down? :right-shift)))
                                  (select-backward-word props)
-
+                                 
                                  (or (key-down? :left-alt)
                                      (key-down? :right-alt))
                                  (backward-word props)
-
+                                 
                                  (or (key-down? :left-shift)
                                      (key-down? :right-shift))
                                  (select-backward-char props)
-
+                                 
                                  (backward-char props)))
 
                        :right (fn [props]
                                 (reset-blink props)
-
+                                
                                 (cond
                                   (and (or (key-down? :left-alt)
                                            (key-down? :right-alt))
@@ -148,11 +147,11 @@
 
                        :delete (fn [props]
                                  (reset-blink props)
-
+                                 
                                  (cond (or (key-down? :left-alt)
                                            (key-down? :right-alt))
                                    (delete-word-forward! props)
-
+                                   
                                    (comment (forward-delete props))))
 
                        :a (fn [props]
@@ -162,23 +161,23 @@
                        :x (fn [props]
                             (when (meta-down?)
                               (reset-blink props)
-
+                              
                               (cut! props)))
-
+                       
                        :c (fn [props]
                             (when (meta-down?)
                               (copy props)))
-
+                       
                        :p (kw->f :paste)
-
+                       
                        :f (fn [props]
                             (reset-blink props)
-
+                            
                             (cond (or (key-down? :left-control)
                                       (key-down? :right-control))
                               (do (print "formatting!")
                                 (format-code props))
-
+                              
                               (when (meta-down?)
                                 ((props :search) props))))
 
@@ -196,10 +195,10 @@
                             (when (or (key-down? :left-control)
                                       (key-down? :right-control))
                               (put (props :data) :quit true)))
-
+                       
                        :enter (fn [props]
                                 (reset-blink props)
-
+                                
                                 (cond
                                   (or (key-down? :left-control)
                                       (key-down? :right-control))
@@ -207,7 +206,7 @@
                                             (gb-get-last-sexp props))
 
                                   (insert-char! props (first "\n"))))
-
+                       
                        :up (fn [props]
                              (reset-blink props)
 
@@ -237,15 +236,15 @@
 
                        :page-up (fn [props]
                                   #(page-up props)
-)
-
+                                  )
+                       
                        :page-down (fn [props]
                                     #(page-down props)
-)})
+                                    )})
 
 (comment (merge-into gb-binds @{:home (fn [props]
                                         (reset-blink props)
-
+                                        
                                         (if (or (key-down? :left-shift)
                                                 (key-down? :right-shift))
                                           (select-to-start-of-line props)
@@ -283,7 +282,7 @@
 
                                 :left (fn [props]
                                         (reset-blink props)
-
+                                        
                                         (cond
                                           ## select whole words
                                           (and (or (key-down? :left-alt)
@@ -304,14 +303,14 @@
 
                                 :right (fn [props]
                                          (reset-blink props)
-
+                                         
                                          (cond
                                            (and (or (key-down? :left-alt)
                                                     (key-down? :right-alt))
                                                 (or (key-down? :left-shift)
                                                     (key-down? :right-shift)))
                                            (select-forward-word props)
-
+                                           
                                            (or (key-down? :left-alt)
                                                (key-down? :right-alt))
                                            (forward-word props)
@@ -354,13 +353,9 @@
                                                (key-down? :right-control))
                                        (do (print "formatting!")
                                          (format-code props))
-
+                                       
                                        (when (meta-down?)
                                          ((props :search) props))))
-
-                                :e (fn [props]
-                                     (when (meta-down?)
-                                       (eval-it (props :data) (last (peg/match sexp-grammar (props :text))))))
 
                                 :backspace (fn [props]
 
@@ -417,11 +412,11 @@
 
                                 :page-up (fn [props]
                                            #(page-up props)
-)
-
+                                           )
+                                
                                 :page-down (fn [props]
                                              #(page-down props)
-)}))
+                                             )}))
 
 (def file-open-binds @{:end (comment (fn [props]
                                        (if (or (key-down? :left-shift)
@@ -451,7 +446,7 @@
                                  (or (key-down? :left-shift)
                                      (key-down? :right-shift))
                                  (select-backward-char props)
-
+                                 
                                  (backward-char props)))
 
                        :right (fn [props]
@@ -482,7 +477,7 @@
                                    (delete-word-forward! props)
 
                                    (comment (forward-delete props))))
-
+                       
                        :a (fn [props]
                             (when (meta-down?)
                               (select-all props)))
@@ -492,7 +487,7 @@
                               (reset-blink props)
 
                               (cut! props)))
-
+                       
                        :i (fn [props]
                             (when (meta-down?)
                               (copy props)))
@@ -502,37 +497,33 @@
                        :f (fn [props]
                             (when (meta-down?)
                               (reset-blink props)
-
+                              
                               (print "formatting!")
-
+                              
                               (format-code props)))
-
-                       :e (fn [props]
-                            (when (meta-down?)
-                              (eval-it (props :data) (last (peg/match sexp-grammar (props :text))))))
-
+                       
                        :backspace (fn [props] (reset-blink props)
-
+                                    
                                     (cond (or (key-down? :left-alt)
                                               (key-down? :right-alt))
                                       (delete-word-backward! props)
-
+                                      
                                       (backspace! props)))
-
+                       
                        :q (fn [props]
                             (when (or (key-down? :left-control)
                                       (key-down? :right-control))
                               (put (props :data) :quit true)))
-
+                       
                        :home (fn [props]
                                (reset-blink props)
-
+                               
                                # (if (or (key-down? :left-shift)
                                #         (key-down? :right-shift))
                                #   (select-until-beginning-of-line props)
                                #   (move-to-beginning-of-line props))
-)
-
+                               )
+                       
                        :enter (fn [props]
                                 (reset-blink props)
                                 ((props :on-enter) props (string ((commit! props) :text))))
@@ -543,21 +534,21 @@
                        :down (fn [props]
                                (reset-blink props)
                                (move-down! props))
-
+                       
                        #:up (vertical-move previous-row (fn [_] 0))
-
+                       
                        # :down (vertical-move
                        #         next-row
                        #         |(length (content $)))
-
-
+                       
+                       
                        :page-up (fn [props]
                                   #(page-up props)
-)
+                                  )
 
                        :page-down (fn [props]
                                     #(page-down props)
-)})
+                                    )})
 
 (comment
   (put gb-data :binds gb-binds))
@@ -584,20 +575,23 @@
   (def {:binds binds} props)
 
   (put props :data data)
-
+  
   (var k (get-key-pressed))
 
   (while (not= 0 k)
     (reset-blink props)
-
-    (cond (or (key-down? :left-shift)
-              (key-down? :right-shift))
-      (insert-char-upper! props k)
-
-      (insert-char! props k))
-
+    
+    (unless (and (binds k)
+                 ((binds k) props))
+      (cond
+        (or (key-down? :left-shift)
+            (key-down? :right-shift))
+        (insert-char-upper! props k)
+        
+        (insert-char! props k)))
+    
     (scroll-to-focus props)
-
+    
     (set k (get-key-pressed)))
 
   (loop [[k dl] :pairs delay-left
@@ -606,8 +600,9 @@
       ((binds k) props)
       (put delay-left k repeat-delay)
       (scroll-to-focus props)))
-
-  (loop [k :keys binds]
+  
+  (loop [k :keys binds
+         :when (not= k (keyword "("))]
     (when (key-released? k)
       (put delay-left k nil)
       (scroll-to-focus props))
@@ -665,7 +660,7 @@
                                                row-end-pos
                                                (- mx (* mult ox)
                                                   (* mult width-of-last-line-number)))
-
+        
         flag (line-flags (max 0 (dec line-index)))]
 
     (cond (and (= flag :regular)
@@ -683,7 +678,7 @@
         :sizes sizes
         :conf conf
         :scroll scroll} props)
-
+  
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
   (def pos (get-mouse-position))
