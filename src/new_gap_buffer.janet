@@ -35,19 +35,18 @@ See `usages/new_gap_buffer.janet` -> ### iterators for examples.
                 :gap-stop gap-stop
                 :text text
                 :gap gap} ,gb)
-          
-          
+
           (loop [,i-sym :range [(max ,start 0)
                                 (min ,stop gap-start)]
                  :let [,c-sym (text ,i-sym)]]
             ,;body)
-          
+
           (loop [,i-sym :range [(max (- ,start gap-start) 0)
                                 (min (- ,stop gap-start) (length gap))]
                  :let [,c-sym (gap ,i-sym)
                        ,i-sym (+ ,i-sym gap-start)]]
             ,;body)
-          
+
           (loop [,i-sym :range [(max (+ (- ,start (length gap))
                                         (- gap-stop gap-start))
                                      gap-stop)
@@ -68,19 +67,19 @@ Each time called, signals the next index and character."
         :gap-stop gap-stop
         :text text
         :gap gap} gb)
-  
+
   (loop [i :down-to [(dec (length text)) gap-stop]]
     (yield [(+ (- gap-stop gap-start) (length gap) i) # index
-            (text i)]))                               # character
-  
+            (text i)])) # character
+
   (loop [i :down-to [(dec (length gap)) 0]]
     (yield [(+ gap-start i)
             (gap i)]))
-  
+
   (loop [i :down-to [(dec gap-start) 0]]
     (yield [i
             (text i)]))
-  
+
   nil)
 
 (varfn index-char-backward-start
@@ -92,25 +91,25 @@ Same as `index-char-backward`, but takes a `start` index, from where iteration w
         :gap-stop gap-stop
         :text text
         :gap gap} gb)
-  
+
   (def start start)
-  
+
   (loop [i :down-to [(min (+ (- start (length gap))
                              (- gap-stop gap-start))
                           (dec (length text))) gap-stop]]
     (yield [(+ (- gap-stop gap-start) (length gap) i) # index
-            (text i)]))                               # character
-  
+            (text i)])) # character
+
   (loop [i :down-to [(min (- start gap-start)
                           (dec (length gap)))
                      0]]
     (yield [(+ gap-start i)
             (gap i)]))
-  
+
   (loop [i :down-to [(min start (dec gap-start)) 0]]
     (yield [i
             (text i)]))
-  
+
   nil)
 
 (varfn index-char-start
@@ -122,18 +121,18 @@ Same as `index-char-backward-start`, but iterates from beginning to end of `gb`.
         :gap-stop gap-stop
         :text text
         :gap gap} gb)
-  
+
   (loop [i :range [(max 0 start) gap-start]]
     (yield [i
             (text i)]))
-  
+
   (loop [i :range [(max (- start gap-start)
                         0)
-                   
+
                    (length gap)]]
     (yield [(+ gap-start i)
             (gap i)]))
-  
+
   (loop [i :range [(max (+ (- start (length gap))
                            (- gap-stop gap-start))
                         gap-stop)
@@ -142,7 +141,7 @@ Same as `index-char-backward-start`, but iterates from beginning to end of `gb`.
                (- gap-stop gap-start)
                i)
             (text i)]))
-  
+
   nil)
 
 ### string functions
@@ -165,7 +164,7 @@ Like `string/slice`, but for gap buffers.
 ``
   [gb start stop]
   (assert (<= start stop) "stop is smaller than start")
-  
+
   (let [{:selection selection} gb]
     (def b (buffer/new (- stop start)))
     (gb-iterate gb
@@ -183,10 +182,10 @@ in `gb-nth`, e.g. when looping.
   [gap-start gap-stop text gap i]
   (cond (< i gap-start)
     (text i)
-    
+
     (< i (+ (length gap) gap-start))
     (gap (- i gap-start))
-    
+
     # else
     (get text (+ (- i (length gap) gap-start) gap-stop))))
 
@@ -194,7 +193,7 @@ in `gb-nth`, e.g. when looping.
   "Returns the char at `i`."
   [{:gap-start gap-start
     :gap-stop gap-stop
-    :gap gap 
+    :gap gap
     :text text} i]
   (start-stop-text-gap-nth* gap-start gap-stop text gap i))
 
@@ -236,13 +235,13 @@ There are many usages of `commit!` in `usages/new_gap_buffer.janet`.
               :gap-stop gap-stop
               :gap gap} gb)
       (def b (buffer/new (gb-length gb)))
-      (buffer/blit b text 0           0         gap-start)
-      (buffer/blit b gap  (length b)                     )
-      (buffer/blit b text (length b)  gap-stop           )
+      (buffer/blit b text 0 0 gap-start)
+      (buffer/blit b gap (length b))
+      (buffer/blit b text (length b) gap-stop)
       (put gb :text b)
       (let [p (+ gap-start (length gap))]
         (put gb :gap-start p)
-        (put gb :gap-stop  p))
+        (put gb :gap-stop p))
       (update gb :gap buffer/clear))))
 
 
@@ -266,10 +265,10 @@ If selection is equal to caret, delete the selection (i.e. nothing is selected).
   (-> gb
       (put :caret (bounds-check gb i))
       (put :changed-nav true))
-  
+
   (def {:selection selection
-        :caret caret} gb)  
-  
+        :caret caret} gb)
+
   (when (and selection (= selection caret))
     (put gb :selection nil))
 
@@ -306,21 +305,21 @@ Is to `update` what `put-caret` is to `put`.
 Doesn't skip delimiters in the beginning."
   [gb pred start]
   (var target-i -1)
-  
-  (def f (fiber/new (fn [] (index-char-start gb start))))  
-  
+
+  (def f (fiber/new (fn [] (index-char-start gb start))))
+
   (loop [[i c] :iterate (resume f)]
     (when (word-delimiter? c)
       (break))
-    
+
     (set target-i i))
-  
+
   (cond (= -1 target-i)
     start
-    
+
     (> target-i (gb-length gb))
     (gb-length gb)
-    
+
     # the i we got was the position of the char  
     # the caret position should be one higher than that    
     # i.e. to the right of the char    
@@ -329,57 +328,57 @@ Doesn't skip delimiters in the beginning."
 (comment
   (search-forward (string->gb "12|34 67") word-delimiter? 3)
   #=> 4
-  
+
   (search-forward (string->gb "12|34 67") word-delimiter? 5)
   #=> 7
-  
+
   (search-forward (string->gb "12|34 67") word-delimiter? 4)
   #=> 4
-  
+
   (search-forward (string->gb "12|34 67") word-delimiter? 7)
   #=> 7
-  )
+)
 
 (varfn search-backward
   "Gets the position of the start of the word before start.
 Doesn't skip delimiters in the beginning."
   [gb pred start]
   (var target-i -1)
-  
+
   (def f (fiber/new (fn [] (index-char-backward-start gb (max 0 (dec start))))))
-  
+
   (loop [[i c] :iterate (resume f)]
     (when (word-delimiter? c)
       (break))
-    
+
     (set target-i i))
-  
+
   (cond (= -1 target-i)
     start
-    
+
     (> target-i (gb-length gb))
     (gb-length gb)
-    
+
     target-i))
 
 (comment
   (search-backward (string->gb "12|34 67") word-delimiter? 5)
   #=> 5
-  
+
   (search-backward (string->gb "12|34 67") word-delimiter? 1)
   #=> 0
-  
+
   (search-backward (string->gb "12|34 67") word-delimiter? 4)
   #=> 0
-  
+
   (search-backward (string->gb "12|34 67") word-delimiter? 0)
   #=> 0
-  )
+)
 
 (varfn word-at-index
   [gb i]
   (let [start (search-backward gb word-delimiter? i)
-        stop  (search-forward gb word-delimiter? i)]
+        stop (search-forward gb word-delimiter? i)]
     [start stop]))
 
 (comment
@@ -391,19 +390,19 @@ Doesn't skip delimiters in the beginning."
   (word-at-index (string->gb "12|34 67") 5) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 6) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 7) #=> [5 7]
-  )
+)
 
 (varfn end-of-next-word
   "Gets the position of the end of the word after the caret."
   [gb]
   (def {:caret caret} gb)
-  
-  (var target-i caret)  
-  
-  (def f (fiber/new (fn [] (index-char-start gb target-i))))  
-  
-  (var skipping-delims true)   
-  
+
+  (var target-i caret)
+
+  (def f (fiber/new (fn [] (index-char-start gb target-i))))
+
+  (var skipping-delims true)
+
   (loop [[i c] :iterate (resume f)
          :let [delim (word-delimiter? c)]]
     # skip word delimiters until encountering a non word delimiter
@@ -412,14 +411,14 @@ Doesn't skip delimiters in the beginning."
                    (and (not skipping-delims)
                         (not delim))))
       (break))
-    
-    (set target-i i))  
-  
+
+    (set target-i i))
+
   # the i we got was the position of the char  
   # the caret position should be one higher than that  
   # i.e. to the right of the char  
-  (set target-i (inc target-i))  
-  
+  (set target-i (inc target-i))
+
   (if (> target-i (gb-length gb))
     nil
     target-i))
@@ -428,15 +427,15 @@ Doesn't skip delimiters in the beginning."
   "Gets the position of the start of the word before the caret."
   [gb]
   (def {:caret caret} gb)
-  
+
   ## the caret pos is between two chars  
   # so if we want to go to the char to the left, we decrease the caret by one  
-  (var target-i (dec caret))  
-  
-  (def f (fiber/new (fn [] (index-char-backward-start gb target-i))))  
-  
-  (var skipping-delims true)   
-  
+  (var target-i (dec caret))
+
+  (def f (fiber/new (fn [] (index-char-backward-start gb target-i))))
+
+  (var skipping-delims true)
+
   (loop [[i c] :iterate (resume f)
          :let [delim (word-delimiter? c)]]
     # skip word delimiters until encountering a non word delimiter
@@ -445,9 +444,9 @@ Doesn't skip delimiters in the beginning."
                    (and (not skipping-delims)
                         (not delim))))
       (break))
-    
-    (set target-i i))  
-  
+
+    (set target-i i))
+
   (if (= -1 target-i)
     nil
     target-i))
@@ -484,7 +483,7 @@ Doesn't skip delimiters in the beginning."
   [gb]
   (unless (gb :selection)
     (put gb :selection (gb :caret)))
-  
+
   (-> gb
       (put-caret (end-of-next-word gb))
       (put :changed-x-pos true)
@@ -496,7 +495,7 @@ Doesn't skip delimiters in the beginning."
   (if-let [start (start-of-previous-word gb)]
     (do (unless (gb :selection)
           (put gb :selection (gb :caret)))
-      
+
       (-> gb
           (put-caret (start-of-previous-word gb))
           (put :changed-x-pos true)
@@ -508,10 +507,10 @@ Doesn't skip delimiters in the beginning."
   [gb]
   (def {:selection selection
         :caret caret} gb)
-  
+
   (when (not selection)
     (put gb :selection caret))
-  
+
   (-> gb
       (update-caret inc)
       (put :changed-x-pos true)
@@ -523,10 +522,10 @@ Doesn't skip delimiters in the beginning."
   (def {:selection selection
         :caret caret}
     (commit! gb))
-  
+
   (when (not selection)
     (put gb :selection caret))
-  
+
   (-> gb
       (update-caret dec)
       (put :changed-x-pos true)
@@ -541,9 +540,9 @@ Does bounds check as well."
   (def {:gap-start gap-start
         :gap-stop gap-stop}
     (commit! gb))
-  
+
   (def new-pos (bounds-check gb pos))
-  
+
   (-> gb
       (put :changed-nav true) ## not sure if this is needed anymore
       (put :gap-start new-pos)
@@ -556,9 +555,9 @@ Does bounds check as well."
   (def {:gap-start gap-start
         :gap-stop gap-stop}
     (commit! gb))
-  
+
   (def new-pos (bounds-check gb (f gap-start)))
-  
+
   (-> gb
       (put :changed-nav true)
       deselect
@@ -571,8 +570,8 @@ Does bounds check as well."
   (def {:gap-start gap-start
         :gap-stop gap-stop
         :gap gap
-        :caret caret} gb) 
-  
+        :caret caret} gb)
+
   (if (or (< caret (+ gap-start (length gap)))
           (> caret (+ gap-start (length gap))))
     (put-gap-pos! gb caret)
@@ -601,10 +600,10 @@ Updates caret etc as expected."
         new-caret-pos (cond
                         (>= caret stop)
                         (- caret (- stop start))
-                        
+
                         (>= caret start)
                         start
-                        
+
                         caret)
         gb (-> gb
                (put :selection nil)
@@ -627,7 +626,7 @@ Updates caret etc as expected."
         :caret caret} gb)
   (if selection
     (let [sel-start (min selection caret)
-          sel-stop  (max selection caret)]
+          sel-stop (max selection caret)]
       (delete-region! gb sel-start sel-stop))
     gb))
 
@@ -642,11 +641,11 @@ Updates caret etc as expected."
         to-delete (gb-slice gb (dec (gb :caret)) (gb :caret))]
     (when (= (gb :caret) 0)
       (break gb))
-    
+
     (if (empty? gap)
       (-> gb
           (update :gap-start |(max 0 (dec $)))
-          (update :caret     |(max 0 (dec $))))
+          (update :caret |(max 0 (dec $))))
       (-> gb
           (update :gap
                   (fn [gap]
@@ -654,11 +653,11 @@ Updates caret etc as expected."
                       (buffer/popn gap (inc (- (length gap) gap-i)))
                       (buffer/push-string gap to-the-right))))
           (update :caret |(max 0 (dec $)))))
-    
+
     (update gb :actions array/push
             {:kind :delete
              :start (gb :caret)
-             :stop  caret
+             :stop caret
              :caret-before caret
              :selection-before selection
              :content to-delete
@@ -668,10 +667,10 @@ Updates caret etc as expected."
 (varfn delete-word-forward!
   "Deletes the word after the cursor."
   [gb]
-  
+
   (def {:selection selection
         :caret caret} gb)
-  
+
   (if selection
     (delete-selection! gb)
     (if-let [stop (end-of-next-word gb)]
@@ -683,10 +682,10 @@ Updates caret etc as expected."
 (varfn delete-word-backward!
   "Deletes the word before the cursor."
   [gb]
-  
+
   (def {:selection selection
         :caret caret} gb)
-  
+
   (if selection
     (delete-selection! gb)
     (if-let [start (start-of-previous-word gb)]
@@ -699,10 +698,10 @@ Updates caret etc as expected."
   "Deletes selection if any, otherwise runs `delete-before-caret!`."
   [gb]
   (def {:selection selection} gb)
-  
+
   (cond selection
     (delete-selection! gb)
-    
+
     # else
     (delete-before-caret! gb))
   (put gb :changed true))
@@ -740,10 +739,10 @@ Used e.g. when loading a file."
             array/push
             {:kind :insert
              :caret-before caret-before
-             :content      (c->s c)
-             :caret-after  (gb :caret)
-             :start        caret-before
-             :stop         (gb :caret)})))
+             :content (c->s c)
+             :caret-after (gb :caret)
+             :start caret-before
+             :stop (gb :caret)})))
 
 (varfn insert-string-at-caret*
   "Inserts string `s` at the position of the caret, without updating the caret or adding to the history.
@@ -767,23 +766,23 @@ You should probably use `insert-string-at-caret!` instead."
         gb (-> gb
                (insert-string-at-caret* s)
                (update :caret + (length s)))]
-    
+
     (update gb
             :actions
             array/push
             {:kind :insert
              :caret-before caret-before
-             :content      s
-             :caret-after  (gb :caret)
-             :start        caret-before
-             :stop         (gb :caret)})))
+             :content s
+             :caret-after (gb :caret)
+             :start caret-before
+             :stop (gb :caret)})))
 
 (varfn insert-char!
   "Inserts at caret based on `k`, which generally comes from `jaylib/get-key-pressed`.
 Deletes selection."
   [gb k]
   (def gb (delete-selection! gb))
-  
+
   (let [k (case k
             :space (chr " ")
             :grave (chr "`")
@@ -793,7 +792,7 @@ Deletes selection."
               (first k)
               k))]
     (insert-char-at-caret gb k))
-  
+
   (-> gb
       (put :changed-x-pos true)
       (put :changed true)))
@@ -810,7 +809,7 @@ Deletes selection."
   "Like `insert-char!`, but uppercases a-z."
   [gb k]
   (def gb (delete-selection! gb))
-  
+
   (let [k (case k
             :space (chr " ")
             :grave (chr "`")
@@ -820,7 +819,7 @@ Deletes selection."
               (ascii-upper-chr* (first k))
               k))]
     (insert-char-at-caret gb k))
-  
+
   (-> gb
       (put :changed true)))
 
@@ -838,7 +837,7 @@ Deletes selection."
   "Moves the caret to the beginning of the word before the caret."
   [gb]
   (deselect gb)
-  
+
   (if-let [start (start-of-previous-word gb)]
     (-> gb
         (put-caret start)
@@ -912,14 +911,14 @@ Otherwise moves the caret backward one character."
   [gb]
   (if-let [action (array/pop (gb :actions))]
     (let [{:content c
-           :caret-after  i-after
+           :caret-after i-after
            :caret-before i-before
            :selection-after sel-after
            :selection-before sel-before
            :kind kind
            :start start
            :stop stop} action]
-      
+
       (case kind
         :insert (-> gb
                     (delete-region* i-before i-after)
@@ -934,9 +933,9 @@ Otherwise moves the caret backward one character."
                     (put :changed true))
         (do (update gb :actions array/push action)
           (error (string "Not supported kind: " kind))))
-      
+
       (array/push (gb :redo-queue) action)
-      
+
       gb)
     gb))
 
@@ -944,20 +943,20 @@ Otherwise moves the caret backward one character."
   [gb]
   (if-let [action (array/pop (gb :redo-queue))]
     (let [{:content c
-           :caret-after  i-after
+           :caret-after i-after
            :caret-before i-before
-           :selection-after sel-after           
+           :selection-after sel-after
            :selection-before sel-before
            :kind kind
            :start start
            :stop stop} action]
-      
+
       (case kind
         :delete (-> gb
                     (delete-region* start stop)
                     (put :caret i-after)
                     (put :changed true))
-        
+
         :insert (-> gb
                     (put :caret start)
                     (insert-string-at-caret* c)
@@ -966,9 +965,9 @@ Otherwise moves the caret backward one character."
                     (put :changed true))
         (do (update gb :redo-queue array/push action)
           (error (string "Not supported kind: " kind))))
-      
+
       (array/push (gb :actions) action)
-      
+
       gb)
     gb))
 
@@ -1004,19 +1003,19 @@ Otherwise moves the caret backward one character."
 (comment
   (find-paragraphs "aoe\n\naohnetsnhtsoae\n\nao\ne")
   #=> @[(0 3) (5 19) (21 25)]
-  
+
   (find-paragraphs "\n\naoe\n\n")
   #=> @[(2 5)]
-  
+
   (find-paragraphs "\n\naoe")
   #=> @[(2 5)]
-  
+
   (find-paragraphs "aoe")
   #=> @[(0 3)]
-  
+
   (find-paragraphs "aoe\n\n")
   #=> @[(0 3)]
-  )
+)
 
 (varfn gb-find-surrounding-paragraph!
   [gb index]
@@ -1031,12 +1030,10 @@ Otherwise moves the caret backward one character."
 
 (comment
   (def gb (string->gb "\n\naoe\n\naohnetsnhtsoae\n\naoe"))
-  
+
   (find-paragraphs (content gb))
-  
-  (gb-find-surrounding-paragraph! gb 3)
-  
-  )
+
+  (gb-find-surrounding-paragraph! gb 3))
 
 (varfn gb-find!
   [gb peg]
@@ -1057,10 +1054,8 @@ Otherwise moves the caret backward one character."
 
 (comment
   (gb-find! (string->gb "abc\n123 hej WAT") "hej")
-  
-  (peg/match (finder "a") "bac" 0)
-  
-  )
+
+  (peg/match (finder "a") "bac" 0))
 
 
 ### initialization
@@ -1072,19 +1067,21 @@ Otherwise moves the caret backward one character."
     :gap-stop 0
     :gap @""
     :caret 0
-    
+
     :actions @[]
     :redo-queue @[]
-    
+
     :selection nil
-    
+
     :size [100 100]
     :position [0 0]
     :offset [0 0]
-    
+
     :changed true
     :scroll 0
-    :blink 0})
+    :blink 0
+
+    :not-changed-timer 0})
 
 
 ### render
@@ -1094,24 +1091,24 @@ Otherwise moves the caret backward one character."
 Should probably be in new_gap_buffer_util, but it depends on functions in this file."
   [gb]
   (def b (buffer/new (gb-length gb)))
-  
+
   (gb-iterate
-    gb 
+    gb
     0 (gb-length gb)
     i c
-    
+
     (when (= i (gb :caret))
-      (buffer/push-byte b (chr "|")))        
-    
+      (buffer/push-byte b (chr "|")))
+
     (when (= i (gb :selection))
       (buffer/push-byte b (chr "*")))
-    
+
     (buffer/push-byte b c))
-  
+
   (when (= (gb-length gb) (gb :caret))
     (buffer/push-byte b (chr "|")))
-  
+
   (when (= (gb-length gb) (gb :selection))
     (buffer/push-byte b (chr "*")))
-  
+
   (string b))

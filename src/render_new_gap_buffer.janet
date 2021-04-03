@@ -666,6 +666,17 @@ This function is pretty expensive since it redoes all word wrapping."
   (with-dyns [:debug true]
     (index->pos gb-data (gb-data :caret))))
 
+(var timing-enabled false)
+(set timing-enabled true)
+(set timing-enabled false)
+
+(defmacro timeit
+  [label & body]
+  ~(if timing-enabled
+     (do (print "timing: " ,label)
+       (test/timeit (do ,;body)))
+     (do ,;body)))
+
 (varfn generate-texture
   [gb]
   (def {:position position
@@ -705,14 +716,14 @@ This function is pretty expensive since it redoes all word wrapping."
                     #(colors :background)
 )
 
-  (print "render lines")
-  (test/timeit (render-lines sizes
-                             conf
-                             gb
-                             (gb :lines)
-                             0
-                             (+ (offset 1) (gb :scroll))
-                             (* y-scale 14) (size 1)))
+  (timeit "render lines"
+          (render-lines sizes
+                        conf
+                        gb
+                        (gb :lines)
+                        0
+                        (+ (offset 1) (gb :scroll))
+                        (* y-scale 14) (size 1)))
 
   (rl-pop-matrix)
 
@@ -732,6 +743,7 @@ This function is pretty expensive since it redoes all word wrapping."
         :changed-nav changed-nav
         :changed-selection changed-selection
         :changed-scroll changed-scroll
+        :changed-styling changed-styling
         :width-of-last-line-number width-of-last-line-number
         :lines lines
         :y-poses y-poses
@@ -751,15 +763,18 @@ This function is pretty expensive since it redoes all word wrapping."
                                           (* y-scale h) #screen-w screen-h
 )))
 
-  (when (or changed changed-nav changed-selection changed-scroll)
+  (when (or changed
+            changed-nav
+            changed-selection
+            changed-scroll
+            changed-styling)
     (when changed
-      (print "delim ps")
-      (test/timeit
-        (put gb :delim-ps (rb/gb->delim-ps gb))))
+      (timeit "delim ps"
+              (put gb :delim-ps (rb/gb->delim-ps gb))))
 
     (when changed
-      (print "hl")
-      (test/timeit (put gb :highlighting (hl/gb->styling gb))))
+      #      (timeit "hl" (put gb :highlighting (hl/gb->styling gb)))
+)
 
     (def lines (or lines @[]))
     (put gb :lines lines)
@@ -771,21 +786,20 @@ This function is pretty expensive since it redoes all word wrapping."
     (put gb :line-flags line-flags)
 
     (var lines (if (or changed changed-scroll)
-                 (do (print "word wrap")
-                   (test/timeit (let [sizes sizes]
-                                  (word-wrap-gap-buffer
-                                    gb
-                                    sizes
-                                    lines
-                                    y-poses
-                                    line-flags
-                                    gb
-                                    0
-                                    (gb-length gb)
-                                    (size 0)
-                                    14
-                                    y
-                                    (- (size 1) scroll)))))
+                 (timeit "word wrap" (let [sizes sizes]
+                                       (word-wrap-gap-buffer
+                                         gb
+                                         sizes
+                                         lines
+                                         y-poses
+                                         line-flags
+                                         gb
+                                         0
+                                         (gb-length gb)
+                                         (size 0)
+                                         14
+                                         y
+                                         (- (size 1) scroll))))
                  lines))
 
     (put gb :width-of-last-line-number
@@ -798,32 +812,31 @@ This function is pretty expensive since it redoes all word wrapping."
       (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
 
     (when (or changed changed-nav)
-      (print "carety things")
-      (test/timeit
-        (let [caret-y ((gb :caret-pos) 1)
-              scroll (* (conf :mult) (- (gb :scroll)))]
-          (when (< caret-y scroll) ### fix so this works going down as well
-            (focus-caret gb))
+      (timeit "carety things"
+              (let [caret-y ((gb :caret-pos) 1)
+                    scroll (* (conf :mult) (- (gb :scroll)))]
+                (when (< caret-y scroll) ### fix so this works going down as well
+                  (focus-caret gb))
 
-          (when (>= caret-y
-                    (- (+ scroll
-                          (min (get-screen-height) (size 1)))
-                       (offset 1)
-                       (position 1)
-                       14))
+                (when (>= caret-y
+                          (- (+ scroll
+                                (min (get-screen-height) (size 1)))
+                             (offset 1)
+                             (position 1)
+                             14))
 
-            ## index->pos! recalculates lines etc
-            ## in order to find the "real" position of the caret
-            ## this function shouldn't be called needlessly
-            (put gb :caret-pos (index->pos! gb (gb :caret)))
-            (focus-caret gb)))))
+                  ## index->pos! recalculates lines etc
+                  ## in order to find the "real" position of the caret
+                  ## this function shouldn't be called needlessly
+                  (put gb :caret-pos (index->pos! gb (gb :caret)))
+                  (focus-caret gb)))))
 
     (when (or changed
               changed-selection
+              changed-styling
               (gb :changed-scroll))
-      (print "generate texture")
-      (test/timeit
-        (generate-texture gb)))
+      (timeit "generate texture"
+              (generate-texture gb)))
 
     #        (pp (ez-gb gb))
 

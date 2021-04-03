@@ -2,18 +2,17 @@
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./textfield :as t)
+(use ./highlighting)
 (import ./text_rendering :prefix "")
 (import ./text_rendering_ints :prefix "" :fresh true)
 (import ../build/text-rendering :prefix "")
 (import ./input :prefix "")
 (import ./file_handling :prefix "")
 (import ./find_row_etc :prefix "")
-(import ./highlight :prefix "")
 (import ./new_gap_buffer :prefix "")
 (import ./new_gap_buffer_util :prefix "")
 (import ./render_new_gap_buffer :prefix "")
 (import spork/netrepl)
-
 (setdyn :pretty-format "%.40M")
 
 (defmacro defonce
@@ -236,6 +235,15 @@
 
   (rl-pop-matrix))
 
+
+(defn styling-worker
+  [parent]
+  (print "New thread started!")
+  (def content (thread/receive))
+  (print "got message!")
+  (def res (peg/match styling-grammar content))
+  (:send parent [:hl res]))
+
 (varfn internal-frame
   []
 
@@ -258,12 +266,22 @@
                    (gb-data :changed-nav)
                    (gb-data :changed-scroll)))
 
-  #(when changed (print "pre-render"))
-
   (if (gb-data :changed)
-    (test/timeit
-      (gb-pre-render gb-data))
-    (gb-pre-render gb-data))
+    (-> gb-data
+        (put :not-changed-timer 0)
+        (put :styled false))
+    (update gb-data :not-changed-timer + dt))
+
+  (when (and (not (gb-data :styled))
+             (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
+    (print "styling")
+
+    (def thread (thread/new styling-worker 32))
+    (:send thread (content gb-data))
+
+    (put gb-data :styled true))
+
+  (gb-pre-render gb-data)
 
   (when (and false changed)
     (->> (remove-keys gb-data
@@ -352,7 +370,21 @@
     ([err fib]
       (print "kbd")
       (put data :latest-res (string "Error: " err))
-      (print (debug/stacktrace fib err)))))
+      (print (debug/stacktrace fib err))))
+
+  (try
+    (let [[kind res] (thread/receive 0)]
+      (print kind)
+      (case kind
+        :hl
+        (-> gb-data
+            (put :highlighting res)
+            (put :changed-styling true))
+
+        # else
+        (print "unmatched message"))
+      :ok)
+    ([err fib])))
 
 (comment
   (ez-gb file-open-data)
