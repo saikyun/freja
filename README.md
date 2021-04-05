@@ -20,8 +20,10 @@ janet src/main.janet
 
 ### changing the theme
 
+NOTE: `Meta` means `Ctrl` on Windows / Linux and `Cmd` on MacOS.
+
 1. Start the editor
-2. Press `Cmd/Ctrl+O`, write `init.janet`, hit `Enter`
+2. Press `Meta+O`, write `init.janet`, hit `Enter`
 3. Copy the following into the file
 ```
 (import ./src/theme :prefix "")
@@ -42,7 +44,7 @@ janet src/main.janet
               :string (rgba 230 219 115)
               :keyword (rgba 174 128 255)})
 ```
-4. Press `Cmd/Ctrl+L`
+4. Press `Meta+L`
 
 The above is a port of the Monokai theme by Wimer Hazenberg.
 
