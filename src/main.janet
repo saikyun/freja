@@ -297,7 +297,7 @@
   (gb-render-text gb-data)
 
   #(when changed (print "render"))
-  (gb-render-text debug-data)
+  #(gb-render-text debug-data)
 
   #(print)
 
