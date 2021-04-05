@@ -758,6 +758,12 @@ This function is pretty expensive since it redoes all word wrapping."
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
 
+  (when-let [t (and (gb :resized)
+                    (gb :texture))]
+    (unload-render-texture t)
+    (put gb :texture nil)
+    (put gb :resized nil))
+
   (when (not (gb :texture))
     (put gb :texture (load-render-texture (* x-scale w)
                                           (* y-scale h) #screen-w screen-h
@@ -796,7 +802,7 @@ This function is pretty expensive since it redoes all word wrapping."
                                          gb
                                          0
                                          (gb-length gb)
-                                         (size 0)
+                                         w
                                          14
                                          y
                                          (- (size 1) scroll))))

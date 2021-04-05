@@ -169,7 +169,7 @@
 (varfn frame
   [dt]
   (clear-background :blank)
-#  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
+  #  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
 )
 
 (var texture nil)
@@ -195,7 +195,7 @@
     (get-render-texture texture)
     [0
      0
-     (* 1 800)
+     (* 1 500)
      (* 1 (- 500))]
     [(+ (get-in gb-data [:position 0])
         (get-in gb-data [:size 0]))
@@ -226,6 +226,9 @@
     (handle-scroll active-data))
 
   (def dt (get-frame-time))
+
+  (when (window-resized?)
+    (put gb-data :resized true))
 
   (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
 
@@ -413,7 +416,7 @@
     (do (set-config-flags :vsync-hint)
       (set-config-flags :window-resizable)
 
-      (init-window 1200 700
+      (init-window 1310 700
                    "Textfield")
 
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
@@ -454,21 +457,21 @@
         (put file-open-data :colors colors)
 
         (set-target-fps 60)
-        
+
         (run-init-file)
-        
+
         (set texture (load-render-texture 500 500))
-        
+
         (loop-it)))
     ([err fib]
       (print "error! " err)
       (debug/stacktrace fib err)
-      
+
       (let [path "text_experiment_dump"]
         ## TODO:  Dump-state
         #(dump-state path gb-data)
         (print "Dumped state to " path))
-      
+
       (close-window))))
 
 (def env (fiber/getenv (fiber/current)))

@@ -4,7 +4,7 @@
 (varfn mp
   []
   (let [[x y] (get-mouse-position)]
-    [(- x 500) (- y 10)]))
+    [(- x 810) (- y 10)]))
 
 (varfn wasd
   [state dt]
