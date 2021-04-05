@@ -21,12 +21,12 @@
         (-> gb-data
             (put :highlighting res)
             (put :changed true))
-
+        
         # else
         (print "unmatched message"))
       :ok)
     ([err fib]))
-
+  
   (gb-data :highlighting)
-
+  
   (print "more?"))

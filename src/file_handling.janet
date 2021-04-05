@@ -27,15 +27,14 @@
   (replace-content gb-data "")
   (let [_ (load-file gb-data "src/test_main.janet")]
     :ok)
-  
+
   (let [_ (load-file2 text-data "src/main.janet")]
     :ok)
-  
+
   (let [_ (load-file text-data "src/text_rendering_ints.janet")]
     :ok)
-  
-  (put text-data :text (buffer (text-data :after)))
-  )
+
+  (put text-data :text (buffer (text-data :after))))
 
 (varfn save-file
   [props path]
@@ -43,7 +42,8 @@
     (file/write f (-> props
                       commit!
                       (get :text)))
-    (file/flush f)))
+    (file/flush f)
+    (print "Saved file: " path)))
 
 (varfn save-and-dofile
   [props]
@@ -59,17 +59,16 @@
     ([err fib]
       (print "nope")
       (print (debug/stacktrace fib err))))
-  (print "loaded file: " path))
+  (print "Loaded file: " path))
 
 
 (comment
 
   (dofile "/Users/test/programmering/janet/textfield/src/text_rendering_ints.janet"
           :env (fiber/getenv (fiber/current)))
-  
+
   (dofile "/Users/test/programmering/janet/textfield/src/new_gap_buffer.janet"
           :env (fiber/getenv (fiber/current)))
-  
+
   (dofile "/Users/test/programmering/janet/textfield/src/main.janet"
-          {:env (get-in text-data [:context :top-env])})
-  )
+          {:env (get-in text-data [:context :top-env])}))

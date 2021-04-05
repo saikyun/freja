@@ -12,6 +12,7 @@
 (import ./new_gap_buffer :prefix "")
 (import ./new_gap_buffer_util :prefix "")
 (import ./render_new_gap_buffer :prefix "")
+(import ./theme :prefix "")
 (import spork/netrepl)
 (setdyn :pretty-format "%.40M")
 
@@ -27,32 +28,6 @@
 (var top-env (fiber/getenv (fiber/current)))
 (var font nil)
 (var loop-fiber nil)
-
-(def colors
-  {:text (map |(/ $ 255) [71 93 101])
-   :border [0.396 0.478 0.514]
-   :background (map |(/ $ 255) [253 246 227])
-   :textarea [0.992 0.965 0.89]
-   :selected-text [0.992 0.965 0.89]
-   :selected-text-background :blue
-   :caret [0.396 0.478 0.514]
-
-   :game-bg (map |(/ $ 255) [134 173 173])
-
-   :call (map |(/ $ 255) [38 139 210])
-   :special-symbol (map |(/ $ 255) [133 153 0])
-   :string (map |(/ $ 255) [42 161 151])
-   :keyword (map |(/ $ 255) [181 137 0])})
-
-(varfn focus
-  [{:id id :context context}]
-  (set delay-left @{})
-  (put context :focus id))
-
-(varfn focus-other
-  [{:context context} id]
-  (set delay-left @{})
-  (put context :focus id))
 
 (var gb-data (new-gap-buffer))
 
@@ -101,12 +76,7 @@
                   :position [0 0]
                   :offset [30 0]
 
-                  :binds (merge-into @{}
-                                     file-open-binds
-                                     @{:escape
-                                       (fn [props]
-                                         (deselect gb-data)
-                                         (focus-other props :main))})
+                  :binds file-open-binds
 
                   :on-enter
                   (fn [props path]
@@ -198,7 +168,9 @@
 
 (varfn frame
   [dt]
-  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue))
+  (clear-background :blank)
+#  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
+)
 
 (var texture nil)
 
@@ -238,9 +210,7 @@
 
 (defn styling-worker
   [parent]
-  (print "New thread started!")
   (def content (thread/receive))
-  (print "got message!")
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
 
@@ -274,8 +244,6 @@
 
   (when (and (not (gb-data :styled))
              (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
-    (print "styling")
-
     (def thread (thread/new styling-worker 32))
     (:send thread (content gb-data))
 
@@ -374,7 +342,6 @@
 
   (try
     (let [[kind res] (thread/receive 0)]
-      (print kind)
       (case kind
         :hl
         (-> gb-data
@@ -429,15 +396,16 @@
 
 (defn run-init-file
   []
-  (def f (file/open "./init.janet" :r))
-  (when f
-    (def res (file/read f :all))
-    (file/close f)
-    (try
-      (do (fiber/setenv (fiber/current) (data :top-env))
-        (eval-string res))
-      ([err fib]
-        (put data :latest-res err)))))
+  (def env (data :top-env))
+  (try
+    (do
+      (dofile "./init.janet"
+              #             :env (fiber/getenv (fiber/current))
+              :env env)
+      (merge-into env env))
+    ([err fib]
+      (print "nope")
+      (print (debug/stacktrace fib err)))))
 
 (defn start
   []
@@ -486,21 +454,21 @@
         (put file-open-data :colors colors)
 
         (set-target-fps 60)
-
+        
         (run-init-file)
-
+        
         (set texture (load-render-texture 500 500))
-
+        
         (loop-it)))
     ([err fib]
       (print "error! " err)
       (debug/stacktrace fib err)
-
+      
       (let [path "text_experiment_dump"]
         ## TODO:  Dump-state
         #(dump-state path gb-data)
         (print "Dumped state to " path))
-
+      
       (close-window))))
 
 (def env (fiber/getenv (fiber/current)))
