@@ -694,6 +694,19 @@ Updates caret etc as expected."
           (put :changed-x-pos true))
       gb)))
 
+(varfn delete-after-caret!
+  "Deletes the character after the cursor."
+  [gb]
+
+  (def {:selection selection
+        :caret caret} gb)
+
+  (if selection
+    (delete-selection! gb)
+    (-> gb
+        (delete-region! caret (inc caret))
+        (put :changed-x-pos true))))
+
 (varfn backspace!
   "Deletes selection if any, otherwise runs `delete-before-caret!`."
   [gb]
