@@ -18,6 +18,32 @@ jpm build
 janet src/main.janet
 ```
 
+### changing the theme
+
+1. In root folder, create the file `init.janet`
+2. Put the following into `init.janet`
+```
+(import ./src/theme :prefix "")
+
+(merge-into colors
+            @{:text (rgba 248 248 243)
+              :border [0.396 0.478 0.513]
+              :background (rgba 39 40 33)
+              :textarea [0.992 0.965 0.88]
+              :selected-text [0.992 0.965 0.88]
+              :selected-text-background :blue
+              :caret [0.396 0.478 0.513]
+              
+              :game-bg (rgba 134 173 172)
+              
+              :call (rgba 166 226 45)
+              :special-symbol (rgba 102 217 238)
+              :string (rgba 230 219 115)
+              :keyword (rgba 174 128 255)})
+```
+
+The above is a port of the Monokai theme by Wimer Hazenberg.
+
 ## Thanks
 
 Thanks to sogaiu and rhine for initial testing. <3
