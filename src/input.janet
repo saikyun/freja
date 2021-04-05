@@ -147,7 +147,7 @@
                                          (key-down? :right-alt))
                                  (delete-word-forward! props)
 
-                                 (comment (forward-delete props))))
+                                 (delete-after-caret! props)))
 
                      :a (fn [props]
                           (when (meta-down?)
