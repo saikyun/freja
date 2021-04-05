@@ -33,7 +33,7 @@
 
 (do (merge-into gb-data
                 @{:size [800 800]
-                  :position [0 30]
+                  :position [5 30]
                   :offset [10 0]
 
                   :id :main
