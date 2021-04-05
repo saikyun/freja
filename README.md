@@ -20,8 +20,9 @@ janet src/main.janet
 
 ### changing the theme
 
-1. In root folder, create the file `init.janet`
-2. Put the following into `init.janet`
+1. Start the editor
+2. Press `Ctrl+O`, write `init.janet`, hit `Enter`
+3. Copy the following into the file
 ```
 (import ./src/theme :prefix "")
 
@@ -41,6 +42,7 @@ janet src/main.janet
               :string (rgba 230 219 115)
               :keyword (rgba 174 128 255)})
 ```
+4. Press `Ctrl+L`
 
 The above is a port of the Monokai theme by Wimer Hazenberg.
 
