@@ -204,11 +204,11 @@
 
                      :page-up (fn [props]
                                 #(page-up props)
-                                )
+)
 
                      :page-down (fn [props]
                                   #(page-down props)
-                                  )})
+)})
 
 (def gb-binds @{})
 
@@ -379,11 +379,12 @@
 
         flag (line-flags (max 0 (dec line-index)))]
 
-    (cond (and (= flag :regular)
-               (= row-start-pos char-i)) ## to the left of \n
-      (inc char-i)
-
-      char-i)))
+    (min
+      (gb-length props)
+      (cond (and (= flag :regular)
+                 (= row-start-pos char-i)) ## to the left of \n
+        (inc char-i)
+        char-i))))
 
 (varfn handle-shift-mouse-down
   [props]

@@ -73,7 +73,7 @@
 
 (do (merge-into file-open-data
                 @{:size [800 28]
-                  :position [0 0]
+                  :position [5 5]
                   :offset [30 0]
 
                   :binds file-open-binds
