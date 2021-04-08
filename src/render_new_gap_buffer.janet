@@ -7,6 +7,20 @@
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
 
+(varfn height
+  [{:position position
+    :offset offset
+    :size size}]
+  (def [_ y] position)
+  (def [_ oy] offset)
+  (def [_ h] size)
+  
+  (if (= h :max)
+    (- (get-screen-height)
+       y
+       oy)
+    h))
+
 (varfn get-size
   [sizes c]
   (let [sz (get sizes c)]
@@ -279,7 +293,7 @@ Returns `nil` if the max width is never exceeded."
                 start-x) y (- stop-x start-x) (* y-scale line-h)]
             (colors :selected-text-background)
             #:blue
-))))))
+            ))))))
 
 (varfn render-lines
   "Renders the lines in gap buffer.
@@ -347,7 +361,7 @@ Render lines doesn't modify anything in gb."
               (prin s)
               (print (length s))
               #(print "x: " x " - y: " y)
-)
+              )
 
             (do
               (while (and delim-ps
@@ -501,11 +515,11 @@ Render lines doesn't modify anything in gb."
                              ((gb :offset) 1)
                              ((gb :position) 1)
                              (- (* 0.5 (- (min (get-screen-height)
-                                               ((gb :size) 1))
+                                               (height gb))
                                           ((gb :offset) 1)
                                           ((gb :position) 1)))))
                           (min 0))
-
+                      
                       (get-in gb [:conf :mult])))
       (put :changed-scroll true)))
 
@@ -516,7 +530,7 @@ Render lines doesn't modify anything in gb."
         #  (- ((gb :y-poses) (line-of-i (gb :caret)))
         #     (get (gb :y-poses) (max (length (gb :y-poses))
         #                             (inc (line-of-i (gb :caret)))))))
-]
+        ]
     (focus-pos gb [x y])))
 
 (varfn move-up!
@@ -634,7 +648,7 @@ This function is pretty expensive since it redoes all word wrapping."
   (do (put gb-data :scroll
            (+ (- (last (index->pos! gb-data
                                     (gb-data :caret))))
-              (* 0.25 ((gb-data :size) 1))))
+              (* 0.25 (height gb-data))))
     (put gb-data :changed-selection true)
     :ok))
 
@@ -697,11 +711,11 @@ This function is pretty expensive since it redoes all word wrapping."
         :scroll scroll}
     gb)
 
-  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
+  (def [x-scale y-scale] (get-window-scale-dpi))
 
   (def [x y] position)
   (def [ox oy] offset)
-  (def [w h] size)
+  (def [w _] size)
 
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
@@ -712,9 +726,9 @@ This function is pretty expensive since it redoes all word wrapping."
   (clear-background (or (gb :background)
                         (colors :background)
                         #:blue
-)
+                        )
                     #(colors :background)
-)
+                    )
 
   (timeit "render lines"
           (render-lines sizes
@@ -723,7 +737,7 @@ This function is pretty expensive since it redoes all word wrapping."
                         (gb :lines)
                         0
                         (+ (offset 1) (gb :scroll))
-                        (* y-scale 14) (size 1)))
+                        (* y-scale 14) (height gb)))
 
   (rl-pop-matrix)
 
@@ -744,32 +758,33 @@ This function is pretty expensive since it redoes all word wrapping."
         :changed-selection changed-selection
         :changed-scroll changed-scroll
         :changed-styling changed-styling
+        :resized resized
         :width-of-last-line-number width-of-last-line-number
         :lines lines
         :y-poses y-poses
         :line-flags line-flags
         :scroll scroll}
     gb)
-  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
-
+  (def [x-scale y-scale] (get-window-scale-dpi))
+  
   (def [x y] position)
-  (def [w h] size)
-
+  (def [w _] size)
+  
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
-
+  
   (when-let [t (and (gb :resized)
                     (gb :texture))]
     (unload-render-texture t)
-    (put gb :texture nil)
-    (put gb :resized nil))
-
+    (put gb :texture nil))
+  
   (when (not (gb :texture))
     (put gb :texture (load-render-texture (* x-scale w)
-                                          (* y-scale h) #screen-w screen-h
-)))
-
-  (when (or changed
+                                          (* y-scale (height gb)) #screen-w screen-h
+                                          )))
+  
+  (when (or resized
+            changed
             changed-nav
             changed-selection
             changed-scroll
@@ -777,20 +792,20 @@ This function is pretty expensive since it redoes all word wrapping."
     (when changed
       (timeit "delim ps"
               (put gb :delim-ps (rb/gb->delim-ps gb))))
-
+    
     (when changed
       #      (timeit "hl" (put gb :highlighting (hl/gb->styling gb)))
-)
-
+      )
+    
     (def lines (or lines @[]))
     (put gb :lines lines)
-
+    
     (def y-poses (or y-poses @[]))
     (put gb :y-poses y-poses)
-
+    
     (def line-flags (or line-flags @[]))
     (put gb :line-flags line-flags)
-
+    
     (var lines (if (or changed changed-scroll)
                  (timeit "word wrap" (let [sizes sizes]
                                        (word-wrap-gap-buffer
@@ -805,47 +820,49 @@ This function is pretty expensive since it redoes all word wrapping."
                                          w
                                          14
                                          y
-                                         (- (size 1) scroll))))
+                                         (- (height gb) scroll))))
                  lines))
-
+    
     (put gb :width-of-last-line-number
          (* x-scale
             (first (measure-text conf (string/format "%d" (length lines))))))
-
+    
     (put gb :caret-pos (index->pos gb (gb :caret)))
-
+    
     (when changed-x-pos
       (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
-
+    
     (when (or changed changed-nav)
       (timeit "carety things"
               (let [caret-y ((gb :caret-pos) 1)
                     scroll (* (conf :mult) (- (gb :scroll)))]
                 (when (< caret-y scroll) ### fix so this works going down as well
                   (focus-caret gb))
-
+                
                 (when (>= caret-y
                           (- (+ scroll
-                                (min (get-screen-height) (size 1)))
+                                (min (get-screen-height) (height gb)))
                              (offset 1)
                              (position 1)
                              14))
-
+                  
                   ## index->pos! recalculates lines etc
                   ## in order to find the "real" position of the caret
                   ## this function shouldn't be called needlessly
                   (put gb :caret-pos (index->pos! gb (gb :caret)))
                   (focus-caret gb)))))
-
-    (when (or changed
+    
+    (when (or resized
+              changed
               changed-selection
               changed-styling
               (gb :changed-scroll))
       (timeit "generate texture"
               (generate-texture gb)))
-
+    
     #        (pp (ez-gb gb))
-
+    
+    (put gb :resized nil)
     (put gb :changed false)
     (put gb :changed-x-pos false)
     (put gb :changed-nav false)
@@ -870,25 +887,27 @@ This function is pretty expensive since it redoes all word wrapping."
         :y-poses y-poses
         :scroll scroll}
     gb)
-  (def [x-scale _ _ _ _ y-scale] (get-screen-scale))
-
+  
+  (def [x-scale y-scale] (get-window-scale-dpi))
+  
   (def [x y] position)
-  (def [w h] size)
-
+  (def [w _] size)
+  
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
-
+  
   (rl-push-matrix)
-  (rl-mult-matrixf-screen-scale)
-
+  
+  (def h (height gb))
+  
   (draw-texture-pro
     (get-render-texture (gb :texture))
     [0 0 (* x-scale w)
      (* y-scale (- h)) # (- h) #screen-w (- screen-h)
-]
-
+     ]
+    
     [x y w h #(/ screen-w x-scale) (/ screen-h y-scale)
-]
+     ]
     [0 0]
     0
     :white)
@@ -913,18 +932,17 @@ This function is pretty expensive since it redoes all word wrapping."
         :y-poses y-poses
         :scroll scroll} gb)
   (rl-push-matrix)
-  (rl-mult-matrixf-screen-scale)
-
+  
   (+= (gb :blink) 1.1)
   (when (> (gb :blink) 60) (set (gb :blink) 0))
-
+  
   (when-let [[x y] (and (< (gb :blink) 30)
                         (gb :caret-pos))
              cx (+ (* (position 0))
                    (* (conf :mult) (offset 0))
                    (* (conf :mult) width-of-last-line-number)
                    x)]
-
+    
     (draw-line-ex
       [cx (+ (offset 1)
              (position 1)

@@ -1,9 +1,13 @@
 (declare-project
-  :name "th"
+  :name "Freja"
   :author "saikyun"
   :dependencies [## using my own fork due to problem with latest raylib release
-                 "https://github.com/Saikyun/jaylib"
-                 ###"file:////Users/test/programmering/janet/my-jaylib"
+                 "https://github.com/Saikyun/freja-jaylib"
+                 #"file:////Users/test/programmering/janet/freja-jaylib"
+                 
+                 # example of how to use `:tag`
+                 # {:repo "https://...." :tag "abcdcbdc"}
+                 
                  "https://github.com/janet-lang/spork"])
 
 (declare-native

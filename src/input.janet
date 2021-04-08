@@ -204,11 +204,11 @@
 
                      :page-up (fn [props]
                                 #(page-up props)
-)
+                                )
 
                      :page-down (fn [props]
                                   #(page-down props)
-)})
+                                  )})
 
 (def gb-binds @{})
 
@@ -261,7 +261,7 @@
              (fn [props]
                (deselect props)
                (focus-other props :main))
-
+             
              :enter (fn [props]
                       (reset-blink props)
                       ((props :on-enter) props (string ((commit! props) :text))))})
@@ -287,13 +287,15 @@
 
 (varfn handle-keyboard
   [data props dt]
-
+  
   (def {:binds binds} props)
-
+  
   (put props :data data)
-
-  (var k (get-key-pressed))
-
+  
+  (var k (get-char-pressed))
+  
+  # TODO: Need to add get-char-pressed
+  
   (while (not= 0 k)
     (reset-blink props)
 
@@ -303,12 +305,12 @@
         (or (key-down? :left-shift)
             (key-down? :right-shift))
         (insert-char-upper! props k)
-
+        
         (insert-char! props k)))
-
+    
     (scroll-to-focus props)
-
-    (set k (get-key-pressed)))
+    
+    (set k (get-char-pressed)))
 
   (loop [[k dl] :pairs delay-left
          :let [left ((update delay-left k - dt) k)]]
