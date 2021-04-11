@@ -7,7 +7,7 @@
 (defn unit [v]
   (* v 4))
 
-(var open-menu :file)
+(var open-menu nil)
 
 (varfn size
   [t]
