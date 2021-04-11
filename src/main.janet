@@ -15,6 +15,7 @@
 (import ./render_new_gap_buffer :prefix "")
 (import ./theme :prefix "")
 (import spork/netrepl)
+(import ./state :prefix "")
 (setdyn :pretty-format "%.40M")
 
 (defmacro defonce
@@ -82,7 +83,6 @@
                   :on-enter
                   (fn [props path]
                     (load-file gb-data path)
-                    (put gb-data :path path)
                     (focus-other props :main))})
   :ok)
 
@@ -170,8 +170,8 @@
 (varfn frame
   [dt]
   (clear-background :blank)
-  #  (draw-text (conf :text) (string (data :latest-res)) [605 660] :blue)
-  )
+  #  (draw-text* (conf :text) (string (data :latest-res)) [605 660] :blue)
+)
 
 (var texture nil)
 
@@ -179,18 +179,18 @@
   [dt]
   (begin-texture-mode texture)
   (rl-push-matrix)
-  
+
   (try (frame dt)
     ([err fib]
       (print "hmm")
       (put data :latest-res (string "Error: " err))
       (print (debug/stacktrace fib err))))
-  
+
   (rl-pop-matrix)
   (end-texture-mode)
-  
+
   (rl-push-matrix)
-  
+
   (draw-texture-pro
     (get-render-texture texture)
     [0
@@ -214,9 +214,11 @@
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
 
+(array/push draws {:draw (fn [_ data] (draw-frame (data :dt)))})
+
 (varfn internal-frame
   []
-  
+
   (when-let [active-data (case (data :focus)
                            :main gb-data
                            :open-file file-open-data
@@ -224,14 +226,16 @@
                            nil)]
     (handle-mouse mouse-data active-data)
     (handle-scroll active-data))
-  
+
   (def dt (get-frame-time))
-  
+
+  (put data :dt dt)
+
   (when (window-resized?)
     (put gb-data :resized true))
-  
+
   (def [x-scale y-scale] (get-window-scale-dpi))
-  
+
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
 
@@ -267,7 +271,7 @@
                                 :lines
                                 :y-poses
                                 :line-flags
-                                
+
                                 :redo-queue
                                 :text))
          (string/format "%.40m")
@@ -285,14 +289,17 @@
 
     nil)
 
+  (loop [f :in updates]
+    (f data))
+
   (begin-drawing)
 
-  (comment  (rl-viewport 0 0 w h)
-    (rl-matrix-mode :rl-projection)
-    (rl-load-identity)
-    (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
-    (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
-    (rl-load-identity)) # Reset internal modelview matrix
+  (comment (rl-viewport 0 0 w h)
+           (rl-matrix-mode :rl-projection)
+           (rl-load-identity)
+           (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
+           (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
+           (rl-load-identity)) # Reset internal modelview matrix
 
 
   (clear-background (colors :background))
@@ -321,28 +328,34 @@
                      :open-file file-open-data
                      :search search-data)]
     (render-cursor focus))
-  
-  (draw-frame dt)
-  
+
+  (try
+    (loop [f :in draws]
+      (:draw f data))
+    ([err fib]
+      (print "draws")
+      (put data :latest-res (string "Error: " err))
+      (print (debug/stacktrace fib err))))
+
   (end-drawing)
-  
+
   (try
     (case (data :focus)
-      
+
       :main
       (handle-keyboard data gb-data dt)
-      
+
       :open-file
       (handle-keyboard data file-open-data dt)
-      
+
       :search
       (handle-keyboard data search-data dt))
-    
+
     ([err fib]
       (print "kbd")
       (put data :latest-res (string "Error: " err))
       (print (debug/stacktrace fib err))))
-  
+
   (try
     (let [[kind res] (thread/receive 0)]
       (case kind
@@ -350,17 +363,11 @@
         (-> gb-data
             (put :highlighting res)
             (put :changed-styling true))
-        
+
         # else
         (print "unmatched message"))
       :ok)
-    ([err fib]))
-  
-  
-  
-  
-  
-  )
+    ([err fib])))
 
 (comment
   (ez-gb file-open-data)
@@ -376,7 +383,7 @@
                            (close-window)
                            (os/exit)
                            (error "QUIT!"))
-                         
+
                          (try
                            (do (internal-frame)
                              (ev/sleep 0.01))
@@ -403,6 +410,13 @@
     {:text t
      :colors colors}))
 
+(def default-glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\"))
+
+(defn default-load-font
+  [font-path size]
+  (def [x-scale _] (get-window-scale-dpi))
+  (load-font-ex font-path (* x-scale size) default-glyphs))
+
 (defn run-init-file
   []
   (def env (data :top-env))
@@ -425,24 +439,24 @@
 
       (init-window 1310 700
                    "Textfield")
-      
+
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
-      
+
       (let [[x-scale y-scale] (get-window-scale-dpi) # must be run after `init-window`
             tc @{:font-path "./assets/fonts/Monaco.ttf"
                  :size (* 14 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
-                 :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
+                 :glyphs default-glyphs
                  :spacing 0.5}
-            
+
             tc2 @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
                   :line-height 1.1
                   :size (* 20 x-scale)
                   :mult (/ 1 x-scale)
                   :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
                   :spacing 2}]
-        
+
         (set conf (load-font gb-data tc))
         (put gb-data :context data)
         (put gb-data :screen-scale [x-scale y-scale])
@@ -489,6 +503,5 @@
   (set server (netrepl/server "127.0.0.1" "9365" env))
   (start)
   (pp args)
-  (when-let [a (first args)]
-    (load-file gb-data a))
-  )
+  (when-let [file (get args 1)]
+    (load-file gb-data file)))

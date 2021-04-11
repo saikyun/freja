@@ -70,10 +70,10 @@
 
   (begin-texture-mode texture)
 
-#  (draw-text-ex
-#    font
-#    (string sin)
-#    [10 5] 14 1 :black)
+  #  (draw-text-ex
+  #    font
+  #    (string sin)
+  #    [10 5] 14 1 :black)
 
   (draw-texture-pro (get-render-texture tex)
                     [0 0 40 (- 20)]

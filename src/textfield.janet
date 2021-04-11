@@ -32,7 +32,7 @@
   (let [[w h]   (measure-text text-conf text)
         [w2 h2] (measure-text text-conf selected)]
     
-    (draw-text text-conf text [30 30] (colors :text))
+    (draw-text* text-conf text [30 30] (colors :text))
     
     (draw-rectangle-rounded [(+ 30 spacing w)
                              40
@@ -42,12 +42,12 @@
                             9
                             (colors :selected-text-background))
     
-    (draw-text text-conf selected [(+ 30 spacing w) 30] (colors :selected-text))
+    (draw-text* text-conf selected [(+ 30 spacing w) 30] (colors :selected-text))
     
-    (draw-text text-conf (string/reverse after) [(+ 30 spacing w spacing w2) 30] (colors :text))
+    (draw-text* text-conf (string/reverse after) [(+ 30 spacing w spacing w2) 30] (colors :text))
     
     (draw-line-ex
-     [(+ 30 spacing w) font-size]
-     [(+ 30 spacing w) (+ font-size (* h 0.75))]
-     1
-     (colors :caret))))
+      [(+ 30 spacing w) font-size]
+      [(+ 30 spacing w) (+ font-size (* h 0.75))]
+      1
+      (colors :caret))))

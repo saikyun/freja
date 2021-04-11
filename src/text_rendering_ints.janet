@@ -251,7 +251,7 @@ Returns `nil` if the max width is never exceeded."
         (put s 0 c)
         (when debug
           (prin s))
-        (draw-text conf s [x y] :black)
+        (draw-text* conf s [x y] :black)
         (+= x w)))
     (+= y h)
     (when debug
@@ -554,7 +554,7 @@ Returns `nil` if the max width is never exceeded."
            :let [c (joined-nth leftover-chars chars i)
                  [w h] (sizes c)]]
       (put s 0 c)
-      (draw-text conf s [x y] :black)
+      (draw-text* conf s [x y] :black)
       (when (= i leftover-stop)
         (render-caret props x y h))
       (+= x w))
@@ -647,7 +647,7 @@ Returns `nil` if the max width is never exceeded."
                          :let [c (text i)
                                [w h] (sizes c)]]
                     (put s 0 c)
-                    (draw-text conf s [x y] :black)
+                    (draw-text* conf s [x y] :black)
                     (+= x w)))
                 
                 #(pp r)

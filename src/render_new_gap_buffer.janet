@@ -394,6 +394,7 @@ Render lines doesn't modify anything in gb."
                            # else
                            default-text-color)
                          x-scale)
+
             (+= x (* x-scale w))))))
 
     (+= y h)
@@ -586,6 +587,8 @@ Render lines doesn't modify anything in gb."
   (move-up! gb-data)
   (move-down! gb-data))
 
+(def font-h 17)
+
 (varfn index->pos!
   "Recalculates position and returns it.
 This function is pretty expensive since it redoes all word wrapping."
@@ -613,7 +616,7 @@ This function is pretty expensive since it redoes all word wrapping."
     gb
     0 index
     ((gb :size) 0)
-    14
+    font-h
     0
     99999999)
 
@@ -631,7 +634,7 @@ This function is pretty expensive since it redoes all word wrapping."
       gb
       0 (gb-length gb)
       ((gb :size) 0)
-      14
+      font-h
       0
       pos)
 
@@ -737,7 +740,7 @@ This function is pretty expensive since it redoes all word wrapping."
                         (gb :lines)
                         0
                         (+ (offset 1) (gb :scroll))
-                        (* y-scale 14) (height gb)))
+                        (* y-scale font-h) (height gb)))
 
   (rl-pop-matrix)
 
@@ -818,7 +821,7 @@ This function is pretty expensive since it redoes all word wrapping."
                                          0
                                          (gb-length gb)
                                          w
-                                         14
+                                         font-h
                                          y
                                          (- (height gb) scroll))))
                  lines))
@@ -844,7 +847,7 @@ This function is pretty expensive since it redoes all word wrapping."
                                 (min (get-screen-height) (height gb)))
                              (offset 1)
                              (position 1)
-                             14))
+                             font-h))
                   
                   ## index->pos! recalculates lines etc
                   ## in order to find the "real" position of the caret
@@ -948,7 +951,7 @@ This function is pretty expensive since it redoes all word wrapping."
              (position 1)
              y
              (* (conf :mult) scroll))]
-      [cx (+ (offset 1) (position 1) y 14 (* (conf :mult) scroll))]
+      [cx (+ (offset 1) (position 1) y font-h (* (conf :mult) scroll))]
       1
       (get-in gb [:colors :caret])))
 
@@ -967,7 +970,7 @@ This function is pretty expensive since it redoes all word wrapping."
                    gb
                    0 (gb-length gb)
                    30
-                   14
+                   font-h
                    0
                    1000)))
 

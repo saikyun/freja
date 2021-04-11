@@ -32,7 +32,7 @@
                (+ y h)
                0)
              16 120)]
-    (draw-text (conf :text) (string (data :latest-res)) [30 y] :blue)
+    (draw-text* (conf :text) (string (data :latest-res)) [30 y] :blue)
     )
   #
   )

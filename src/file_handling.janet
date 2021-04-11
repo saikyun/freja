@@ -15,6 +15,7 @@
   [props path]
   (-> props
       (replace-content (read-file path))
+      (put :path path)
       (put :caret 0)
       (put :scroll 0)
       (put :selection nil)))

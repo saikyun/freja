@@ -45,7 +45,7 @@
                    (math/floor (* (tc :mult) (tc :size)))
                    (* (tc :mult) (tc :spacing))))
 
-(defn draw-text
+(defn draw-text*
   [tc text pos color]
   (draw-text-ex (tc :font)
                 text
@@ -735,7 +735,7 @@
         (loop [c :in word
                :let [[w h] (sizes c)]]
           (put s 0 c)
-          (draw-text conf s [x y] :black)
+          (draw-text* conf s [x y] :black)
           (+= x w)))
       
       (set x 0)
@@ -762,7 +762,7 @@
         (loop [c :in word
                :let [[w h] (sizes c)]]
           (put s 0 c)
-          (draw-text conf s [x y] :black)
+          (draw-text* conf s [x y] :black)
           (+= x w)))
       
       (set x 0)
