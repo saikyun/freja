@@ -7,6 +7,8 @@
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
 
+(def font-h 17)
+
 (varfn height
   [{:position position
     :offset offset
@@ -263,7 +265,7 @@ Returns `nil` if the max width is never exceeded."
       (when (and (< sel-start stop)
                  (>= sel-stop start))
 
-        (var line-h 0)
+        (var line-h font-h)
         (var start-x nil)
         (var stop-x nil)
         (var acc-w 0)
@@ -290,7 +292,7 @@ Returns `nil` if the max width is never exceeded."
           (draw-rectangle-rec
             [(+ (offset 0)
                 width-of-last-line-number
-                start-x) y (- stop-x start-x) (* y-scale line-h)]
+                start-x) (- y (* y-scale 3)) (- stop-x start-x) (* y-scale line-h)]
             (colors :selected-text-background)
             #:blue
             ))))))
@@ -586,8 +588,6 @@ Render lines doesn't modify anything in gb."
   (index-below-cursor gb-data)
   (move-up! gb-data)
   (move-down! gb-data))
-
-(def font-h 17)
 
 (varfn index->pos!
   "Recalculates position and returns it.

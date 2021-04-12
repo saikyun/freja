@@ -61,6 +61,11 @@
   (set delay-left @{})
   (put context :focus id))
 
+(varfn unfocus
+  [{:context context} id]
+  (set delay-left @{})
+  (put context :focus nil))
+
 ## delay before first repetition of held keys
 (var initial-delay 0.2)
 
@@ -260,7 +265,7 @@
             {:escape
              (fn [props]
                (deselect props)
-               (focus-other props :main))
+               (unfocus props))
              
              :enter (fn [props]
                       (reset-blink props)
@@ -286,7 +291,9 @@
 (def pressed-game-binds @{})
 
 (varfn handle-keyboard
-  [data props dt]
+  [props data]
+  
+  (def dt (data :dt))
   
   (def {:binds binds} props)
   
@@ -426,7 +433,7 @@
           (put :changed-selection true)))))
 
 (varfn handle-mouse
-  [mouse-data props]
+  [props mouse-data]
   (def {:lines lines
         :offset offset
         :position position

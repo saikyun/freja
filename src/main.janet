@@ -31,26 +31,42 @@
 (var font nil)
 (var loop-fiber nil)
 
+(var file-open-data nil)
+(var search-data nil)
+
 (var gb-data (new-gap-buffer))
 
 (do (merge-into gb-data
                 @{:size [800 :max]
                   :position [5 30]
                   :offset [10 0]
-
+                  
+                  :update (fn [self data]
+                            (when (= (data :focus) self)
+                              (handle-mouse self (data :mouse))
+                              (handle-scroll self)
+                              
+                              (try
+                                (handle-keyboard self data)
+                                
+                                ([err fib]
+                                  (print "kbd")
+                                  (put data :latest-res (string "Error: " err))
+                                  (print (debug/stacktrace fib err))))))
+                  
                   :id :main
-
+                  
                   :open-file (fn [props]
-                               (focus-other props :open-file))
-
+                               (focus-other props file-open-data))
+                  
                   :search (fn [props]
-                            (focus-other props :search))
-
+                            (focus-other props search-data))
+                  
                   :save-file (fn [props]
                                (if-let [path (props :path)]
                                  (save-file props path)
                                  (print "no path!")))
-
+                  
                   :binds gb-binds})
   :ok)
 
@@ -60,33 +76,46 @@
             @{:size [500 800]
               :position [800 30]
               :offset [10 0]
-
+              
               :open-file (fn [props]
                            (focus-other props :open-file))
-
+              
               :save-file (fn [props]
                            (if-let [path (props :path)]
                              (save-file props path)
                              (print "no path!")))
-
+              
               :binds gb-binds})
 
-(var file-open-data (new-gap-buffer))
+(set file-open-data (new-gap-buffer))
 
 (do (merge-into file-open-data
                 @{:size [800 18]
                   :position [5 5]
                   :offset [30 0]
-
+                  
+                  :update (fn [self data]
+                            (when (= (data :focus) self)
+                              (handle-mouse self (data :mouse))
+                              (handle-scroll self)
+                              
+                              (try
+                                (handle-keyboard self data)
+                                
+                                ([err fib]
+                                  (print "kbd")
+                                  (put data :latest-res (string "Error: " err))
+                                  (print (debug/stacktrace fib err))))))
+                  
                   :binds file-open-binds
-
+                  
                   :on-enter
                   (fn [props path]
                     (load-file gb-data path)
-                    (focus-other props :main))})
+                    (focus-other props gb-data))})
   :ok)
 
-(var search-data (new-gap-buffer))
+(set search-data (new-gap-buffer))
 
 (varfn search
   [props]
@@ -114,7 +143,7 @@
                                          @{:escape
                                            (fn [props]
                                              (deselect gb-data)
-                                             (focus-other props :main))
+                                             (focus-other props gb-data))
 
                                            :f (fn [props]
                                                 (when (meta-down?)
@@ -136,13 +165,12 @@
                                                        (put :changed-selection true))))))}))})
   :ok)
 
-(var mouse-data (new-mouse-data))
 (var conf nil)
 (var conf2 nil)
 (var conf3 nil)
 
 (var data @{:latest-res @""
-            :focus :main
+            :focus gb-data
             :quit false
             :top-env top-env})
 
@@ -171,7 +199,7 @@
   [dt]
   (clear-background :blank)
   #  (draw-text* (conf :text) (string (data :latest-res)) [605 660] :blue)
-)
+  )
 
 (var texture nil)
 
@@ -218,31 +246,42 @@
 
 (varfn internal-frame
   []
-
-  (when-let [active-data (case (data :focus)
-                           :main gb-data
-                           :open-file file-open-data
-                           :search search-data
-                           nil)]
-    (handle-mouse mouse-data active-data)
-    (handle-scroll active-data))
-
   (def dt (get-frame-time))
-
-  (put data :dt dt)
-
+  
+  (put data :dt dt)  
+  
+  (put data :changed-focus false)
+  (try
+    (loop [o :in focus-checks]
+      (when (and (o :focus?)
+                 (:focus? o data))
+        (put data :focus o)
+        (put data :changed-focus true)))
+    ([err fib]
+      (print "draws")
+      (put data :latest-res (string "Error: " err))
+      (print (debug/stacktrace fib err))))
+  (comment
+    (unless (data :changed-focus)
+      (put data :focus gb-data)))
+  
+  (comment
+    (when-let [active-data (data :focus)]
+      (handle-mouse mouse-data active-data)
+      (handle-scroll active-data)))
+  
   (when (window-resized?)
     (put gb-data :resized true))
-
+  
   (def [x-scale y-scale] (get-window-scale-dpi))
 
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
-
+  
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)
                    (gb-data :changed-scroll)))
-
+  
   (if (gb-data :changed)
     (-> gb-data
         (put :not-changed-timer 0)
@@ -253,11 +292,14 @@
              (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
     (def thread (thread/new styling-worker 32))
     (:send thread (content gb-data))
-
+    
     (put gb-data :styled true))
 
+  (loop [f :in updates]
+    (:update f data))
+  
   (gb-pre-render gb-data)
-
+  
   (when (and false changed)
     (->> (remove-keys gb-data
                       (dumb-set :actions
@@ -267,39 +309,36 @@
                                 :colors
                                 :sizes
                                 :data
-
+                                
                                 :lines
                                 :y-poses
                                 :line-flags
-
+                                
                                 :redo-queue
                                 :text))
          (string/format "%.40m")
          (replace-content debug-data)))
-
+  
   (gb-pre-render debug-data)
 
-  (case (data :focus)
+  (cond
 
-    :open-file
+    (= (data :focus) file-open-data)
     (gb-pre-render file-open-data)
-
-    :search
+    
+    (= (data :focus) search-data)
     (gb-pre-render search-data)
-
+    
     nil)
 
-  (loop [f :in updates]
-    (f data))
-
   (begin-drawing)
-
+  
   (comment (rl-viewport 0 0 w h)
-           (rl-matrix-mode :rl-projection)
-           (rl-load-identity)
-           (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
-           (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
-           (rl-load-identity)) # Reset internal modelview matrix
+    (rl-matrix-mode :rl-projection)
+    (rl-load-identity)
+    (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
+    (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
+    (rl-load-identity)) # Reset internal modelview matrix
 
 
   (clear-background (colors :background))
@@ -313,20 +352,18 @@
 
   #(print)
 
-  (case (data :focus)
-
-    :open-file
+  (cond (= (data :focus) file-open-data)
     (gb-render-text file-open-data)
-
-    :search
+    
+    (= (data :focus) search-data)
     (gb-render-text search-data)
-
+    
     nil)
-
-  (when-let [focus (case (data :focus)
-                     :main gb-data
-                     :open-file file-open-data
-                     :search search-data)]
+  
+  (when-let [focus (cond 
+                     (= (data :focus) gb-data)        gb-data
+                     (= (data :focus) file-open-data) file-open-data
+                     (= (data :focus) search-data)    search-data)]
     (render-cursor focus))
 
   (try
@@ -338,23 +375,6 @@
       (print (debug/stacktrace fib err))))
 
   (end-drawing)
-
-  (try
-    (case (data :focus)
-
-      :main
-      (handle-keyboard data gb-data dt)
-
-      :open-file
-      (handle-keyboard data file-open-data dt)
-
-      :search
-      (handle-keyboard data search-data dt))
-
-    ([err fib]
-      (print "kbd")
-      (put data :latest-res (string "Error: " err))
-      (print (debug/stacktrace fib err))))
 
   (try
     (let [[kind res] (thread/receive 0)]
@@ -372,7 +392,7 @@
 (comment
   (ez-gb file-open-data)
   (ez-gb gb-data)
-
+  
   (focus {:context data :id :main}))
 
 (defn loop-it
@@ -461,38 +481,44 @@
         (put gb-data :context data)
         (put gb-data :screen-scale [x-scale y-scale])
         (put gb-data :colors colors)
-
+        
+        (array/push updates gb-data)
+        
         (set conf (load-font debug-data tc))
         (put debug-data :context data)
         (put debug-data :screen-scale [x-scale y-scale])
         (put debug-data :colors colors)
-
+        
         (set conf (load-font search-data tc))
         (put search-data :context data)
         (put search-data :screen-scale [x-scale y-scale])
         (put search-data :colors colors)
-
+        
         (set conf2 (load-font file-open-data tc))
         (put file-open-data :context data)
         (put file-open-data :screen-scale [x-scale y-scale])
         (put file-open-data :colors colors)
-
+        
+        (array/push updates file-open-data)
+        
+        (put data :mouse (new-mouse-data))
+        
         (set-target-fps 60)
-
+        
         (run-init-file)
-
+        
         (set texture (load-render-texture 500 500))
-
+        
         (loop-it)))
     ([err fib]
       (print "error! " err)
       (debug/stacktrace fib err)
-
+      
       (let [path "text_experiment_dump"]
         ## TODO:  Dump-state
         #(dump-state path gb-data)
         (print "Dumped state to " path))
-
+      
       (close-window))))
 
 (def env (fiber/getenv (fiber/current)))
