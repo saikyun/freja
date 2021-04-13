@@ -277,6 +277,9 @@
 
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
+
+  (loop [f :in updates]
+    (:update f data))  
   
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)
@@ -287,16 +290,13 @@
         (put :not-changed-timer 0)
         (put :styled false))
     (update gb-data :not-changed-timer + dt))
-
+  
   (when (and (not (gb-data :styled))
              (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
     (def thread (thread/new styling-worker 32))
     (:send thread (content gb-data))
     
     (put gb-data :styled true))
-
-  (loop [f :in updates]
-    (:update f data))
   
   (gb-pre-render gb-data)
   
@@ -322,7 +322,7 @@
   (gb-pre-render debug-data)
 
   (cond
-
+    
     (= (data :focus) file-open-data)
     (gb-pre-render file-open-data)
     
@@ -347,11 +347,11 @@
 
   #(when changed (print "render"))
   #(gb-render-text debug-data)
-
+  
   #(print)
-
+  
   #(print)
-
+  
   (cond (= (data :focus) file-open-data)
     (gb-render-text file-open-data)
     
@@ -365,7 +365,7 @@
                      (= (data :focus) file-open-data) file-open-data
                      (= (data :focus) search-data)    search-data)]
     (render-cursor focus))
-
+  
   (try
     (loop [f :in draws]
       (:draw f data))
@@ -373,9 +373,9 @@
       (print "draws")
       (put data :latest-res (string "Error: " err))
       (print (debug/stacktrace fib err))))
-
+  
   (end-drawing)
-
+  
   (try
     (let [[kind res] (thread/receive 0)]
       (case kind

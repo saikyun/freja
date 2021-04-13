@@ -337,7 +337,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-forward (string->gb "12|34 67") word-delimiter? 7)
   #=> 7
-)
+  )
 
 (varfn search-backward
   "Gets the position of the start of the word before start.
@@ -373,7 +373,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-backward (string->gb "12|34 67") word-delimiter? 0)
   #=> 0
-)
+  )
 
 (varfn word-at-index
   [gb i]
@@ -390,7 +390,7 @@ Doesn't skip delimiters in the beginning."
   (word-at-index (string->gb "12|34 67") 5) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 6) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 7) #=> [5 7]
-)
+  )
 
 (varfn end-of-next-word
   "Gets the position of the end of the word after the caret."
@@ -726,6 +726,8 @@ Used e.g. when loading a file."
   (-> gb
       (update :gap buffer/clear)
       (update :text (comp |(buffer/push-string $ text) buffer/clear))
+      (put :actions @[])
+      (put :redo-queue @[])
       (put :changed true)
       (put :gap-start 0)
       (put :gap-stop 0)))
@@ -1028,7 +1030,7 @@ Otherwise moves the caret backward one character."
 
   (find-paragraphs "aoe\n\n")
   #=> @[(0 3)]
-)
+  )
 
 (varfn gb-find-surrounding-paragraph!
   [gb index]

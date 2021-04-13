@@ -9,10 +9,10 @@
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
 
-(def thread (thread/new styling-worker 32))
-(:send thread (content gb-data))
-
 (comment
+  (def thread (thread/new styling-worker 32))
+  (:send thread (content gb-data))
+  
   (try
     (let [[kind res] (thread/receive 0)]
       (print kind)
