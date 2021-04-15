@@ -1,5 +1,6 @@
 (import spork/test)
 (use jaylib)
+(import ./dumb :prefix "")
 (import ./new_gap_buffer :prefix "")
 (import ./textfield_api :prefix "")
 (import ./text_rendering :prefix "")
@@ -714,7 +715,7 @@ This function is pretty expensive since it redoes all word wrapping."
         :scroll scroll}
     gb)
 
-  (def [x-scale y-scale] (get-window-scale-dpi))
+  (def [x-scale y-scale] screen-scale)
 
   (def [x y] position)
   (def [ox oy] offset)
@@ -768,7 +769,7 @@ This function is pretty expensive since it redoes all word wrapping."
         :line-flags line-flags
         :scroll scroll}
     gb)
-  (def [x-scale y-scale] (get-window-scale-dpi))
+  (def [x-scale y-scale] screen-scale)
   
   (def [x y] position)
   (def [w _] size)
@@ -891,7 +892,7 @@ This function is pretty expensive since it redoes all word wrapping."
         :scroll scroll}
     gb)
   
-  (def [x-scale y-scale] (get-window-scale-dpi))
+  (def [x-scale y-scale] screen-scale)
   
   (def [x y] position)
   (def [w _] size)

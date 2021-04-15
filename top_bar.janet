@@ -1,5 +1,10 @@
 (import ./src/state :as s)
 
+(when (dyn 'top-bar)
+  (print "removing f")
+  (s/remove-f (or (get-in (dyn 'top-bar) [:ref 0])
+                  (get (dyn 'top-bar) :value))))
+
 (def font-size 16)
 (def spacing 1)
 (def font (default-load-font "assets/fonts/FiraSans-Regular.ttf" font-size))
@@ -8,6 +13,7 @@
   (* v 4))
 
 (var open-menu nil)
+(var menu-rec nil)
 
 (varfn size
   [t]
@@ -61,10 +67,10 @@
 (varfn file-menu
   []
   (draw-rectangle-rec [0 (unit 6) 100 100] 0x3E3E3Eff)
-  
+
   (with-dyns [:layout :vertical
               :anchor @[(unit 1) (unit 6)]]
-    
+
     (def p [(unit 4) (unit 0.5)])
     (def mouse-over (check-collision-recs (get-rec "Save" p) mr))
     (when (and mouse-over (mouse-button-down? 0))
@@ -76,30 +82,32 @@
   (pp (macex '(button "Lule" [(unit 4) (unit 0.5)]
                       (print "hello")
                       (set open-menu nil))))
-  
+
   (button "Lule" [(unit 4) (unit 0.5)]
           (print "hello")
           (set to-draw "wat")
           (set open-menu nil))
-  
+
   #
-  )
+)
 
 (varfn top-bar-focus?
   [self _]
   (let [[_ y _ h] (self :rec)]
     (>= (+ y h) ((get-mouse-position) 1))))
 
+(var top-bar-rec @[0 0 (get-screen-width) (unit 6)])
+
 (varfn draw-top-bar
-  [self data]
+  []
   (let [[mx my] (get-mouse-position)]
     (put mr 0 mx)
     (put mr 1 my))
-  
+
   (when to-draw
     (draw-text-ex font to-draw [800 100] 28 1 0x00ff00ff))
-  
-  (draw-rectangle-rec (self :rec) 0x3E3E3Eff)
+
+  (draw-rectangle-rec top-bar-rec 0x3E3E3Eff)
 
   (with-dyns [:layout :horizontal
               :anchor @[(unit 1) (unit 0.5)]]
@@ -107,43 +115,42 @@
     (def p [(unit 4) (unit 0.5)])
     (def mouse-over (check-collision-recs (get-rec "File" p) mr))
     (when (and mouse-over (mouse-button-down? 0))
-      (set open-menu :file))
+      (set open-menu :file)
+      (set menu-rec [0 (unit 6) 100 100]))
     (def r (draw-text** "File" p (if mouse-over 0xffffffff 0xffffff80)))
 
     (def p [(unit 4) (unit 0.5)])
     (def mouse-over (check-collision-recs (get-rec "Edit" p) mr))
     (def r (draw-text** "Edit" p (if mouse-over 0xffffffff 0xffffff80)))
 
-
     (button "Lule" [(unit 4) (unit 0.5)]
             (print "hello")
-            (set to-draw "hej Magda & Milton")
-            (set open-menu nil))
-    )
+            (set to-draw "hello Sogaiu :)")
+            (set open-menu nil)))
 
-  (comment
-
-    (button "Lule" [(unit 4) (unit 0.5)]
-            (print "hello")
-            (set to-draw "wat")
-            (set open-menu nil))
-    #
-    )
-  
   (case open-menu
     :file (file-menu)))
 
-(def top-bar {:id :top-bar
-              :rec [0 0 (get-screen-width) (unit 6)]
-              :draw draw-top-bar
-              :focus? top-bar-focus?})
+(def top-bar @{:render draw-top-bar
+               :context @{:capture-mouse |
+                          (or (in-rec? $ top-bar-rec)
+                              (and open-menu
+                                   (in-rec? $ menu-rec)))}})
 
-(-?>> (find-index |(= (top-bar :id) ($ :id)) s/draws)
-      (array/remove s/draws))
+(s/add-f top-bar)
 
-(array/push s/draws top-bar)
+(comment
+  (def top-bar {:id :top-bar
+                :rec [0 0 (get-screen-width) (unit 6)]
+                :draw draw-top-bar
+                :focus? top-bar-focus?})
 
-(-?>> (find-index |(= (top-bar :id) ($ :id)) s/focus-checks)
-      (array/remove s/focus-checks))
+  (-?>> (find-index |(= (top-bar :id) ($ :id)) s/draws)
+        (array/remove s/draws))
 
-(array/push s/focus-checks top-bar)
+  (array/push s/draws top-bar)
+
+  (-?>> (find-index |(= (top-bar :id) ($ :id)) s/focus-checks)
+        (array/remove s/focus-checks))
+
+  (array/push s/focus-checks top-bar))

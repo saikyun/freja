@@ -3,12 +3,14 @@
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./textfield :as t)
+(import ./../backwards2 :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
 (import ./text_rendering_ints :prefix "" :fresh true)
 (import ../build/text-rendering :prefix "")
 (import ./input :prefix "")
 (import ./file_handling :prefix "")
+(import ./dumb :prefix "")
 (import ./find_row_etc :prefix "")
 (import ./new_gap_buffer :prefix "")
 (import ./new_gap_buffer_util :prefix "")
@@ -54,19 +56,23 @@
                                   (put data :latest-res (string "Error: " err))
                                   (print (debug/stacktrace fib err))))))
                   
+                  :render (fn []
+                            (gb-pre-render gb-data)
+                            (gb-render-text gb-data))
+                  
                   :id :main
                   
                   :open-file (fn [props]
                                (focus-other props file-open-data))
-                  
+
                   :search (fn [props]
                             (focus-other props search-data))
-                  
+
                   :save-file (fn [props]
                                (if-let [path (props :path)]
                                  (save-file props path)
                                  (print "no path!")))
-                  
+
                   :binds gb-binds})
   :ok)
 
@@ -76,15 +82,15 @@
             @{:size [500 800]
               :position [800 30]
               :offset [10 0]
-              
+
               :open-file (fn [props]
                            (focus-other props :open-file))
-              
+
               :save-file (fn [props]
                            (if-let [path (props :path)]
                              (save-file props path)
                              (print "no path!")))
-              
+
               :binds gb-binds})
 
 (set file-open-data (new-gap-buffer))
@@ -93,22 +99,22 @@
                 @{:size [800 18]
                   :position [5 5]
                   :offset [30 0]
-                  
+
                   :update (fn [self data]
                             (when (= (data :focus) self)
                               (handle-mouse self (data :mouse))
                               (handle-scroll self)
-                              
+
                               (try
                                 (handle-keyboard self data)
-                                
+
                                 ([err fib]
                                   (print "kbd")
                                   (put data :latest-res (string "Error: " err))
                                   (print (debug/stacktrace fib err))))))
-                  
+
                   :binds file-open-binds
-                  
+
                   :on-enter
                   (fn [props path]
                     (load-file gb-data path)
@@ -244,12 +250,14 @@
 
 (array/push draws {:draw (fn [_ data] (draw-frame (data :dt)))})
 
+(array/concat fs [gb-data])
+
 (varfn internal-frame
   []
   (def dt (get-frame-time))
-  
-  (put data :dt dt)  
-  
+
+  (put data :dt dt)
+
   (put data :changed-focus false)
   (try
     (loop [o :in focus-checks]
@@ -264,41 +272,39 @@
   (comment
     (unless (data :changed-focus)
       (put data :focus gb-data)))
-  
+
   (comment
     (when-let [active-data (data :focus)]
       (handle-mouse mouse-data active-data)
       (handle-scroll active-data)))
-  
+
   (when (window-resized?)
     (put gb-data :resized true))
-  
-  (def [x-scale y-scale] (get-window-scale-dpi))
+
+  (def [x-scale y-scale] screen-scale)
 
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
 
   (loop [f :in updates]
-    (:update f data))  
-  
+    (:update f data))
+
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)
                    (gb-data :changed-scroll)))
-  
+
   (if (gb-data :changed)
     (-> gb-data
         (put :not-changed-timer 0)
         (put :styled false))
     (update gb-data :not-changed-timer + dt))
-  
+
   (when (and (not (gb-data :styled))
              (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
     (def thread (thread/new styling-worker 32))
     (:send thread (content gb-data))
-    
+
     (put gb-data :styled true))
-  
-  (gb-pre-render gb-data)
   
   (when (and false changed)
     (->> (remove-keys gb-data
@@ -320,7 +326,7 @@
          (replace-content debug-data)))
   
   (gb-pre-render debug-data)
-
+  
   (cond
     
     (= (data :focus) file-open-data)
@@ -330,42 +336,44 @@
     (gb-pre-render search-data)
     
     nil)
-
+  
   (begin-drawing)
   
+  (clear-background (colors :background))  
+  
+  (render-all fs)
+  
+
+
   (comment (rl-viewport 0 0 w h)
     (rl-matrix-mode :rl-projection)
     (rl-load-identity)
     (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
     (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
     (rl-load-identity)) # Reset internal modelview matrix
-
-
-  (clear-background (colors :background))
-
-  (gb-render-text gb-data)
-
+  
+  
   #(when changed (print "render"))
   #(gb-render-text debug-data)
-  
+
   #(print)
-  
+
   #(print)
-  
+
   (cond (= (data :focus) file-open-data)
     (gb-render-text file-open-data)
-    
+
     (= (data :focus) search-data)
     (gb-render-text search-data)
-    
+
     nil)
-  
-  (when-let [focus (cond 
-                     (= (data :focus) gb-data)        gb-data
+
+  (when-let [focus (cond
+                     (= (data :focus) gb-data) gb-data
                      (= (data :focus) file-open-data) file-open-data
-                     (= (data :focus) search-data)    search-data)]
+                     (= (data :focus) search-data) search-data)]
     (render-cursor focus))
-  
+
   (try
     (loop [f :in draws]
       (:draw f data))
@@ -373,9 +381,9 @@
       (print "draws")
       (put data :latest-res (string "Error: " err))
       (print (debug/stacktrace fib err))))
-  
+
   (end-drawing)
-  
+
   (try
     (let [[kind res] (thread/receive 0)]
       (case kind
@@ -392,11 +400,12 @@
 (comment
   (ez-gb file-open-data)
   (ez-gb gb-data)
-  
+
   (focus {:context data :id :main}))
 
 (defn loop-it
   []
+
   (set loop-fiber
        (ev/call (fn [] (while true
                          (when (data :quit)
@@ -434,7 +443,7 @@
 
 (defn default-load-font
   [font-path size]
-  (def [x-scale _] (get-window-scale-dpi))
+  (def [x-scale _] screen-scale)
   (load-font-ex font-path (* x-scale size) default-glyphs))
 
 (defn run-init-file
@@ -462,7 +471,11 @@
 
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 
-      (let [[x-scale y-scale] (get-window-scale-dpi) # must be run after `init-window`
+      (let [[xs ys] (get-window-scale-dpi)]
+        (put screen-scale 0 xs)
+        (put screen-scale 1 ys))
+
+      (let [[x-scale y-scale] screen-scale
             tc @{:font-path "./assets/fonts/Monaco.ttf"
                  :size (* 14 x-scale)
                  :line-height 1.2
@@ -481,44 +494,44 @@
         (put gb-data :context data)
         (put gb-data :screen-scale [x-scale y-scale])
         (put gb-data :colors colors)
-        
+
         (array/push updates gb-data)
-        
+
         (set conf (load-font debug-data tc))
         (put debug-data :context data)
         (put debug-data :screen-scale [x-scale y-scale])
         (put debug-data :colors colors)
-        
+
         (set conf (load-font search-data tc))
         (put search-data :context data)
         (put search-data :screen-scale [x-scale y-scale])
         (put search-data :colors colors)
-        
+
         (set conf2 (load-font file-open-data tc))
         (put file-open-data :context data)
         (put file-open-data :screen-scale [x-scale y-scale])
         (put file-open-data :colors colors)
-        
+
         (array/push updates file-open-data)
-        
+
         (put data :mouse (new-mouse-data))
-        
+
         (set-target-fps 60)
-        
+
         (run-init-file)
-        
+
         (set texture (load-render-texture 500 500))
-        
+
         (loop-it)))
     ([err fib]
       (print "error! " err)
       (debug/stacktrace fib err)
-      
+
       (let [path "text_experiment_dump"]
         ## TODO:  Dump-state
         #(dump-state path gb-data)
         (print "Dumped state to " path))
-      
+
       (close-window))))
 
 (def env (fiber/getenv (fiber/current)))
@@ -527,7 +540,7 @@
 
 (defn main [& args]
   (set server (netrepl/server "127.0.0.1" "9365" env))
-  (start)
   (pp args)
   (when-let [file (get args 1)]
-    (load-file gb-data file)))
+    (load-file gb-data file))
+  (start))
