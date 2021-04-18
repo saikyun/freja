@@ -9,6 +9,8 @@
 # to create e.g. a cause and effect
 # such as "mario moves, so we render him in a new position"
 
+(use spork/test)
+
 (def mario @{:x 0 :y 0 :vx 0 :vy 0})
 
 (defn physics
@@ -30,14 +32,29 @@
   (walk (dir :x) (physics dt mario))
   (up-down (dir :y) (physics dt mario)))
 
+(def state {:buttons [{:hitbox @[810 30 100 100]
+                       :render |(draw-rectangle-rec ($ :hitbox) :red)
+                       :f |(print "red!")}
+                      {:hitbox @[860 0 100 100]
+                       :render |(draw-rectangle-rec ($ :hitbox) :blue)
+                       :f |(print "blue!")}]})
+
 (defn render
-  [[w h] mario]
+  [[w h] buttons]
   (rl-push-matrix)
 
   (rl-translatef 810 0 0)
   (draw-rectangle 0 0 w h :black)
-  (draw-rectangle (mario :x) (mario :y) 35 35 :red)
-  (rl-pop-matrix))
+  (rl-pop-matrix)
+
+  (loop [b :in buttons]
+    ((b :render) b))
+  #  (draw-rectangle (mario :x) (mario :y) 35 35 :red)
+)
+
+(defn hit-me?
+  [pos rec]
+  (in-rec? pos rec))
 
 (varfn keyboard-arrows
   ``
@@ -84,6 +101,37 @@ will return [false @{:x x :y y}] instead.
         (listen :down :y 1)
 
         (yield res)))))
+
+
+(varfn mouse-click
+  ``
+An <unnamed> for handling mouse clicks
+``
+  []
+  (fiber/new
+    (fn []
+      (def buttons-down @{})
+      (def res @[false [0 0]])
+
+      (defn listen
+        [button]
+
+        (if (mouse-button-down? button)
+          (do
+            (unless (buttons-down button)
+              (put res 0 true)
+              (put res 1 (get-mouse-position)))
+
+            (put buttons-down button true))
+          (put buttons-down button false)))
+
+      (while true
+        (put res 0 false)
+
+        (listen 0)
+
+        (yield res)))))
+
 
 (defn fps
   ``
@@ -171,12 +219,30 @@ whenever pusher is changed.
 # step on mario and the value of input
 # whenever input is changed
 (def main (applyp (partial render [500 500])
-                  (foldp step mario input)))
+                  #(foldp step mario input)
+
+                  (fiber/new (fn []
+                               (yield [true (state :buttons)])
+                               (while true
+                                 (yield [true (state :buttons)]))))))
+
+(resume main)
+
+(def other-thing (applyp pp (mouse-click)))
 
 # is run every frame
 # but will only rerender if something is changed
 # but since fps always returns a true change
 # it will run render every frame
+
 (varfn draw-frame
   [dt]
-  (resume main))
+  (resume main)
+  (let [recs (state :buttons)]
+    (->> (foldp (fn [pos recs]
+                  (filter |(hit-me? pos ($ :hitbox)) recs))
+                recs
+                (mouse-click))
+         (applyp last) # we want the one rendered last
+         (applyp |(-?> $ (get :f) apply))
+         resume)))
