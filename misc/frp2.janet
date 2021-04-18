@@ -80,7 +80,7 @@
                (while true
                  (def res (map resume args))
                  (yield [(reduce or2 false (map first res))
-                         (f ;(map second res))])))))
+                         (f ;(map 1 res))])))))
 
 (defn foldp
   [f rec pusher]
