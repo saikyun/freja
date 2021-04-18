@@ -12,6 +12,7 @@
 (defn unit [v]
   (* v 4))
 
+(var still-down false)
 (var open-menu nil)
 (var menu-rec nil)
 
@@ -60,7 +61,7 @@
   [text p & body]
   ~(do
      (def mouse-over (check-collision-recs (get-rec ,text ,p) mr))
-     (when (and mouse-over (mouse-button-down? 0))
+     (when (and mouse-over (mouse-button-released? 0))
        ,;body)
      (def r (draw-text** ,text ,p (if mouse-over 0xffffffff 0xffffff80)))))
 
@@ -73,10 +74,41 @@
 
     (def p [(unit 4) (unit 0.5)])
     (def mouse-over (check-collision-recs (get-rec "Save" p) mr))
-    (when (and mouse-over (mouse-button-down? 0))
+    (when (and mouse-over (mouse-button-released? 0))
       (save-file gb-data (gb-data :path))
       (set open-menu nil))
-    (def r (draw-text** "Save" p (if mouse-over 0xffffffff 0xffffff80)))))
+    (def r (draw-text** "Save" p (if mouse-over 0xffffffff 0xffffff80))))
+
+  (when (mouse-button-released? 0)
+    (print "que" still-down)
+    (if still-down
+      (set still-down false)
+      (do (print "wat")
+        (set open-menu nil)))))
+
+(def edit-menu-rec @[(unit 12) (unit 6) 120 44])
+
+(varfn edit-menu
+  []
+  (draw-rectangle-rec edit-menu-rec 0x3E3E3Eff)
+
+  (with-dyns [:layout :vertical
+              :anchor @[(+ (edit-menu-rec 0) (unit 1)) (unit 6)]]
+
+    (button "Undo   Ctrl+Z"
+            [(unit 4) (unit 0.5)]
+            (undo! gb-data)
+            (set open-menu nil))
+
+    (button "Redo   Ctrl+R"
+            [(unit 4) (unit 0.5)]
+            (redo! gb-data)
+            (set open-menu nil))
+
+    (when (mouse-button-released? 0)
+      (if still-down
+        (set still-down false)
+        (set open-menu nil)))))
 
 (comment
   (pp (macex '(button "Lule" [(unit 4) (unit 0.5)]
@@ -109,27 +141,36 @@
 
   (draw-rectangle-rec top-bar-rec 0x3E3E3Eff)
 
+  (case open-menu
+    :file (file-menu)
+    :edit (edit-menu))
+
   (with-dyns [:layout :horizontal
               :anchor @[(unit 1) (unit 0.5)]]
 
     (def p [(unit 4) (unit 0.5)])
+
     (def mouse-over (check-collision-recs (get-rec "File" p) mr))
     (when (and mouse-over (mouse-button-down? 0))
       (set open-menu :file)
+      (set still-down true)
       (set menu-rec [0 (unit 6) 100 100]))
     (def r (draw-text** "File" p (if mouse-over 0xffffffff 0xffffff80)))
 
     (def p [(unit 4) (unit 0.5)])
     (def mouse-over (check-collision-recs (get-rec "Edit" p) mr))
-    (def r (draw-text** "Edit" p (if mouse-over 0xffffffff 0xffffff80)))
+    (when (and mouse-over (mouse-button-down? 0))
+      (set open-menu :edit)
+      (set still-down true)
+      (put edit-menu-rec 0
+           (+ ((dyn :anchor) 0) (unit 2.5)))
+      (set menu-rec edit-menu-rec))
+    (def r (draw-text** "Edit" p (if (or (= open-menu :edit) mouse-over) 0xffffffff 0xffffff80)))
 
     (button "Lule" [(unit 4) (unit 0.5)]
             (print "hello")
             (set to-draw "hello Sogaiu :)")
-            (set open-menu nil)))
-
-  (case open-menu
-    :file (file-menu)))
+            (set open-menu nil))))
 
 (def top-bar @{:render draw-top-bar
                :context @{:capture-mouse |

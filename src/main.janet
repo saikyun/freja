@@ -26,6 +26,12 @@
   (when (nil? (dyn name))
     ~(def ,name ,;more)))
 
+(defmacro varonce
+  "Var a value once."
+  [name & more]
+  (when (nil? (dyn name))
+    ~(var ,name ,;more)))
+
 (comment
   (top-env 'ta/split-words))
 
@@ -99,7 +105,7 @@
                 @{:size [800 18]
                   :position [5 5]
                   :offset [30 0]
-
+                  
                   :update (fn [self data]
                             (when (= (data :focus) self)
                               (handle-mouse self (data :mouse))
@@ -112,9 +118,9 @@
                                   (print "kbd")
                                   (put data :latest-res (string "Error: " err))
                                   (print (debug/stacktrace fib err))))))
-
+                  
                   :binds file-open-binds
-
+                  
                   :on-enter
                   (fn [props path]
                     (load-file gb-data path)
@@ -141,7 +147,20 @@
                 @{:size [800 14]
                   :position [5 5]
                   :offset [30 0]
+                  
+                  :update (fn [self data]
+                            (when (= (data :focus) self)
+                              (handle-mouse self (data :mouse))
+                              (handle-scroll self)
 
+                              (try
+                                (handle-keyboard self data)
+
+                                ([err fib]
+                                  (print "kbd")
+                                  (put data :latest-res (string "Error: " err))
+                                  (print (debug/stacktrace fib err))))))
+                  
                   :on-enter (fn [props _] (search props))
 
                   :binds (-> (merge-into @{}
@@ -285,25 +304,25 @@
 
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
-
+  
   (loop [f :in updates]
     (:update f data))
-
+  
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)
                    (gb-data :changed-scroll)))
-
+  
   (if (gb-data :changed)
     (-> gb-data
         (put :not-changed-timer 0)
         (put :styled false))
     (update gb-data :not-changed-timer + dt))
-
+  
   (when (and (not (gb-data :styled))
              (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
     (def thread (thread/new styling-worker 32))
     (:send thread (content gb-data))
-
+    
     (put gb-data :styled true))
   
   (when (and false changed)
@@ -496,23 +515,26 @@
         (put gb-data :colors colors)
 
         (array/push updates gb-data)
-
+        
         (set conf (load-font debug-data tc))
         (put debug-data :context data)
         (put debug-data :screen-scale [x-scale y-scale])
         (put debug-data :colors colors)
-
+        
         (set conf (load-font search-data tc))
         (put search-data :context data)
         (put search-data :screen-scale [x-scale y-scale])
         (put search-data :colors colors)
-
+        
         (set conf2 (load-font file-open-data tc))
         (put file-open-data :context data)
         (put file-open-data :screen-scale [x-scale y-scale])
         (put file-open-data :colors colors)
-
+        
         (array/push updates file-open-data)
+        
+        (array/push updates search-data)
+
 
         (put data :mouse (new-mouse-data))
 
