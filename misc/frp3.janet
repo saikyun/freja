@@ -109,7 +109,6 @@
          ### resolving callbacks
          @{:listen [callbacks-ref]
            :update (fn [self cbs]
-                     (print "callbacks running")
                      (when-let [cb (last cbs)]
                        (cb)
                        (array/clear cbs)))}]
@@ -122,6 +121,7 @@
          (add-listeners o)))
 
 (comment
+  # eval the following sexp to get another "button"
   (add-obj
     state-ref
     @{:hitbox @[810 100 100 70]
