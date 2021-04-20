@@ -11,6 +11,14 @@
 
 (use spork/test)
 
+(def w (get-screen-width))
+(def h (get-screen-height))
+(defonce rt (load-render-texture w h))
+
+(begin-texture-mode rt)
+(clear-background :blank)
+(end-texture-mode)
+
 (def mario @{:x 0 :y 0 :vx 0 :vy 0})
 
 (defn physics
@@ -32,25 +40,52 @@
   (walk (dir :x) (physics dt mario))
   (up-down (dir :y) (physics dt mario)))
 
-(def state {:buttons [{:hitbox @[810 30 100 100]
-                       :render |(draw-rectangle-rec ($ :hitbox) :red)
-                       :f |(print "red!")}
-                      {:hitbox @[860 0 100 100]
-                       :render |(draw-rectangle-rec ($ :hitbox) :blue)
-                       :f |(print "blue!")}]})
+(def state123 {:buttons [{:hitbox @[810 30 100 100]
+                          :render |(draw-rectangle-rec ($ :hitbox) :red)
+                          :f |(print "red!")}
+                         {:hitbox @[860 0 100 100]
+                          :render |(draw-rectangle-rec ($ :hitbox) :blue)
+                          :f |(print "blue!")}]})
+
+(defn ev/check
+  [chan]
+  (when (pos? (ev/count chan))
+    (ev/take chan)))
+
+(defn ev/push
+  [chan v]
+  (when (ev/full chan)
+    (ev/take chan)) ## throw away old values
+  (ev/give chan v))
+
+(def state (ev/chan 1))
+(ev/push state state123)
+
+(defn state-thing
+  []
+  (fiber/new (fn []
+               (var last-state nil)
+               (forever
+                 (if-let [new-state (ev/check state)]
+                   (do (set last-state new-state)
+                     (yield [true last-state]))
+                   (yield [false last-state]))))))
+
+(def render-texture (ev/chan 1))
 
 (defn render
-  [[w h] buttons]
+  [[w h] rt state]
+  (begin-texture-mode rt)
   (rl-push-matrix)
 
   (rl-translatef 810 0 0)
   (draw-rectangle 0 0 w h :black)
   (rl-pop-matrix)
 
-  (loop [b :in buttons]
+  (loop [b :in (state :buttons)]
     ((b :render) b))
   #  (draw-rectangle (mario :x) (mario :y) 35 35 :red)
-)
+  (end-texture-mode))
 
 (defn hit-me?
   [pos rec]
@@ -218,15 +253,22 @@ whenever pusher is changed.
 # foldp will return an <unnamed> which calls
 # step on mario and the value of input
 # whenever input is changed
-(def main (applyp (partial render [500 500])
-                  #(foldp step mario input)
 
-                  (fiber/new (fn []
-                               (yield [true (state :buttons)])
-                               (while true
-                                 (yield [true (state :buttons)]))))))
 
-(resume main)
+
+(comment
+
+  #
+)
+
+#(comment
+# (fiber/new (fn []
+#               (yield [true (state :buttons)])
+#               (while true
+#                 (yield [true (state :buttons)])))))
+
+
+#(resume main)
 
 (def other-thing (applyp pp (mouse-click)))
 
@@ -235,14 +277,53 @@ whenever pusher is changed.
 # but since fps always returns a true change
 # it will run render every frame
 
+(def mc (mouse-click))
+
+
+(def st (state-thing))
+
+
+(def rt-thing (fiber/new
+                (fn []
+                  (yield [true rt])
+                  (forever
+                    (if-let [v (ev/check render-texture)]
+                      (yield [true v])
+                      (yield [false rt]))))))
+
+(def clicks
+  (applyp (fn [[clicks state]]
+            (let [recs (state :buttons)]
+              (-> (reduce (fn [recs pos]
+                            (filter |(hit-me? pos ($ :hitbox)) recs))
+                          recs
+                          [clicks])
+                  last # we want the one rendered last
+                  (-?> (get :f) apply)))
+
+            state)
+
+          (lift array
+                mc
+                st)))
+
+(def main (fn [[render-texture state]]
+            (render [500 500] render-texture state)))
+
+(def both (applyp
+            main
+            (lift array rt-thing clicks)))
+
 (varfn draw-frame
   [dt]
-  (resume main)
-  (let [recs (state :buttons)]
-    (->> (foldp (fn [pos recs]
-                  (filter |(hit-me? pos ($ :hitbox)) recs))
-                recs
-                (mouse-click))
-         (applyp last) # we want the one rendered last
-         (applyp |(-?> $ (get :f) apply))
-         resume)))
+  #(resume main)
+
+  (resume both)
+
+  (draw-texture-pro
+    (get-render-texture rt)
+    [0 0 w (- h)]
+    [0 0 w h]
+    [0 0]
+    0
+    :white))

@@ -358,7 +358,7 @@
   
   (begin-drawing)
   
-  (clear-background (colors :background))  
+  #(clear-background (colors :background))  
   
   (render-all fs)
   
@@ -424,6 +424,14 @@
 
 (defn loop-it
   []
+
+(begin-drawing)
+(clear-background (colors :background))
+(end-drawing)
+
+(begin-drawing)
+(clear-background (colors :background))
+(end-drawing)
 
   (set loop-fiber
        (ev/call (fn [] (while true
