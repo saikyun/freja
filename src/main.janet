@@ -17,6 +17,7 @@
 (import ./render_new_gap_buffer :prefix "")
 (import ./theme :prefix "")
 (import spork/netrepl)
+(import ./font :prefix "")
 (import ./state :prefix "")
 (setdyn :pretty-format "%.40M")
 
@@ -358,7 +359,7 @@
   
   (begin-drawing)
   
-  #(clear-background (colors :background))  
+  (clear-background (colors :background))  
   
   (render-all fs)
   
@@ -425,14 +426,6 @@
 (defn loop-it
   []
 
-(begin-drawing)
-(clear-background (colors :background))
-(end-drawing)
-
-(begin-drawing)
-(clear-background (colors :background))
-(end-drawing)
-
   (set loop-fiber
        (ev/call (fn [] (while true
                          (when (data :quit)
@@ -465,13 +458,6 @@
 
     {:text t
      :colors colors}))
-
-(def default-glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\"))
-
-(defn default-load-font
-  [font-path size]
-  (def [x-scale _] screen-scale)
-  (load-font-ex font-path (* x-scale size) default-glyphs))
 
 (defn run-init-file
   []

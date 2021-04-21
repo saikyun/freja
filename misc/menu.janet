@@ -1,11 +1,4 @@
-(use jaylib)
-(import ./src/state :as s)
-(import ./src/font :prefix "")
-
-(when (dyn 'top-bar)
-  (print "removing f")
-  (s/remove-f (or (get-in (dyn 'top-bar) [:ref 0])
-                  (get (dyn 'top-bar) :value))))
+(import ./frp3 :as frp)
 
 (def font-size 16)
 (def spacing 1)
@@ -180,20 +173,80 @@
                               (and open-menu
                                    (in-rec? $ menu-rec)))}})
 
-(s/add-f top-bar)
 
-(comment
-  (def top-bar {:id :top-bar
-                :rec [0 0 (get-screen-width) (unit 6)]
-                :draw draw-top-bar
-                :focus? top-bar-focus?})
+(def rt (load-render-texture (get-screen-width) (get-screen-height)))
+#(begin-texture-mode rt)
+#(clear-background :blank)
+#(end-texture-mode)
 
-  (-?>> (find-index |(= (top-bar :id) ($ :id)) s/draws)
-        (array/remove s/draws))
+(def state-ref @{:ch (ev/chan 1) :data @[]})
 
-  (array/push s/draws top-bar)
+(def state
+  (->> @[### buttons
+         @{:listen [frp/clicks-ref state-ref]
+           :hitbox @[810 0 100 70]
+           :update (fn [self click state]
+                     (draw-rectangle-rec (self :hitbox) :red)
+                     (when (in-rec? click (self :hitbox))
+                       (frp/swap! frp/callbacks-ref array/push |(print (length state)))))}
 
-  (-?>> (find-index |(= (top-bar :id) ($ :id)) s/focus-checks)
-        (array/remove s/focus-checks))
+         @{:listen [frp/clicks-ref]
+           :render (fn [self]
+                     (draw-top-bar))
+           :update (fn [self click state]
+                     (when (in-rec? click (self :hitbox))
+                       (frp/swap! frp/callbacks-ref array/push |(print (length state)))))}
 
-  (array/push s/focus-checks top-bar))
+         @{:listen [frp/clicks-ref]
+           :hitbox @[860 20 100 70]
+           :render (fn [self]
+                     (draw-rectangle-rec (self :hitbox) :blue))
+           :update (fn [self click]
+                     (when (in-rec? click (self :hitbox))
+                       (print "pushing")
+                       (frp/swap! frp/callbacks-ref array/push |(print "blue"))))}
+
+         ### resolving callbacks
+         @{:listen [frp/callbacks-ref]
+           :update (fn [self cbs]
+                     (when-let [cb (last cbs)]
+                       (cb)
+                       (array/clear cbs)))}]
+       (map frp/add-listeners)))
+
+(defn run
+  [state]
+  (loop [o :in state
+         :let [{:listeners listeners
+                :listen listen
+                :last-res last-res} o]]
+    (var any-change false)
+
+    (loop [i :range [0 (length listen)]
+           :let [l (listen i)
+                 ls (listeners l)]]
+      (when-let [v (frp/ev/check ls)]
+        (set any-change true)
+        (put last-res i v)))
+
+    (begin-texture-mode rt)
+    (when any-change
+      ((o :update) o ;(o :last-res)))
+    (end-texture-mode)))
+
+(frp/swap! state-ref (fn [_] state))
+
+(varfn draw-frame
+  [dt]
+  (when (mouse-button-pressed? 0)
+    (frp/swap! frp/clicks-ref (fn [_] (get-mouse-position))))
+
+  (frp/run (state-ref :data))
+
+  (draw-texture-pro
+    (get-render-texture rt)
+    [0 0 (get-screen-width) (- (get-screen-height))]
+    [0 0 (get-screen-width) (get-screen-height)]
+    [0 0]
+    0
+    :white))
