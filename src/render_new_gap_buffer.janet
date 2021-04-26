@@ -714,26 +714,31 @@ This function is pretty expensive since it redoes all word wrapping."
         :line-flags line-flags
         :scroll scroll}
     gb)
-
+  
   (def [x-scale y-scale] screen-scale)
-
+  
   (def [x y] position)
   (def [ox oy] offset)
   (def [w _] size)
-
+  
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
-
+  
   (begin-texture-mode (gb :texture))
-
+  
   (rl-push-matrix)
+  
+  #  (rl-load-identity)
+  
+  #  (rl-scalef 1 1 1)
+  
   (clear-background (or (gb :background)
                         (colors :background)
                         #:blue
                         )
                     #(colors :background)
                     )
-
+  
   (timeit "render lines"
           (render-lines sizes
                         conf
@@ -742,9 +747,15 @@ This function is pretty expensive since it redoes all word wrapping."
                         0
                         (+ (offset 1) (gb :scroll))
                         (* y-scale font-h) (height gb)))
-
+  
+  # not sure why I have to do this 
+  # I thought rl-pop-matrix would be enough
+  #  (rl-load-identity) 
+  
+  #  (rl-scalef 2 2 1)
+  
   (rl-pop-matrix)
-
+  
   (end-texture-mode))
 
 (varfn gb-pre-render
@@ -793,6 +804,7 @@ This function is pretty expensive since it redoes all word wrapping."
             changed-selection
             changed-scroll
             changed-styling)
+    
     (when changed
       (timeit "delim ps"
               (put gb :delim-ps (rb/gb->delim-ps gb))))
@@ -861,8 +873,8 @@ This function is pretty expensive since it redoes all word wrapping."
               changed-selection
               changed-styling
               (gb :changed-scroll))
-      (timeit "generate texture"
-              (generate-texture gb)))
+      (timeit "generate texture" (generate-texture gb))
+      )
     
     #        (pp (ez-gb gb))
     
@@ -904,19 +916,28 @@ This function is pretty expensive since it redoes all word wrapping."
   
   (def h (height gb))
   
+  #  (rl-mult-matrixf-screen-scale)
+  
+  #€   (rl-load-identity)
+  
+  #  (rl-scalef 2 2 1)
+  
   (draw-texture-pro
     (get-render-texture (gb :texture))
     [0 0 (* x-scale w)
      (* y-scale (- h)) # (- h) #screen-w (- screen-h)
      ]
     
-    [x y w h #(/ screen-w x-scale) (/ screen-h y-scale)
+    [x
+     (* 0 y)
+     w h                    #(/ screen-w x-scale) (/ screen-h y-scale)
      ]
     [0 0]
     0
     :white)
-
-  (rl-pop-matrix))
+  
+  (rl-pop-matrix)
+  )
 
 (varfn render-cursor
   [gb]
@@ -937,8 +958,9 @@ This function is pretty expensive since it redoes all word wrapping."
         :scroll scroll} gb)
   (rl-push-matrix)
   
-  (+= (gb :blink) 1.1)
-  (when (> (gb :blink) 60) (set (gb :blink) 0))
+  #(rl-load-identity)
+  
+  #  (rl-scalef 2 2 1)
   
   (when-let [[x y] (and (< (gb :blink) 30)
                         (gb :caret-pos))
@@ -948,14 +970,18 @@ This function is pretty expensive since it redoes all word wrapping."
                    x)]
     
     (draw-line-ex
-      [cx (+ (offset 1)
-             (position 1)
+      [cx (+ (+ (offset 1)
+                (position 1))
              y
              (* (conf :mult) scroll))]
-      [cx (+ (offset 1) (position 1) y font-h (* (conf :mult) scroll))]
+      [cx (+ (+ (offset 1)
+                (position 1)
+                )
+             y 
+             font-h (* (conf :mult) scroll))]
       1
       (get-in gb [:colors :caret])))
-
+  
   (rl-pop-matrix))
 
 (comment

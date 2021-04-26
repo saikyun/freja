@@ -10,7 +10,7 @@
 
 (defn hit?
   [rec]
-  (< (tracev (rec 0)) ((get-mouse-position) 0)))
+  (< (rec 0) ((get-mouse-position) 0)))
 
 (defmacro try-steal-mouse-click
   [rec & body]

@@ -4,7 +4,11 @@
 
 (def font-size 16)
 (def spacing 1)
-(def font (default-load-font "assets/fonts/FiraSans-Regular.ttf" font-size))
+(var font nil)
+
+(varfn init
+  []
+  (set font (default-load-font "assets/fonts/FiraSans-Regular.ttf" font-size)))
 
 (defn unit [v]
   (* v 4))

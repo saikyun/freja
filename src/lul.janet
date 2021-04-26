@@ -27,9 +27,6 @@
       (put delay-left k repeat-delay)
       (scroll-to-focus props)))
   
-  (when (key-released? :;)
-    (print "YEE"))
-  
   (loop [k :keys binds]
     (when (key-released? k)
       (put delay-left k nil)

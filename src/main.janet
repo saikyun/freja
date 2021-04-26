@@ -3,6 +3,7 @@
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./textfield :as t)
+(import ./../misc/frp3 :as frp)
 (import ./../backwards2 :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
@@ -52,8 +53,8 @@
                   
                   :update (fn [self data]
                             (when (= (data :focus) self)
-                              (handle-mouse self (data :mouse))
-                              (handle-scroll self)
+                              #                              (handle-mouse self (data :mouse))
+                              #                              (handle-scroll self)
                               
                               (try
                                 (handle-keyboard self data)
@@ -64,7 +65,7 @@
                                   (print (debug/stacktrace fib err))))))
                   
                   :render (fn []
-                            (gb-pre-render gb-data)
+                            #_(gb-pre-render gb-data)
                             (gb-render-text gb-data))
                   
                   :id :main
@@ -109,8 +110,8 @@
                   
                   :update (fn [self data]
                             (when (= (data :focus) self)
-                              (handle-mouse self (data :mouse))
-                              (handle-scroll self)
+                              #                              (handle-mouse self (data :mouse))
+                              #                              (handle-scroll self)
 
                               (try
                                 (handle-keyboard self data)
@@ -151,8 +152,8 @@
                   
                   :update (fn [self data]
                             (when (= (data :focus) self)
-                              (handle-mouse self (data :mouse))
-                              (handle-scroll self)
+                              #                              (handle-mouse self (data :mouse))
+                              #                              (handle-scroll self)
 
                               (try
                                 (handle-keyboard self data)
@@ -170,7 +171,7 @@
                                            (fn [props]
                                              (deselect gb-data)
                                              (focus-other props gb-data))
-
+                                           
                                            :f (fn [props]
                                                 (when (meta-down?)
                                                   (search props)))
@@ -258,7 +259,7 @@
     [0 0]
     0
     :white)
-
+  
   (rl-pop-matrix))
 
 
@@ -270,14 +271,14 @@
 
 (array/push draws {:draw (fn [_ data] (draw-frame (data :dt)))})
 
-(array/concat fs [gb-data])
+#_(array/concat fs [gb-data])
 
 (varfn internal-frame
   []
   (def dt (get-frame-time))
 
   (put data :dt dt)
-
+  
   (put data :changed-focus false)
   (try
     (loop [o :in focus-checks]
@@ -292,17 +293,18 @@
   (comment
     (unless (data :changed-focus)
       (put data :focus gb-data)))
-
+  
   (comment
     (when-let [active-data (data :focus)]
       (handle-mouse mouse-data active-data)
-      (handle-scroll active-data)))
-
+      (handle-scroll active-data))
+    )
+  
   (when (window-resized?)
     (put gb-data :resized true))
-
+  
   (def [x-scale y-scale] screen-scale)
-
+  
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
   
@@ -345,17 +347,17 @@
          (string/format "%.40m")
          (replace-content debug-data)))
   
-  (gb-pre-render debug-data)
-  
-  (cond
-    
-    (= (data :focus) file-open-data)
-    (gb-pre-render file-open-data)
-    
-    (= (data :focus) search-data)
-    (gb-pre-render search-data)
-    
-    nil)
+  # (gb-pre-render debug-data)
+  (comment
+    (cond
+      
+      (= (data :focus) file-open-data)
+      (gb-pre-render file-open-data)
+      
+      (= (data :focus) search-data)
+      (gb-pre-render search-data)
+      
+      nil))
   
   (begin-drawing)
   
@@ -363,8 +365,8 @@
   
   (render-all fs)
   
-
-
+  
+  
   (comment (rl-viewport 0 0 w h)
     (rl-matrix-mode :rl-projection)
     (rl-load-identity)
@@ -375,25 +377,29 @@
   
   #(when changed (print "render"))
   #(gb-render-text debug-data)
-
+  
   #(print)
-
+  
   #(print)
-
+  
   (cond (= (data :focus) file-open-data)
     (gb-render-text file-open-data)
-
+    
     (= (data :focus) search-data)
     (gb-render-text search-data)
-
+    
     nil)
-
+  
   (when-let [focus (cond
                      (= (data :focus) gb-data) gb-data
                      (= (data :focus) file-open-data) file-open-data
                      (= (data :focus) search-data) search-data)]
-    (render-cursor focus))
+    #    (render-cursor focus)
+    )
 
+
+  (frp/trigger dt)
+  
   (try
     (loop [f :in draws]
       (:draw f data))
@@ -408,9 +414,10 @@
     (let [[kind res] (thread/receive 0)]
       (case kind
         :hl
-        (-> gb-data
-            (put :highlighting res)
-            (put :changed-styling true))
+        (do
+          (-> gb-data
+              (put :highlighting res)
+              (put :changed-styling true)))
 
         # else
         (print "unmatched message"))
@@ -478,9 +485,13 @@
     (do (set-config-flags :vsync-hint)
       (set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
-
+      
       (init-window 1310 700
                    "Textfield")
+      
+      (frp/init)
+
+      (frp/swap! frp/gb-ref (fn [_] gb-data))
 
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 
@@ -507,8 +518,10 @@
         (put gb-data :context data)
         (put gb-data :screen-scale [x-scale y-scale])
         (put gb-data :colors colors)
+        
 
-        (array/push updates gb-data)
+
+        # (array/push updates gb-data)
         
         (set conf (load-font debug-data tc))
         (put debug-data :context data)

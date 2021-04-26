@@ -20,6 +20,21 @@
   (math/sqrt (+ (math/pow x 2)
                 (math/pow y 2))))
 
+(varfn mag-sqr
+  [v]
+  (assert (= (length v) 2)
+          "mag only works on v2")
+  
+  (def [x y] v)
+  
+  (+ (math/pow x 2)
+     (math/pow y 2)))
+
+(varfn dist-sqr
+  [v1 v2]
+  (math/abs
+    (mag-sqr (v- v1 v2))))
+
 (varfn normalize
   [v]
   (def m (mag v))

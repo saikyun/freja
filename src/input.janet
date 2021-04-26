@@ -103,7 +103,9 @@
                          (redo! props)
 
                          (meta-down?)
-                         (undo! props)))
+                         (do
+                           (print "undo")
+                           (undo! props))))
 
                      :left (fn [props]
                              (reset-blink props)
@@ -154,7 +156,7 @@
                                  (delete-word-forward! props)
 
                                  (delete-after-caret! props)))
-
+                     
                      :a (fn [props]
                           (when (meta-down?)
                             (select-all props)))
@@ -294,6 +296,8 @@
 (varfn handle-keyboard
   [props data]
   
+  (print "handling kb (should not happen)")
+  
   (def dt (data :dt))
   
   (def {:binds binds} props)
@@ -306,7 +310,7 @@
   
   (while (not= 0 k)
     (reset-blink props)
-
+    
     (unless (and (binds k)
                  ((binds k) props))
       (cond
@@ -319,27 +323,27 @@
     (scroll-to-focus props)
     
     (set k (get-char-pressed)))
-
+  
   (loop [[k dl] :pairs delay-left
          :let [left ((update delay-left k - dt) k)]]
     (when (<= left 0)
       ((binds k) props)
       (put delay-left k repeat-delay)
       (scroll-to-focus props)))
-
+  
   (loop [k :keys binds
          :when (not= k (keyword "("))]
     (when (key-released? k)
       (put delay-left k nil)
       (scroll-to-focus props))
-
+    
     (when (key-pressed? k)
       (reset-blink props)
       (put delay-left k initial-delay)
       ((binds k) props)
-
+      
       (scroll-to-focus props)))
-
+  
   (loop [k :keys game-binds]
     (when (key-down? k)
       (print "wat?")
@@ -350,12 +354,42 @@
       (print "wat 2?")
       ((pressed-game-binds k)))))
 
-(varfn handle-scroll
-  [props]
-  (let [move (get-mouse-wheel-move)]
-    (when (not= move 0)
-      (update props :scroll |(min 0 (+ $ (* move 10))))
-      (put props :changed-scroll true))))
+(varfn handle-keyboard-char
+  [props k]
+  
+  (def {:binds binds} props)
+  
+  # TODO: Need to add get-char-pressed
+  
+  (reset-blink props)
+  
+  (cond
+    (or (key-down? :left-shift)
+        (key-down? :right-shift))
+    (insert-char-upper! props k)
+    
+    (insert-char! props k))
+  
+  (scroll-to-focus props)
+  )
+
+(varfn handle-keyboard2
+  [props k]
+  
+  (def {:binds binds} props)
+  
+  # TODO: Need to add get-char-pressed
+  
+  (when-let [f (binds k)]
+    (reset-blink props)
+    (f props)
+    
+    (scroll-to-focus props)))
+
+(varfn handle-scroll-event
+  [props move]
+  (update props :scroll |(min 0 (+ $ (* move 10))))
+  (put props :changed-scroll true))
 
 (varfn get-mouse-pos
   [props [mx my]]
@@ -397,7 +431,7 @@
         char-i))))
 
 (varfn handle-shift-mouse-down
-  [props]
+  [props [kind mouse-pos] cb]
   (def {:lines lines
         :offset offset
         :position position
@@ -405,36 +439,36 @@
         :sizes sizes
         :conf conf
         :scroll scroll} props)
-
+  
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
-  (def pos (get-mouse-position))
-  (def [x y] pos)
-
+  
+  (def [x y] mouse-pos)
+  
   (def y-offset (+ y-pos oy (* (conf :mult) scroll)))
   (def x-offset (+ x-pos ox))
-
+  
   (if (nil? (props :selection))
-    (-> props
-        (put :selection (props :caret))
-        (put-caret (get-mouse-pos props pos))
-        (put :stickiness (if (< x x-offset) :down :right))
-        (put :changed-selection true))
+    (cb kind |(-> props
+                  (put :selection (props :caret))
+                  (put-caret (get-mouse-pos props mouse-pos))
+                  (put :stickiness (if (< x x-offset) :down :right))
+                  (put :changed-selection true)))
+    
+    (cb kind |(let [curr-pos (get-mouse-pos props mouse-pos)
+                    start (min (props :selection) (props :caret))
+                    stop (max (props :selection) (props :caret))]
+                (-> props
+                    (put :selection
+                         (if (> curr-pos start)
+                           start
+                           stop))
+                    (put-caret curr-pos)
+                    (put :stickiness (if (< x x-offset) :down :right))
+                    (put :changed-selection true))))))
 
-    (let [curr-pos (get-mouse-pos props pos)
-          start (min (props :selection) (props :caret))
-          stop (max (props :selection) (props :caret))]
-      (-> props
-          (put :selection
-               (if (> curr-pos start)
-                 start
-                 stop))
-          (put-caret curr-pos)
-          (put :stickiness (if (< x x-offset) :down :right))
-          (put :changed-selection true)))))
-
-(varfn handle-mouse
-  [props mouse-data]
+(varfn handle-mouse-event
+  [props event cb]
   (def {:lines lines
         :offset offset
         :position position
@@ -442,129 +476,63 @@
         :sizes sizes
         :conf conf
         :scroll scroll} props)
-
+  
+  (def [kind mouse-pos] event)
+  (def [x y] mouse-pos)
+  
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
-  (def pos (get-mouse-position))
-  (def [x y] pos)
-
+  
   (def y-offset (+ y-pos oy (* (conf :mult) scroll)))
   (def x-offset (+ x-pos ox))
-
-  (put mouse-data :just-double-clicked false)
-  (put mouse-data :just-triple-clicked false)
-
-  (when (mouse-button-released? 0)
-    (put mouse-data :last-text-pos nil)
-    (put mouse-data :just-down nil)
-    (put mouse-data :recently-double-clicked nil)
-    (put mouse-data :recently-triple-clicked nil)
-    (put mouse-data :up-pos [x y])
-
-    (comment
-      (when (mouse-data :down-pos)
-        (put mouse-data :selected-pos [(get-mouse-pos
-                                         (mouse-data :down-pos)
-                                         props
-                                         text
-                                         sizes
-                                         ps
-                                         rows
-                                         x-offset
-                                         y-offset)
-                                       (get-mouse-pos
-                                         pos
-                                         props
-                                         text
-                                         sizes
-                                         ps
-                                         rows
-                                         x-offset
-                                         y-offset)]))))
-
-  (when (mouse-button-pressed? 0)
-    (reset-blink props)
-
-    (when (and (mouse-data :down-time2)
-               (> 0.4 (- (get-time) (mouse-data :down-time2))))
-      (put mouse-data :just-triple-clicked true)
-      (put mouse-data :recently-triple-clicked true))
-
-    (when (and (mouse-data :down-time)
-               (> 0.25 (- (get-time) (mouse-data :down-time))))
-      (put mouse-data :just-double-clicked true)
-      (put mouse-data :recently-double-clicked true)
-      (put mouse-data :down-time2 (get-time))))
-
-  (cond (mouse-data :just-triple-clicked)
-    (select-region props ;(gb-find-surrounding-paragraph!
-                            props
-                            (mouse-data :down-index)))
-
-    (and (mouse-data :just-double-clicked)
+  
+  (cond
+    (= kind :release)
+    (cb kind |(put props :down-index nil))
+    
+    (= kind :triple-click)
+    (cb kind |(select-region props ;(gb-find-surrounding-paragraph!
+                                      props
+                                      (get-mouse-pos props mouse-pos))))
+    #                       should maybe remember original pos
+    
+    (and (= kind :double-click)
          (not (key-down? :left-shift))
          (not (key-down? :right-shift)))
-    (select-region props ;(word-at-index props (mouse-data :down-index)))
-
-    (or (mouse-data :recently-double-clicked)
-        (mouse-data :recently-triple-clicked)) nil # don't start selecting until mouse is released again
-
-    (mouse-button-down? 0)
-    (do
-      (when (nil? (mouse-data :last-text-pos))
-        (put mouse-data :last-text-pos (+ (props :gap-start)
-                                          (length (props :gap)))))
-
-      (put mouse-data :down-time (get-time))
-
-      (if (= nil (mouse-data :just-down))
-        (do (put mouse-data :just-down true)
-          (put mouse-data :down-pos [x y])
-          (put mouse-data :down-index (get-mouse-pos props pos)))
-        (put mouse-data :just-down false))
-
-      (if (or (key-down? :left-shift)
-              (key-down? :right-shift))
-        (handle-shift-mouse-down props)
-
-        (let [down-pos (mouse-data :down-index)
-              curr-pos (get-mouse-pos props pos)]
-
-          (if (not= down-pos curr-pos)
-            (-> props
-                (put :selection down-pos)
-                (put :changed-selection true))
-            (-> props
-                (put :selection nil)
-                (put :changed-selection true)))
-
-          (-> props
-              (put :caret curr-pos)
-              (put :stickiness (if (< x x-offset) :down :right))
-              (put :changed-nav true))))
-
-      (comment
-        (var moved-caret false)
-
-        (let [[start end] (mouse-data :selected-pos)
-              start (if (or (key-down? :left-shift)
-                            (key-down? :right-shift))
-                      (mouse-data :last-text-pos)
-                      start)
-
-              single (= start end)
-              p (dec (get-in mouse-data [:selected-pos 1])) ## position before mouse
-              rp (row-of-pos (props :rows) p)
-              newline (= (first "\n") (get both p))]
-
-          (if (and single
-                   newline
-                   (= rp (y->row props (pos 1))))
-            (select-region props (dec start) (dec end))
-            (do
-              (if (= (row-of-pos (props :rows) (get-in mouse-data [:selected-pos 1]))
-                     (y->row props (pos 1)))
-                (put props :stickiness :down)
-                (put props :stickiness :right))
-
-              (select-region props start end))))))))
+    (cb kind |(select-region props ;(word-at-index props 
+                                                   (get-mouse-pos props mouse-pos))))
+    #                                    should maybe remember original pos
+    
+    (and (or (= kind :press)
+             (= kind :drag))
+         (or (key-down? :left-shift)
+             (key-down? :right-shift)))
+    (handle-shift-mouse-down props event cb)
+    
+    (= kind :press)
+    (cb kind |(let [cur-index (get-mouse-pos props mouse-pos)]
+                (-> props
+                    reset-blink
+                    (put :down-index cur-index)
+                    (put :selection nil)
+                    (put :changed-selection true)
+                    (put :caret cur-index)
+                    (put :stickiness (if (< x x-offset) :down :right))
+                    (put :changed-nav true))))
+    
+    (= kind :drag)
+    (cb kind |(let [down-pos (props :down-index)
+                    curr-pos (get-mouse-pos props mouse-pos)]
+                
+                (if (not= down-pos curr-pos)
+                  (-> props
+                      (put :selection down-pos)
+                      (put :changed-selection true))
+                  (-> props
+                      (put :selection nil)
+                      (put :changed-selection true)))
+                
+                (-> props
+                    (put :caret curr-pos)
+                    (put :stickiness (if (< x x-offset) :down :right))
+                    (put :changed-nav true))))))

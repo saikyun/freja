@@ -46,24 +46,39 @@
     (file/flush f)
     (print "Saved file: " path)))
 
-(varfn save-and-dofile
-  [props]
-  (def path (props :path))
-  (save-file props path)
-  (def env (make-env (get-in props [:context :top-env])))
+(varfn inner-dofile
+  [top-env path]
+  
+  (def env (make-env top-env))
+  
   (try
     (do
       (dofile path
               #             :env (fiber/getenv (fiber/current))
               :env env)
-      (merge-into (get-in props [:context :top-env]) env))
+      (merge-into top-env env))
     ([err fib]
       (print "nope")
-      (print (debug/stacktrace fib err))))
+      (print (debug/stacktrace fib err)))))
+
+(varfn save-and-dofile
+  [props]
+  (def path (props :path))
+  (save-file props path)
+  
+  (inner-dofile (get-in props [:context :top-env]) path)
+  
   (print "Loaded file: " path))
+
+(varfn df
+  [path]
+  (do (inner-dofile (fiber/getenv (fiber/current)) "misc/frp3.janet") :ok))
 
 
 (comment
+
+  (df "misc/frp3.janet")
+  
 
   (dofile "/Users/test/programmering/janet/textfield/src/text_rendering_ints.janet"
           :env (fiber/getenv (fiber/current)))
