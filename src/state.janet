@@ -1,3 +1,55 @@
+(import ./../misc/defonce :prefix "")
+
+(def state-ref @{:ch (ev/chan 1) :data @[] :only-last true})
+(defonce screen-size-ref @{:ch (ev/chan 1) :data nil})
+(defonce rt-ref @{:ch (ev/chan 1) :data nil})
+(def render-queue-ref @{:ch (ev/chan 1) :data nil :only-last true})
+(def mouse-pos-ref @{:ch (ev/chan 1) :data [-1 -1] :only-last true})
+(def clicks-ref @{:ch (ev/chan 10) :no-history true})
+(def scroll-ref @{:ch (ev/chan 10) :no-history true})
+(def kb-ref @{:ch (ev/chan 10) :no-history true})
+(def char-ref @{:ch (ev/chan 10) :no-history true})
+
+(def new-frame-ref @{:ch (ev/chan 1) :no-history true :only-last true})
+(def callbacks-ref @{:ch (ev/chan 10) :data @{}})
+(defonce gb-ref @{:ch (ev/chan 1) :data nil :only-last true})
+(defonce search-ref @{:ch (ev/chan 1) :data nil :only-last true})
+(defonce file-open-ref @{:ch (ev/chan 1) :data nil :only-last true})
+(defonce focus-ref @{:ch (ev/chan 1) :data nil :only-last true})
+
+
+
+
+(defn ev/check
+  [chan]
+  (when (pos? (ev/count chan))
+    (ev/take chan)))
+
+(defn ev/push
+  [chan v]
+  (when (ev/full chan)
+    (ev/take chan)) ## throw away old values
+  (ev/give chan v))
+
+(defn swap!
+  [ref f & vs]
+  (let [new-data (f (ref :data) ;vs)]
+    (ev/push (ref :ch) new-data)
+    (unless (ref :no-history)
+      (put ref :data new-data))))
+
+
+
+
+
+
+
+
+
+
+
+
+
 (def focus-checks @[])
 
 (def updates @[])

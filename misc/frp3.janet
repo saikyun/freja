@@ -2,11 +2,10 @@
 
 (use jaylib)
 (import ./../backwards2 :prefix "")
-
+(import ./../src/state :prefix "")
+(import ./defonce :prefix "")
 (import ./../src/render_new_gap_buffer :prefix "")
-
 (import ./../src/input :prefix "")
-
 (import ./../top_bar2 :as tb)
 
 (def possible-keys
@@ -116,38 +115,6 @@
    :y
    :z])
 
-(def state-ref @{:ch (ev/chan 1) :data @[] :only-last true})
-(def screen-size-ref @{:ch (ev/chan 1) :data nil})
-(def rt-ref @{:ch (ev/chan 1) :data nil})
-(def render-queue-ref @{:ch (ev/chan 1) :data nil :only-last true})
-(def mouse-pos-ref @{:ch (ev/chan 1) :data [-1 -1] :only-last true})
-(def clicks-ref @{:ch (ev/chan 10) :no-history true})
-(def scroll-ref @{:ch (ev/chan 10) :no-history true})
-(def kb-ref @{:ch (ev/chan 10) :no-history true})
-(def char-ref @{:ch (ev/chan 10) :no-history true})
-
-(def new-frame-ref @{:ch (ev/chan 1) :no-history true :only-last true})
-(def callbacks-ref @{:ch (ev/chan 10) :data @{}})
-(def gb-ref @{:ch (ev/chan 1) :data nil :only-last true})
-
-(defn ev/check
-  [chan]
-  (when (pos? (ev/count chan))
-    (ev/take chan)))
-
-(defn ev/push
-  [chan v]
-  (when (ev/full chan)
-    (ev/take chan)) ## throw away old values
-  (ev/give chan v))
-
-(defn swap!
-  [ref f & vs]
-  (let [new-data (f (ref :data) ;vs)]
-    (ev/push (ref :ch) new-data)
-    (unless (ref :no-history)
-      (put ref :data new-data))))
-
 (defn split
   [ch target-chs]
   {:fib
@@ -222,17 +189,21 @@
 
 (defn pad-left
   [padding]
-  (case (length padding)
-    1 (first padding)
-    2 (padding 1)
-    4 (padding 3)))
+  (if (nil? padding)
+    0
+    (case (length padding)
+      1 (first padding)
+      2 (padding 1)
+      4 (padding 3))))
 
 (defn pad-top
   [padding]
-  (case (length padding)
-    1 (first padding)
-    2 (padding 0)
-    4 (padding 0)))
+  (if (nil? padding)
+    0
+    (case (length padding)
+      1 (first padding)
+      2 (padding 0)
+      4 (padding 0))))
 
 (def button {:render (fn [self {:size size :padding padding :color color} children]
                        (draw-rectangle
@@ -248,7 +219,7 @@
                          (when children
                            (map draw-layout children)))
 
-                       (if (= (dyn :layout) :horizonal)
+                       (if (= (dyn :layout) :horizontal)
                          (update (dyn :anchor) 0 + (get size 0 0))
                          (update (dyn :anchor) 1 + (get size 1 0))))
              :update (fn [self
@@ -269,16 +240,59 @@
                                      (get size 0 0)
                                      (get size 1 0)]))
                          (swap! callbacks-ref put kind on-click))
-                       
+
                        (with-dyns [:anchor (array ;(dyn :anchor))]
                          (update (dyn :anchor) 0 + (pad-left padding))
                          (update (dyn :anchor) 1 + (pad-top padding))
                          (when children
                            (map trigger-update-layout children)))
-                       
-                       (if (= (dyn :layout) :horizonal)
+
+                       (if (= (dyn :layout) :horizontal)
                          (update (dyn :anchor) 0 + (get size 0 0))
                          (update (dyn :anchor) 1 + (get size 1 0))))})
+
+(def horizontal {:render
+                 (fn [self
+                      {:size size
+                       :padding padding
+                       :color color}
+                      children]
+
+                   (when color
+                     (draw-rectangle
+                       ((dyn :anchor) 0)
+                       ((dyn :anchor) 1)
+                       (get size 0 0)
+                       (get size 1 0)
+                       color))
+
+                   (with-dyns [:anchor (array ;(dyn :anchor))
+                               :layout :horizontal]
+                     (update (dyn :anchor) 0 + (pad-left padding))
+                     (update (dyn :anchor) 1 + (pad-top padding))
+                     (when children
+                       (map draw-layout children)))
+
+                   (if (= (dyn :layout) :horizontal)
+                     (update (dyn :anchor) 0 + (get size 0 0))
+                     (update (dyn :anchor) 1 + (get size 1 0))))
+
+                 :update
+                 (fn [self
+                      {:size size
+                       :padding padding}
+                      children]
+
+                   (with-dyns [:anchor (array ;(dyn :anchor))
+                               :layout :horizontal]
+                     (update (dyn :anchor) 0 + (pad-left padding))
+                     (update (dyn :anchor) 1 + (pad-top padding))
+                     (when children
+                       (map trigger-update-layout children)))
+
+                   (if (= (dyn :layout) :horizontal)
+                     (update (dyn :anchor) 0 + (get size 0 0))
+                     (update (dyn :anchor) 1 + (get size 1 0))))})
 
 (varfn draw-layout
   [c]
@@ -298,90 +312,141 @@
 
 (defn noop [_ _ _] nil)
 
-(def p {:render (fn [self props [text]]
-                  (draw-text-ex tb/font text (dyn :anchor) tb/font-size tb/spacing :black))
+(def p {:render
+        (fn [self {:color color} [text]]
+          (default color :black)
+          (draw-text-ex tb/font text (dyn :anchor) tb/font-size tb/spacing color))
         :update noop})
 
 (def mouse-data (new-mouse-data))
 
+(defn new-text-area
+  [id gb-ref]
+  @{:listen [gb-ref focus-ref char-ref kb-ref clicks-ref mouse-pos-ref scroll-ref]
+
+    :id id
+
+    :render (fn [self]
+              (when (or (= (self :id) :main)
+                        (= (self :id) ((self :last-res) 1)))
+                (def gb ((self :last-res) 0))
+
+                (rl-pop-matrix)
+
+                (end-texture-mode)
+
+                (gb-pre-render gb)
+                (begin-texture-mode (rt-ref :data))
+
+                (rl-push-matrix)
+
+                (rl-load-identity)
+
+                (rl-scalef 2 2 1)
+
+                (gb-render-text gb)))
+
+    :update (fn [self gb focus char-to-insert pressed-key clicks mouse-pos scroll]
+              #(handle-mouse self (data :mouse))
+              #(handle-scroll self)
+
+              (when (= (self :id) focus)
+                (when clicks
+                  #(swap! callbacks-ref array/push |(print "GB CLICKED"))
+
+                  # handle mouse input here, somewhere
+)
+                (try
+                  (do
+                    (when (and clicks gb)
+                      (handle-mouse-event
+                        gb
+                        clicks
+                        (fn [kind f]
+                          (swap! callbacks-ref put kind f)
+                          (swap! gb-ref (fn [_] gb))
+                          (swap! state-ref identity)))
+                      (swap! gb-ref (fn [_] gb))
+                      (swap! state-ref identity))
+
+                    (when (and scroll gb)
+                      (handle-scroll-event gb scroll)
+                      (swap! gb-ref (fn [_] gb))
+                      (swap! state-ref identity))
+
+                    (when pressed-key
+                      (do
+                        (handle-keyboard2 gb pressed-key)
+                        (swap! gb-ref (fn [_] gb))
+                        (swap! state-ref identity)))
+
+                    (when char-to-insert
+                      (do
+                        (handle-keyboard-char gb char-to-insert)
+                        (swap! gb-ref (fn [_] gb))
+                        (swap! state-ref identity))))
+
+                  ([err fib]
+                    (print "kbd")
+                    (print (debug/stacktrace fib err))))))})
+
+(def text-area (new-text-area :main gb-ref))
+(def search-area (new-text-area :search search-ref))
+(def file-open-area (new-text-area :file-open file-open-ref))
+
+(def menu
+  @{:listen [clicks-ref]
+    :layout (fn [clicks]
+              [horizontal
+               {:size [1920 30]
+                :color 0x3E3E3Eff}
+               [button {:size [100 30]
+                        :padding [8 12]
+                        :on-click (fn [] (print "Hi sogaiu :D"))
+                        :clicks clicks
+                        :color 0x3E3E3Eff}
+                [p {:color 0xffffff80} "File123"]]
+
+               [button {:size [100 30]
+                        :padding [8 12]
+                        :on-click (fn [] (print "Hi sogaiu :D"))
+                        :clicks clicks
+                        :color 0x3E3E3Eff}
+                [p {:color 0xffffff80} "Edit"]]])
+    :render (fn [self]
+              (draw-layout ((self :layout) nil)))
+    :update (fn [self click]
+              (trigger-update-layout ((self :layout) click)))})
+
 (def state
   (->> @[### buttons
-         @{:listen [gb-ref char-ref kb-ref clicks-ref mouse-pos-ref scroll-ref]
-           
-           :render (fn [self]
-                     (def gb ((self :last-res) 0))
-                     
-                     (rl-pop-matrix)
-                     
-                     (end-texture-mode)
-                     
-                     (gb-pre-render gb)
-                     (begin-texture-mode (rt-ref :data))
+         text-area
 
-                     (rl-push-matrix)
+         search-area
 
-                     (rl-load-identity)
+         file-open-area
 
-                     (rl-scalef 2 2 1)
-
-                     (gb-render-text gb))
-
-           :update (fn [self gb char-to-insert pressed-key clicks mouse-pos scroll]
-                     #(handle-mouse self (data :mouse))
-                     #(handle-scroll self)
-
-                     (when clicks
-                       #(swap! callbacks-ref array/push |(print "GB CLICKED"))
-
-                       # handle mouse input here, somewhere
-                       )
-                     (try
-                       (do
-                         (when (and clicks gb)
-                           (handle-mouse-event
-                             gb
-                             clicks
-                             (fn [kind f]
-                               (swap! callbacks-ref put kind f)
-                               (swap! gb-ref (fn [_] gb))
-                               (swap! state-ref identity)))
-                           (swap! gb-ref (fn [_] gb))
-                           (swap! state-ref identity))
-                         
-                         (when (and scroll gb)
-                           (handle-scroll-event gb scroll)
-                           (swap! gb-ref (fn [_] gb))
-                           (swap! state-ref identity))
-                         
-                         (when pressed-key
-                           (do
-                             (handle-keyboard2 gb pressed-key)
-                             (swap! gb-ref (fn [_] gb))
-                             (swap! state-ref identity)))
-                         
-                         (when char-to-insert
-                           (do
-                             (handle-keyboard-char gb char-to-insert)
-                             (swap! gb-ref (fn [_] gb))
-                             (swap! state-ref identity))))
-
-                       ([err fib]
-                         (print "kbd")
-                         (print (debug/stacktrace fib err)))))}
-
-         @{:listen [new-frame-ref]
+         @{:listen [focus-ref new-frame-ref]
 
            :render (fn [self]
-                     (when-let [gb (gb-ref :data)]
+                     (when-let [gb (self :gb)]
                        (render-cursor gb)))
 
            :on true
 
-           :update (fn [self dt]
+           :update (fn [self focus dt]
+                     (def old-gb (self :gb))
+                     (put self :gb (case focus
+                                     :main (gb-ref :data)
+                                     :search (search-ref :data)
+                                     :file-open (file-open-ref :data)))
+                     (def gb (self :gb))
 
-                     (def gb (gb-ref :data))
-
-                     (+= (gb :blink) (* 60 dt))
+                     (if (not= old-gb gb)
+                       (do (put gb :blink 0)
+                         (put self :on true)
+                         (swap! state-ref identity))
+                       (+= (gb :blink) (* 60 dt)))
 
                      (when (and (> (gb :blink) 30)
                                 (self :on))
@@ -401,7 +466,7 @@
                      (when (and click
                                 (in-rec? click (self :hitbox)))
                        (swap! callbacks-ref put (first click) |(print (length state)))))}
-         
+
          @{:listen [clicks-ref]
            :hitbox @[860 20 100 70]
            :render (fn [self]
@@ -410,41 +475,8 @@
                      (when (in-rec? click (self :hitbox))
                        (print "pushing")
                        (swap! callbacks-ref put (first click) |(print "blue"))))}
-         
-         @{:listen [clicks-ref]
-           :layout (fn [clicks]
-                     [button {:size [100 60]
-                              :padding [20 30]
-                              :on-click (fn [] (print "Hi sogaiu :D"))
-                              :clicks clicks
-                              :color :green}
-                      [p {} "Hello 123"]])
-           :render (fn [self]
-                     (draw-layout ((self :layout) nil)))
-           :update (fn [self click]
-                     (trigger-update-layout ((self :layout) click)))}
 
-         # @{:listen [clicks-ref gb-ref]
-         #   :gb-data nil
-         #   :render (fn [self]
-         #             (def gb-data (self :gb-data))
-         #             (gb-pre-render gb-data)
-         #             (gb-render-text gb-data))
-         #   :update (fn [self click gb-data]
-         #             (put self :gb-data gb-data)
-         #             (when (= (data :focus) self)
-         #               (comment
-         #                 (handle-mouse self (data :mouse))
-         #                 (handle-scroll self)
-
-         #                 (try
-         #                   (handle-keyboard self data)
-
-         #                   ([err fib]
-         #                     (print "kbd")
-         #                     (put data :latest-res (string "Error: " err))
-         #                     (print (debug/stacktrace fib err)))))))}
-
+         menu
 
          ### rendering
 
@@ -472,7 +504,7 @@
                      (rl-pop-matrix)
 
                      (end-texture-mode)
-                     
+
                      (swap! render-queue-ref
                             (fn [_]
                               (fn render
@@ -487,12 +519,12 @@
                                   [0 0]
                                   0
                                   :white)))))}
-         
+
          @{:listen [new-frame-ref render-queue-ref]
            :update (fn [self _ rq]
                      (when rq
                        (rq)))}
-         
+
          ### resolving callbacks
          @{:listen [callbacks-ref]
            :update (fn [self cb-pairs]
@@ -501,7 +533,7 @@
                        (put cb-pairs k nil)))}]
        (map add-listeners)))
 
-(defn add-objeoa
+(defn add-obj
   [state-ref o]
   (swap! state-ref
          array/push
@@ -515,7 +547,7 @@
       :render (fn [self]
                 (print "green")
                 (draw-rectaungle-rec (self :hitbox) :green))
-      
+
       :listen [clicks-ref soaetate-ref]
       :update (fn [self click state]
                 (when (in-rec? click (self :hitbox))
@@ -524,29 +556,29 @@
                          (first click)
                          |(print "green" (length state)))))})
   #
-  )
+)
 
 (var delay-left @{})
 
 (defn handle-keys
   [dt]
   (var k (get-char-pressed))
-  
+
   (while (not= 0 k)
     (swap! char-ref (fn [_] k))
     (set k (get-char-pressed)))
-  
+
   (loop [[k dl] :pairs delay-left
          :let [left ((update delay-left k - dt) k)]]
     (when (<= left 0)
       # push key
       (swap! kb-ref (fn [_] k))
       (put delay-left k repeat-delay)))
-  
+
   (loop [k :in possible-keys]
     (when (key-released? k)
       (put delay-left k nil))
-    
+
     (when (key-pressed? k)
       (put delay-left k initial-delay)
       # push key
@@ -567,7 +599,7 @@
 
   (put mouse-data :just-double-clicked false)
   (put mouse-data :just-triple-clicked false)
-  
+
   (when (mouse-button-released? 0)
     (put mouse-data :just-down nil)
     (put mouse-data :recently-double-clicked nil)
@@ -633,13 +665,15 @@
   (handle-mouse mouse-data)
 
   (handle-scroll)
-  
+
   (handle-keys dt)
 
   (run (state-ref :data)))
 
 (varfn init
   []
+  (swap! focus-ref (fn [_] :main))
+
   (swap! screen-size-ref
          (fn [_]
            [(get-screen-width)

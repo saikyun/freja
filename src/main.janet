@@ -3,7 +3,7 @@
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./textfield :as t)
-(import ./../misc/frp3 :as frp)
+(import ./../misc/frp3 :prefix "")
 (import ./../backwards2 :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
@@ -71,16 +71,20 @@
                   :id :main
                   
                   :open-file (fn [props]
-                               (focus-other props file-open-data))
-
+                               #(focus-other props file-open-data)
+                               (swap! focus-ref (fn [_] :file-open))
+                               )
+                  
                   :search (fn [props]
-                            (focus-other props search-data))
-
+                            #(focus-other props search-data)
+                            (swap! focus-ref (fn [_] :search))
+                            )
+                  
                   :save-file (fn [props]
                                (if-let [path (props :path)]
                                  (save-file props path)
                                  (print "no path!")))
-
+                  
                   :binds gb-binds})
   :ok)
 
@@ -90,15 +94,15 @@
             @{:size [500 800]
               :position [800 30]
               :offset [10 0]
-
+              
               :open-file (fn [props]
                            (focus-other props :open-file))
-
+              
               :save-file (fn [props]
                            (if-let [path (props :path)]
                              (save-file props path)
                              (print "no path!")))
-
+              
               :binds gb-binds})
 
 (set file-open-data (new-gap-buffer))
@@ -112,10 +116,10 @@
                             (when (= (data :focus) self)
                               #                              (handle-mouse self (data :mouse))
                               #                              (handle-scroll self)
-
+                              
                               (try
                                 (handle-keyboard self data)
-
+                                
                                 ([err fib]
                                   (print "kbd")
                                   (put data :latest-res (string "Error: " err))
@@ -126,7 +130,9 @@
                   :on-enter
                   (fn [props path]
                     (load-file gb-data path)
-                    (focus-other props gb-data))})
+                    (swap! focus-ref (fn [_] :main))
+                    #(focus-other props gb-data)
+                    )})
   :ok)
 
 (set search-data (new-gap-buffer))
@@ -154,28 +160,32 @@
                             (when (= (data :focus) self)
                               #                              (handle-mouse self (data :mouse))
                               #                              (handle-scroll self)
-
+                              
                               (try
                                 (handle-keyboard self data)
-
+                                
                                 ([err fib]
                                   (print "kbd")
                                   (put data :latest-res (string "Error: " err))
                                   (print (debug/stacktrace fib err))))))
                   
                   :on-enter (fn [props _] (search props))
-
+                  
                   :binds (-> (merge-into @{}
                                          file-open-binds
                                          @{:escape
                                            (fn [props]
                                              (deselect gb-data)
-                                             (focus-other props gb-data))
+                                             #_(focus-other props gb-data)
+                                             
+                                             (swap! focus-ref (fn [_] :main))
+                                             
+                                             )
                                            
                                            :f (fn [props]
                                                 (when (meta-down?)
                                                   (search props)))
-
+                                           
                                            :b
                                            (fn [props]
                                              (when (meta-down?)
@@ -189,7 +199,8 @@
                                                        (reset-blink)
                                                        (put-caret i)
                                                        (put :selection (gb-find-forward! gb-data search-term))
-                                                       (put :changed-selection true))))))}))})
+                                                       (put :changed-selection true))
+                                                   (swap! gb-ref (fn [_] gb-data))))))}))})
   :ok)
 
 (var conf nil)
@@ -398,7 +409,7 @@
     )
 
 
-  (frp/trigger dt)
+  (trigger dt)
   
   (try
     (loop [f :in draws]
@@ -489,9 +500,12 @@
       (init-window 1310 700
                    "Textfield")
       
-      (frp/init)
+      (init)
 
-      (frp/swap! frp/gb-ref (fn [_] gb-data))
+      (swap! gb-ref (fn [_] gb-data))
+      
+      (swap! search-ref (fn [_] search-data))
+      (swap! file-open-ref (fn [_] file-open-data))
 
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 

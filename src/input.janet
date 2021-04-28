@@ -1,5 +1,6 @@
 (use jaylib)
 (import ./eval :prefix "")
+(import ./state :prefix "")
 (import ./new_gap_buffer :prefix "")
 (import ./render_new_gap_buffer :prefix "")
 (import ./file_handling :prefix "")
@@ -259,7 +260,7 @@
                              (key-down? :right-control))
                          (eval-it2 (get-in props [:context :top-env])
                                    (gb-get-last-sexp props))
-
+                         
                          (insert-char! props (first "\n"))))})
 
 (def file-open-binds @{})
@@ -268,7 +269,9 @@
             {:escape
              (fn [props]
                (deselect props)
-               (unfocus props))
+               (swap! focus-ref (fn [_] :main))
+               #(unfocus props)
+               )
              
              :enter (fn [props]
                       (reset-blink props)
@@ -388,7 +391,7 @@
 
 (varfn handle-scroll-event
   [props move]
-  (update props :scroll |(min 0 (+ $ (* move 10))))
+  (update props :scroll |(min 0 (+ $ (* move 2))))
   (put props :changed-scroll true))
 
 (varfn get-mouse-pos
