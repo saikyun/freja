@@ -8,6 +8,8 @@
 (import ./../src/input :prefix "")
 (import ./../top_bar2 :as tb)
 
+123
+
 (def possible-keys
   [(keyword "'")
    (keyword ",")
@@ -117,27 +119,48 @@
 
 (defn split
   [ch target-chs]
-  {:fib
-   (ev/call
-     (fn []
-       (forever
-         (let [v (ev/take ch)]
-           (loop [c :in target-chs]
-             (ev/give c v))))))
-   :chs target-chs})
+  @{:fib
+    (ev/call
+      (fn []
+        (forever
+          (let [v (ev/take ch)]
+            (loop [c :in target-chs]
+              (ev/give c v))))))
+    :chs target-chs})
 
 (defn listen
   [ref o]
   (unless (get-in o [:listeners ref])
     (def ch (ev/chan 10))
     (update o :listeners |(put (or $ @{}) ref ch))
-
+    
     (if-let [{:fib fib :chs chs} (ref :split)]
       (do #(ev/cancel fib "k")
         (put ref :split (split (ref :ch) (array/push chs ch))))
       (put ref :split (split (ref :ch) @[ch])))
     (update o :last-res |(let [arr (or $ (array 1))]
                            (put arr (dec (length (o :listeners))) (ref :data))))))
+
+(varfn unlisten
+  [ref o]
+  (def ch (get-in o [:listeners ref]))
+  (update-in ref [:split :chs] (fn [chs] (filter |(not= $ ch) chs)))
+  (put-in o [:listeners ref] nil)
+  (update o :listen (fn [refs] (filter |(not= $ ref) refs)))
+  #(pp (ref :split))
+  )
+
+(varfn unlisten-all
+  [o]
+  (loop [l :in (o :listen)]
+    (unlisten l o))
+  (put o :last-res nil))
+
+(comment
+  (loop [o :in state]
+    (unlisten-all o))
+  #
+  )
 
 (defn add-listeners
   [o]
@@ -161,7 +184,7 @@
     (while check-queue
       (var any-change false)
       (var any-change-in-queues false)
-
+      
       (loop [i :range [0 (length listen)]
              :let [l (listen i)
                    ls (listeners l)]]
@@ -171,16 +194,16 @@
               # if a historised ref was changed
               # we want to rerun the thing to get the next event              
               (set any-change-in-queues true))
-
+            
             (unless (l :no-history)
               (put last-res i v))
             (put current-res i v))
-
+          
           (put current-res i (last-res i))))
-
+      
       (when any-change
         (:update o ;current-res))
-
+      
       (unless any-change-in-queues
         (set check-queue false)))))
 
@@ -323,9 +346,9 @@
 (defn new-text-area
   [id gb-ref]
   @{:listen [gb-ref focus-ref char-ref kb-ref clicks-ref mouse-pos-ref scroll-ref]
-
-    :id id
-
+    
+    :id id    
+    
     :render (fn [self]
               (when (or (= (self :id) :main)
                         (= (self :id) ((self :last-res) 1)))
@@ -344,8 +367,8 @@
 
                 (rl-scalef 2 2 1)
 
-                (gb-render-text gb)))
-
+                (gb-render-text gb)))    
+    
     :update (fn [self gb focus char-to-insert pressed-key clicks mouse-pos scroll]
               #(handle-mouse self (data :mouse))
               #(handle-scroll self)
@@ -355,7 +378,7 @@
                   #(swap! callbacks-ref array/push |(print "GB CLICKED"))
 
                   # handle mouse input here, somewhere
-)
+                  )
                 (try
                   (do
                     (when (and clicks gb)
@@ -390,6 +413,7 @@
                     (print "kbd")
                     (print (debug/stacktrace fib err))))))})
 
+
 (def text-area (new-text-area :main gb-ref))
 (def search-area (new-text-area :search search-ref))
 (def file-open-area (new-text-area :file-open file-open-ref))
@@ -417,6 +441,17 @@
               (draw-layout ((self :layout) nil)))
     :update (fn [self click]
               (trigger-update-layout ((self :layout) click)))})
+
+(put menu :render nil)
+
+(when (dyn 'state)
+  # (print "state exists")
+  
+  
+  (loop [o :in ((dyn 'state) :value)]
+    (unlisten-all o))
+
+  )
 
 (def state
   (->> @[### buttons
@@ -486,25 +521,26 @@
 
            :update (fn [self state screen-size rt]
                      (begin-texture-mode rt)
-
+                     
                      (rl-push-matrix)
-
+                     
                      (rl-load-identity)
-
+                     
                      (rl-scalef 2 2 1)
-
+                     
                      (clear-background :blank)
-
+                     
                      (loop [o :in state
                             :when (o :render)]
+                       # (when (o :id) (print "rendering " (o :id)))
                        (:render o))
-
+                     
                      # (draw-rectangle 800 0 100 100 :black)
-
+                     
                      (rl-pop-matrix)
-
+                     
                      (end-texture-mode)
-
+                     
                      (swap! render-queue-ref
                             (fn [_]
                               (fn render
@@ -556,7 +592,7 @@
                          (first click)
                          |(print "green" (length state)))))})
   #
-)
+  )
 
 (var delay-left @{})
 
@@ -578,7 +614,7 @@
   (loop [k :in possible-keys]
     (when (key-released? k)
       (put delay-left k nil))
-
+    
     (when (key-pressed? k)
       (put delay-left k initial-delay)
       # push key
@@ -625,7 +661,7 @@
       (put mouse-data :just-double-clicked true)
       (put mouse-data :recently-double-clicked true)
       (put mouse-data :down-time2 (get-time))))
-
+  
   (cond (mouse-data :just-triple-clicked)
     (swap! clicks-ref (fn [_] [:triple-click pos]))
 
@@ -633,7 +669,7 @@
          (not (key-down? :left-shift))
          (not (key-down? :right-shift)))
     (swap! clicks-ref (fn [_] [:double-click pos]))
-
+    
     (or (mouse-data :recently-double-clicked)
         (mouse-data :recently-triple-clicked))
     nil # don't start selecting until mouse is released again
@@ -641,7 +677,7 @@
     (mouse-button-down? 0)
     (do
       (put mouse-data :down-time (get-time))
-
+      
       (if (= nil (mouse-data :just-down))
         (do (put mouse-data :just-down true)
           (put mouse-data :last-pos pos)
@@ -661,13 +697,13 @@
 (varfn trigger
   [dt]
   (swap! new-frame-ref (fn [_] dt))
-
-  (handle-mouse mouse-data)
-
-  (handle-scroll)
-
-  (handle-keys dt)
-
+  
+  #(handle-mouse mouse-data)
+  
+  #(handle-scroll)
+  
+  #(handle-keys dt)
+  
   (run (state-ref :data)))
 
 (varfn init

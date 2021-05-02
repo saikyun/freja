@@ -479,7 +479,6 @@
         :sizes sizes
         :conf conf
         :scroll scroll} props)
-  
   (def [kind mouse-pos] event)
   (def [x y] mouse-pos)
   

@@ -72,7 +72,7 @@
 
 (varfn df
   [path]
-  (do (inner-dofile (fiber/getenv (fiber/current)) "misc/frp3.janet") :ok))
+  (do (inner-dofile (fiber/getenv (fiber/current)) path) :ok))
 
 
 (comment
