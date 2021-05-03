@@ -77,7 +77,6 @@
                   
                   :search (fn [props]
                             #(focus-other props search-data)
-                            (swap! focus-ref (fn [_] :search))
                             )
                   
                   :save-file (fn [props]
@@ -413,7 +412,8 @@
   
   (try
     (loop [f :in draws]
-      (:draw f data))
+      (:draw f data)
+      )
     ([err fib]
       (print "draws")
       (put data :latest-res (string "Error: " err))

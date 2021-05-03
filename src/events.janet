@@ -59,10 +59,16 @@
   [pullables]
   (loop [[pullable pullers] :pairs pullables]
     (case (type pullable)
-      :core/channel (array/push pullers @{:history (ev/chan 10000)
-                                          :on-event (fn [self ev] (update self :history ec/push! ev))})
-      :table        (array/push pullers @{:history (table/clone pullable)
-                                          :on-event (fn [self ev] nil)})))
+      :core/channel
+      (array/push pullers
+                  @{:history (ev/chan 10000)
+                    :on-event (fn [self ev]
+                                (update self :history ec/push! ev))})
+      
+      :table
+      (array/push pullers
+                  @{:history (freeze pullable)
+                    :on-event (fn [self ev] nil)})))
   
   pullables)
 

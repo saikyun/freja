@@ -10,6 +10,7 @@
 
 (import ./../src/extra_channel :as ec :fresh true)
 (import ./../src/events :as e :fresh true)
+(import ./../src/state :prefix "" :fresh true)
 (import ./../src/keyboard :as kb :fresh true)
 
 (def mouse     (ev/chan 100))
@@ -18,6 +19,7 @@
 (def callbacks (ev/chan 100))
 (def frame     (ev/chan 1))
 (def rerender  (ev/chan 1))
+
 
 (var delay-left @{})
 
@@ -91,10 +93,39 @@
                   :press (when (in-rec? data (self :rec))
                            (push-callback! ev |(:cb self)))))})
 
+(def search-area @{})
+
+(defn text-area-on-event
+  [self ev]
+  (match ev
+    [:key-down k]
+    (do
+      (handle-keyboard2
+        (self :gb)
+        k))
+    [:char k]
+    (handle-keyboard-char
+      (self :gb)
+      k)
+    [:scroll n]
+    (handle-scroll-event
+      (self :gb)
+      data)
+    [:press _]
+    (handle-mouse-event
+      (self :gb)
+      ev
+      (fn [kind f]
+        (push-callback! kind f)
+        (put (self :gb) :changed true)))))
+
 (def text-area
-  @{:id main
+  @{:id :main
     
-    :gb gb-data
+    :gb (merge-into gb-data
+                    @{:search (fn [props]
+                                (put focus :focus search-area)
+                                (put focus :updated true))})
     
     :draw (fn [self]
             (rl-pop-matrix)
@@ -114,68 +145,59 @@
             (gb-render-text (self :gb)))
     
     :on-event (fn [self ev]
-                #(handle-mouse self (data :mouse))
-                #(handle-scroll self)
-                
-                (def [kind data] ev)
-                
-                (case kind
-                  :key-down (handle-keyboard2 (self :gb) data)
+                (text-area-on-event self ev))})
+
+(merge-into
+  search-area
+  @{:id :search
+    
+    :gb search-data
+    
+    :draw (fn [self]
+            (rl-pop-matrix)
+            
+            #(end-texture-mode)
+            
+            (gb-pre-render (self :gb))
+            
+            #(begin-texture-mode (rt-ref :data))
+            
+            (rl-push-matrix)
+            
+            (rl-load-identity)
+            
+            #(rl-scalef 2 2 1)
+            
+            (gb-render-text (self :gb)))
+    
+    :on-event (fn [self ev]
+                (pp ev)
+                (text-area-on-event self ev))})
+
+(def caret
+  @{:draw (fn [self]
+            (when-let [gb (self :gb)]
+              (render-cursor gb)))
+    
+    :on true
+    
+    :on-event (fn [self ev]
+                (match ev
+                  {:focus focus}
+                  (put self :gb (focus :gb))
                   
-                  :char     (handle-keyboard-char (self :gb) (tracev data))
-                  
-                  # else
-                  (cond (= kind :scroll)
-                    (handle-scroll-event (self :gb) data)
+                  [:dt dt]
+                  (when (self :gb)
+                    (when (and (> ((self :gb) :blink) 30)
+                               (self :on))
+                      (put self :on false))
                     
-                    (or (= kind :press))
-                    (handle-mouse-event 
-                      (self :gb)
-                      (tracev ev)
-                      (fn [kind f]
-                        (push-callback! kind f)
-                        (put (self :gb) :changed true)))))
-                
-                (comment
-                  (when (= (self :id) focus)
-                    (when clicks
-                      #(swap! callbacks-ref array/push |(print "GB CLICKED"))
-                      
-                      # handle mouse input here, somewhere
-                      )
-                    (try
-                      (do
-                        (when (and clicks gb)
-                          (handle-mouse-event
-                            gb
-                            clicks
-                            (fn [kind f]
-                              (swap! callbacks-ref put kind f)
-                              (swap! gb-ref (fn [_] gb))
-                              (swap! state-ref identity)))
-                          (swap! gb-ref (fn [_] gb))
-                          (swap! state-ref identity))
-                        
-                        (when (and scroll gb)
-                          (handle-scroll-event gb scroll)
-                          (swap! gb-ref (fn [_] gb))
-                          (swap! state-ref identity))
-                        
-                        (when pressed-key
-                          (do
-                            (handle-keyboard2 gb pressed-key)
-                            (swap! gb-ref (fn [_] gb))
-                            (swap! state-ref identity)))
-                        
-                        (when char-to-insert
-                          (do
-                            (handle-keyboard-char gb char-to-insert)
-                            (swap! gb-ref (fn [_] gb))
-                            (swap! state-ref identity))))
-                      
-                      ([err fib]
-                        (print "kbd")
-                        (print (debug/stacktrace fib err)))))))})
+                    (when (> ((self :gb) :blink) 60)
+                      (set ((self :gb) :blink) 0)
+                      (put self :on true)))))})
+
+(put focus :focus text-area)
+(put focus :changed true)
 
 (def button2
   (table/setproto
@@ -186,18 +208,41 @@
 (varfn render
   [dt]
   (:draw text-area)
+  (:draw search-area)
+  (:draw caret)
   
   (:draw button)
   (:draw button2))
 
 (def dependencies
-  @{mouse [button button2 text-area]
-    keyboard [text-area]
-    chars [text-area]
-    callbacks [pp handle-callbacks]})
+  @{mouse @[button button2 text-area search-area]
+    keyboard @[|(:on-event (focus :focus) $)]
+    chars @[|(:on-event (focus :focus) $)]
+    focus @[caret]
+    callbacks @[pp handle-callbacks]})
+
+(comment
+  (get-in focus [:focus :id])
+  
+  (loop [[pullable pullers] :pairs dependencies]
+    (when-let [hi-i (find-index |(and (table? $) ($ :history)) pullers)]
+      (def history (pullers hi-i))
+      (array/remove pullers hi-i)
+      (case (type pullable)
+        :core/channel (e/pull-all (history :history) [pullable])
+        :table        (do (loop [k :in (keys pullable)]
+                            (put pullable k nil))
+                        (merge-into pullable (history :history)))
+        (error (string "Strange" (type pullable))))
+      (array/push pullers history)))
+  #
+  )
+
+# (e/record-all dependencies)
+# need to make gb-data not contain circular references etc
 
 (def finally
-  @{frame [render]})
+  @{frame [render caret]})
 
 (varfn draw-frame
   [dt]

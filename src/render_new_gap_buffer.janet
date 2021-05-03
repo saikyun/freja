@@ -929,7 +929,7 @@ This function is pretty expensive since it redoes all word wrapping."
      ]
     
     [x
-     (* 0 y)
+     y
      w h                    #(/ screen-w x-scale) (/ screen-h y-scale)
      ]
     [0 0]

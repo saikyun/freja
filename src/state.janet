@@ -20,6 +20,14 @@
 
 
 
+
+
+
+(def focus     @{})
+
+
+
+
 (defn ev/check
   [chan]
   (when (pos? (ev/count chan))

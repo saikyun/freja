@@ -456,13 +456,13 @@
 (def state
   (->> @[### buttons
          text-area
-
+         
          search-area
-
+         
          file-open-area
-
+         
          @{:listen [focus-ref new-frame-ref]
-
+           
            :render (fn [self]
                      (when-let [gb (self :gb)]
                        (render-cursor gb)))
