@@ -172,7 +172,7 @@
                   
                   :binds (-> (merge-into @{}
                                          file-open-binds
-                                         @{:escape
+                                         @{:escape 
                                            (fn [props]
                                              (deselect gb-data)
                                              #_(focus-other props gb-data)

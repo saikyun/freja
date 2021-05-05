@@ -59,12 +59,10 @@
 
 (defn push-callback!
   [ev cb]
-  (-> callbacks
-      (update ev (fn [chan]
-                   (default chan (ev/chan 1))
-                   (ec/push! chan cb)
-                   chan))
-      (put :changed true)))
+  (e/update! callbacks ev (fn [chan]
+                            (default chan (ev/chan 1))
+                            (ec/push! chan cb)
+                            chan)))
 
 (defn handle-callbacks
   [callbacks]
@@ -94,6 +92,7 @@
                            (push-callback! ev |(:cb self)))))})
 
 (def search-area @{})
+(def file-open-area @{})
 
 (defn text-area-on-event
   [self ev]
@@ -122,10 +121,16 @@
 (def text-area
   @{:id :main
     
-    :gb (merge-into gb-data
-                    @{:search (fn [props]
-                                (put focus :focus search-area)
-                                (put focus :updated true))})
+    :gb (merge-into
+          gb-data
+          @{:search
+            (fn [props]
+              (e/put! focus :focus search-area))
+            
+            :open-file
+            (fn [props]
+              (e/put! focus :focus file-open-area))
+            })
     
     :draw (fn [self]
             (rl-pop-matrix)
@@ -146,6 +151,34 @@
     
     :on-event (fn [self ev]
                 (text-area-on-event self ev))})
+
+(merge-into
+  (search-data :binds)
+  @{:escape 
+    (fn [props]
+      (put focus :focus text-area)
+      (put focus :changed true)
+      )
+    
+    :f (fn [props]
+         (when (meta-down?)
+           (search props)))
+    
+    :b
+    (fn [props]
+      (when (meta-down?)
+        (let [search-term (string (content props))]
+          (put-caret gb-data (if (gb-data :selection)
+                               (min (gb-data :selection)
+                                    (gb-data :caret))
+                               (gb-data :caret)))
+          (when-let [i (gb-find-backward! gb-data search-term)]
+            (-> gb-data
+                (reset-blink)
+                (put-caret i)
+                (put :selection (gb-find-forward! gb-data search-term))
+                (put :changed-selection true))
+            (swap! gb-ref (fn [_] gb-data))))))})
 
 (merge-into
   search-area
@@ -171,8 +204,44 @@
             (gb-render-text (self :gb)))
     
     :on-event (fn [self ev]
-                (pp ev)
                 (text-area-on-event self ev))})
+
+(merge-into
+  file-open-area
+  @{:id :file-open
+    
+    :gb file-open-data
+    
+    :draw (fn [self]
+            (rl-pop-matrix)
+            
+            #(end-texture-mode)
+            
+            (gb-pre-render (self :gb))
+            
+            #(begin-texture-mode (rt-ref :data))
+            
+            (rl-push-matrix)
+            
+            (rl-load-identity)
+            
+            #(rl-scalef 2 2 1)
+            
+            (gb-render-text (self :gb)))
+    
+    :on-event (fn [self ev]
+                (text-area-on-event self ev))})
+
+
+(merge-into (file-open-data :binds)
+            {:escape
+             (fn [props]
+               (e/put! focus :focus text-area)
+               )
+             
+             :enter (fn [props]
+                      (load-file gb-data (string ((commit! props) :text)))
+                      (e/put! focus :focus text-area))})
 
 (def caret
   @{:draw (fn [self]
@@ -182,9 +251,13 @@
     :on true
     
     :on-event (fn [self ev]
+                
                 (match ev
                   {:focus focus}
-                  (put self :gb (focus :gb))
+                  (do
+                    (put self :gb (focus :gb))
+                    (set ((self :gb) :blink) 0)
+                    (put self :on true))
                   
                   [:dt dt]
                   (when (self :gb)
@@ -196,8 +269,7 @@
                       (set ((self :gb) :blink) 0)
                       (put self :on true)))))})
 
-(put focus :focus text-area)
-(put focus :changed true)
+(e/put! focus :focus text-area)
 
 (def button2
   (table/setproto
@@ -208,14 +280,17 @@
 (varfn render
   [dt]
   (:draw text-area)
-  (:draw search-area)
+  
+  (case (focus :focus)
+    search-area (:draw search-area)
+    file-open-area (:draw file-open-area))
   (:draw caret)
   
   (:draw button)
   (:draw button2))
 
 (def dependencies
-  @{mouse @[button button2 text-area search-area]
+  @{mouse @[button button2 text-area search-area file-open-area]
     keyboard @[|(:on-event (focus :focus) $)]
     chars @[|(:on-event (focus :focus) $)]
     focus @[caret]
