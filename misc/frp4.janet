@@ -12,12 +12,18 @@
 (import ./../src/events :as e :fresh true)
 (import ./../src/state :prefix "" :fresh true)
 (import ./../src/keyboard :as kb :fresh true)
+(import ./../vector_math :as v :fresh true)
+(import ./../src/input :prefix "")
+(import ./../src/file_handling :prefix "")
+(import ./../backwards2 :prefix "")
+(import ./../src/render_new_gap_buffer :prefix "")
+(import ./../src/new_gap_buffer :prefix "")
 
 (def mouse     (ev/chan 100))
 (def chars     (ev/chan 100))
 (def keyboard  (ev/chan 100))
 (def callbacks (ev/chan 100))
-(def frame     (ev/chan 1))
+(def frame-chan (ev/chan 1))
 (def rerender  (ev/chan 1))
 
 
@@ -94,8 +100,15 @@
 (def search-area @{})
 (def file-open-area @{})
 
+(def mouse-events {:press :press
+                   :drag :drag
+                   :release :release
+                   :double-click :double-click
+                   :triple-click :triple-click})
+
 (defn text-area-on-event
   [self ev]
+  
   (match ev
     [:key-down k]
     (do
@@ -107,23 +120,26 @@
       (self :gb)
       k)
     [:scroll n]
-    (handle-scroll-event
-      (self :gb)
-      data)
-    [:press _]
+    (handle-scroll-event (self :gb) n)
+    ['(mouse-events (first ev)) _]
     (handle-mouse-event
       (self :gb)
       ev
       (fn [kind f]
         (push-callback! kind f)
+        (e/put! focus :focus self)
         (put (self :gb) :changed true)))))
+
+(merge-into file-open-data {:binds file-open-binds})
 
 (def text-area
   @{:id :main
     
     :gb (merge-into
           gb-data
-          @{:search
+          @{:binds gb-binds
+            
+            :search
             (fn [props]
               (e/put! focus :focus search-area))
             
@@ -152,33 +168,49 @@
     :on-event (fn [self ev]
                 (text-area-on-event self ev))})
 
-(merge-into
-  (search-data :binds)
-  @{:escape 
-    (fn [props]
-      (put focus :focus text-area)
-      (put focus :changed true)
-      )
-    
-    :f (fn [props]
+(varfn search
+  [props]
+  (let [search-term (string (content props))]
+    (put-caret gb-data (if (gb-data :selection)
+                         (max (gb-data :selection)
+                              (gb-data :caret))
+                         (gb-data :caret)))
+    (when-let [i (gb-find-forward! gb-data search-term)]
+      (-> gb-data
+          (reset-blink)
+          (put-caret i)
+          (put :selection (gb-find-backward! gb-data search-term))
+          (put :changed-selection true)))))
+
+
+(put search-data :binds
+     @{:escape 
+       (fn [props]
+         (put focus :focus text-area)
+         (put focus :changed true)
+         )
+       
+       :enter (fn [props _] (search props))
+       
+       :f (fn [props]
+            (when (meta-down?)
+              (search props)))
+       
+       :b
+       (fn [props]
          (when (meta-down?)
-           (search props)))
-    
-    :b
-    (fn [props]
-      (when (meta-down?)
-        (let [search-term (string (content props))]
-          (put-caret gb-data (if (gb-data :selection)
-                               (min (gb-data :selection)
-                                    (gb-data :caret))
-                               (gb-data :caret)))
-          (when-let [i (gb-find-backward! gb-data search-term)]
-            (-> gb-data
-                (reset-blink)
-                (put-caret i)
-                (put :selection (gb-find-forward! gb-data search-term))
-                (put :changed-selection true))
-            (swap! gb-ref (fn [_] gb-data))))))})
+           (let [search-term (string (content props))]
+             (put-caret gb-data (if (gb-data :selection)
+                                  (min (gb-data :selection)
+                                       (gb-data :caret))
+                                  (gb-data :caret)))
+             (when-let [i (gb-find-backward! gb-data search-term)]
+               (-> gb-data
+                   (reset-blink)
+                   (put-caret i)
+                   (put :selection (gb-find-forward! gb-data search-term))
+                   (put :changed-selection true))
+               (swap! gb-ref (fn [_] gb-data))))))})
 
 (merge-into
   search-area
@@ -290,11 +322,11 @@
   (:draw button2))
 
 (def dependencies
-  @{mouse @[button button2 text-area search-area file-open-area]
+  @{mouse @[pp button button2 text-area search-area file-open-area]
     keyboard @[|(:on-event (focus :focus) $)]
     chars @[|(:on-event (focus :focus) $)]
     focus @[caret]
-    callbacks @[pp handle-callbacks]})
+    callbacks @[handle-callbacks]})
 
 (comment
   (get-in focus [:focus :id])
@@ -316,20 +348,86 @@
 # (e/record-all dependencies)
 # need to make gb-data not contain circular references etc
 
-(def finally
-  @{frame [render caret]})
+(def mouse-data (new-mouse-data))
 
-(varfn draw-frame
+(varfn handle-mouse
+  [mouse-data]
+  (def pos (get-mouse-position))
+  (def [x y] pos)
+  
+  (put mouse-data :just-double-clicked false)
+  (put mouse-data :just-triple-clicked false)
+  
+  (when (mouse-button-released? 0)
+    (put mouse-data :just-down nil)
+    (put mouse-data :recently-double-clicked nil)
+    (put mouse-data :recently-triple-clicked nil)
+    (put mouse-data :up-pos [x y])
+    
+    (ec/push! mouse @[:release (get-mouse-position)]))
+  
+  (when (mouse-button-pressed? 0)
+    (when (and (mouse-data :down-time2)
+               # max time to pass for triple click
+               (> 0.4 (- (get-time) (mouse-data :down-time2)))
+               # max distance to travel for triple click
+               (> 200 (v/dist-sqr pos (mouse-data :down-pos))))
+      (put mouse-data :just-triple-clicked true)
+      (put mouse-data :recently-triple-clicked true))
+    
+    (when (and (mouse-data :down-time)
+               # max time to pass for double click
+               (> 0.25 (- (get-time) (mouse-data :down-time)))
+               # max distance to travel for double click
+               (> 100 (v/dist-sqr pos (mouse-data :down-pos))))
+      (put mouse-data :just-double-clicked true)
+      (put mouse-data :recently-double-clicked true)
+      (put mouse-data :down-time2 (get-time))))
+  
+  (cond (mouse-data :just-triple-clicked)
+    (ec/push! mouse @[:triple-click (get-mouse-position)])
+    
+    (and (mouse-data :just-double-clicked)
+         (not (key-down? :left-shift))
+         (not (key-down? :right-shift)))
+    (ec/push! mouse @[:double-click (get-mouse-position)])
+    
+    (or (mouse-data :recently-double-clicked)
+        (mouse-data :recently-triple-clicked))
+    nil # don't start selecting until mouse is released again
+    
+    (mouse-button-down? 0)
+    (do
+      (put mouse-data :down-time (get-time))
+      
+      (if (= nil (mouse-data :just-down))
+        (do (put mouse-data :just-down true)
+          (put mouse-data :last-pos pos)
+          (put mouse-data :down-pos pos)
+          (ec/push! mouse @[:press (get-mouse-position)]))
+        (do (put mouse-data :just-down false)
+          (unless (= pos (mouse-data :last-pos))
+            (put mouse-data :last-pos pos)
+            (ec/push! mouse @[:drag (get-mouse-position)])))))))
+
+
+(def finally
+  @{frame-chan [render caret]})
+
+(varfn trigger
   [dt]
   (handle-keys dt)
   (handle-scroll)
   
-  (ec/push! frame @[:dt dt])
+  (ec/push! frame-chan @[:dt dt])
   
-  (when (mouse-button-pressed? 0)
-    # uses arrays in order to have reference identity rather than value identity
-    # relevant for callback handling
-    (ec/push! mouse @[:press (get-mouse-position)]))
+  (handle-mouse mouse-data)
+  
+  (comment
+    (when (mouse-button-pressed? 0)
+      # uses arrays in order to have reference identity rather than value identity
+      # relevant for callback handling
+      (ec/push! mouse @[:press (get-mouse-position)])))
   
   (e/pull-deps dependencies finally))
 

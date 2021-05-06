@@ -1082,16 +1082,16 @@ Otherwise moves the caret backward one character."
     :gap-stop 0
     :gap @""
     :caret 0
-
+    
     :actions @[]
     :redo-queue @[]
-
+    
     :selection nil
-
+    
     :size [100 100]
     :position [0 0]
     :offset [0 0]
-
+    
     :changed true
     :scroll 0
     :blink 0

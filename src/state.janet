@@ -1,4 +1,5 @@
 (import ./../misc/defonce :prefix "")
+(import ./new_gap_buffer :prefix "")
 
 (def state-ref @{:ch (ev/chan 1) :data @[] :only-last true})
 (defonce screen-size-ref @{:ch (ev/chan 1) :data nil})
@@ -45,6 +46,76 @@
     (ev/push (ref :ch) new-data)
     (unless (ref :no-history)
       (put ref :data new-data))))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+(var file-open-data nil)
+(var search-data nil)
+
+(var gb-data (new-gap-buffer))
+
+(do (merge-into gb-data
+                @{:size [800 :max]
+                  :position [5 30]
+                  :offset [10 0]
+                  
+                  :id :main})
+  :ok)
+
+(set file-open-data (new-gap-buffer))
+
+(do (merge-into file-open-data
+                @{:size [800 18]
+                  :position [5 5]
+                  :offset [30 0]})
+  :ok)
+
+(set search-data (new-gap-buffer))
+
+(do (merge-into search-data
+                @{:size [800 14]
+                  :position [5 5]
+                  :offset [30 0]})
+  :ok)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

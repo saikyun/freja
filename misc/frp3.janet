@@ -391,11 +391,12 @@
                           (swap! state-ref identity)))
                       (swap! gb-ref (fn [_] gb))
                       (swap! state-ref identity))
-
-                    (when (and scroll gb)
-                      (handle-scroll-event gb scroll)
-                      (swap! gb-ref (fn [_] gb))
-                      (swap! state-ref identity))
+                    
+                    (comment
+                      (when (and scroll gb)
+                        (handle-scroll-event gb scroll)
+                        (swap! gb-ref (fn [_] gb))
+                        (swap! state-ref identity)))
 
                     (when pressed-key
                       (do

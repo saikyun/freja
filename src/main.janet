@@ -3,7 +3,8 @@
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./textfield :as t)
-(import ./../misc/frp3 :prefix "")
+#(import ./../misc/frp3 :prefix "")
+(import ./../misc/frp4 :prefix "")
 (import ./../backwards2 :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
@@ -40,167 +41,6 @@
 (var top-env (fiber/getenv (fiber/current)))
 (var font nil)
 (var loop-fiber nil)
-
-(var file-open-data nil)
-(var search-data nil)
-
-(var gb-data (new-gap-buffer))
-
-(do (merge-into gb-data
-                @{:size [800 :max]
-                  :position [5 30]
-                  :offset [10 0]
-                  
-                  :update (fn [self data]
-                            (when (= (data :focus) self)
-                              #                              (handle-mouse self (data :mouse))
-                              #                              (handle-scroll self)
-                              
-                              (try
-                                (handle-keyboard self data)
-                                
-                                ([err fib]
-                                  (print "kbd")
-                                  (put data :latest-res (string "Error: " err))
-                                  (print (debug/stacktrace fib err))))))
-                  
-                  :render (fn []
-                            #_(gb-pre-render gb-data)
-                            (gb-render-text gb-data))
-                  
-                  :id :main
-                  
-                  :open-file (fn [props]
-                               #(focus-other props file-open-data)
-                               (swap! focus-ref (fn [_] :file-open))
-                               )
-                  
-                  :search (fn [props]
-                            #(focus-other props search-data)
-                            )
-                  
-                  :save-file (fn [props]
-                               (if-let [path (props :path)]
-                                 (save-file props path)
-                                 (print "no path!")))
-                  
-                  :binds gb-binds})
-  :ok)
-
-(def debug-data (new-gap-buffer))
-
-(merge-into debug-data
-            @{:size [500 800]
-              :position [800 30]
-              :offset [10 0]
-              
-              :open-file (fn [props]
-                           (focus-other props :open-file))
-              
-              :save-file (fn [props]
-                           (if-let [path (props :path)]
-                             (save-file props path)
-                             (print "no path!")))
-              
-              :binds gb-binds})
-
-(set file-open-data (new-gap-buffer))
-
-(do (merge-into file-open-data
-                @{:size [800 18]
-                  :position [5 5]
-                  :offset [30 0]
-                  
-                  :update (fn [self data]
-                            (when (= (data :focus) self)
-                              #                              (handle-mouse self (data :mouse))
-                              #                              (handle-scroll self)
-                              
-                              (try
-                                (handle-keyboard self data)
-                                
-                                ([err fib]
-                                  (print "kbd")
-                                  (put data :latest-res (string "Error: " err))
-                                  (print (debug/stacktrace fib err))))))
-                  
-                  :binds file-open-binds
-                  
-                  :on-enter
-                  (fn [props path]
-                    (load-file gb-data path)
-                    (swap! focus-ref (fn [_] :main))
-                    #(focus-other props gb-data)
-                    )})
-  :ok)
-
-(set search-data (new-gap-buffer))
-
-(varfn search
-  [props]
-  (let [search-term (string (content props))]
-    (put-caret gb-data (if (gb-data :selection)
-                         (max (gb-data :selection)
-                              (gb-data :caret))
-                         (gb-data :caret)))
-    (when-let [i (gb-find-forward! gb-data search-term)]
-      (-> gb-data
-          (reset-blink)
-          (put-caret i)
-          (put :selection (gb-find-backward! gb-data search-term))
-          (put :changed-selection true)))))
-
-(do (merge-into search-data
-                @{:size [800 14]
-                  :position [5 5]
-                  :offset [30 0]
-                  
-                  :update (fn [self data]
-                            (when (= (data :focus) self)
-                              #                              (handle-mouse self (data :mouse))
-                              #                              (handle-scroll self)
-                              
-                              (try
-                                (handle-keyboard self data)
-                                
-                                ([err fib]
-                                  (print "kbd")
-                                  (put data :latest-res (string "Error: " err))
-                                  (print (debug/stacktrace fib err))))))
-                  
-                  :on-enter (fn [props _] (search props))
-                  
-                  :binds (-> (merge-into @{}
-                                         file-open-binds
-                                         @{:escape 
-                                           (fn [props]
-                                             (deselect gb-data)
-                                             #_(focus-other props gb-data)
-                                             
-                                             (swap! focus-ref (fn [_] :main))
-                                             
-                                             )
-                                           
-                                           :f (fn [props]
-                                                (when (meta-down?)
-                                                  (search props)))
-                                           
-                                           :b
-                                           (fn [props]
-                                             (when (meta-down?)
-                                               (let [search-term (string (content props))]
-                                                 (put-caret gb-data (if (gb-data :selection)
-                                                                      (min (gb-data :selection)
-                                                                           (gb-data :caret))
-                                                                      (gb-data :caret)))
-                                                 (when-let [i (gb-find-backward! gb-data search-term)]
-                                                   (-> gb-data
-                                                       (reset-blink)
-                                                       (put-caret i)
-                                                       (put :selection (gb-find-forward! gb-data search-term))
-                                                       (put :changed-selection true))
-                                                   (swap! gb-ref (fn [_] gb-data))))))}))})
-  :ok)
 
 (var conf nil)
 (var conf2 nil)
@@ -318,8 +158,8 @@
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
   
-  (loop [f :in updates]
-    (:update f data))
+  (comment (loop [f :in updates]
+             (:update f data)))
   
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)
@@ -337,25 +177,6 @@
     (:send thread (content gb-data))
     
     (put gb-data :styled true))
-  
-  (when (and false changed)
-    (->> (remove-keys gb-data
-                      (dumb-set :actions
-                                :conf
-                                :binds
-                                :context
-                                :colors
-                                :sizes
-                                :data
-                                
-                                :lines
-                                :y-poses
-                                :line-flags
-                                
-                                :redo-queue
-                                :text))
-         (string/format "%.40m")
-         (replace-content debug-data)))
   
   # (gb-pre-render debug-data)
   (comment
@@ -406,7 +227,6 @@
                      (= (data :focus) search-data) search-data)]
     #    (render-cursor focus)
     )
-
 
   (trigger dt)
   
@@ -493,20 +313,14 @@
 (defn start
   []
   (try
-    (do (set-config-flags :vsync-hint)
+    (do 
+      (set-config-flags :vsync-hint)
       (set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
       
       (init-window 1310 700
                    "Textfield")
       
-      (init)
-
-      (swap! gb-ref (fn [_] gb-data))
-      
-      (swap! search-ref (fn [_] search-data))
-      (swap! file-open-ref (fn [_] file-open-data))
-
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 
       (let [[xs ys] (get-window-scale-dpi)]
@@ -532,15 +346,6 @@
         (put gb-data :context data)
         (put gb-data :screen-scale [x-scale y-scale])
         (put gb-data :colors colors)
-        
-
-
-        # (array/push updates gb-data)
-        
-        (set conf (load-font debug-data tc))
-        (put debug-data :context data)
-        (put debug-data :screen-scale [x-scale y-scale])
-        (put debug-data :colors colors)
         
         (set conf (load-font search-data tc))
         (put search-data :context data)

@@ -10,6 +10,11 @@
 
 (def font-h 17)
 
+(defn reset-blink
+  [props]
+  (set (props :blink) 0)
+  props)
+
 (varfn height
   [{:position position
     :offset offset
