@@ -1,4 +1,4 @@
-# (df "misc/frp4.janet")
+# (aoeaoedf "misc/frp4.janet")
 
 (comment
   # (fset 'eval-df-thing (kmacro-lambda-form [S-right ?\( ?d ?f ?  ?\" ?m ?i ?s ?c ?/ ?f ?r ?p ?4 ?. ?j ?a ?n ?e ?t ?\" ?\) return S-left] 0 "%d"))
@@ -55,7 +55,7 @@
   []
   (let [move (get-mouse-wheel-move)]
     (when (not= move 0)
-      (ec/push! mouse @[:scroll (* move 10)]))))
+      (ec/push! mouse @[:scroll (* move 30)]))))
 
 # table of callbacks, eg @{@[:down [10 10]  [|(print "hello") |(print "other")]}
 #                          ^ a mouse event  ^ queued callbacks
@@ -190,15 +190,13 @@
          (put focus :changed true)
          )
        
-       :enter (fn [props _] (search props))
-       
-       :f (fn [props]
-            (when (meta-down?)
-              (search props)))
+       :enter search
+
+:control @{
+       :f search
        
        :b
        (fn [props]
-         (when (meta-down?)
            (let [search-term (string (content props))]
              (put-caret gb-data (if (gb-data :selection)
                                   (min (gb-data :selection)
@@ -210,7 +208,11 @@
                    (put-caret i)
                    (put :selection (gb-find-forward! gb-data search-term))
                    (put :changed-selection true))
-               (swap! gb-ref (fn [_] gb-data))))))})
+               (swap! gb-ref (fn [_] gb-data)))))}
+#
+})
+
+(table/setproto (search-data :binds) global-keys)
 
 (merge-into
   search-area
@@ -305,7 +307,7 @@
 
 (def button2
   (table/setproto
-    @{:rec [350 10 100 50]
+    @{:rec [350 30 100 50]
       :color :blue}
     button))
 
@@ -320,13 +322,6 @@
   
   (:draw button)
   (:draw button2))
-
-(def dependencies
-  @{mouse @[pp button button2 text-area search-area file-open-area]
-    keyboard @[|(:on-event (focus :focus) $)]
-    chars @[|(:on-event (focus :focus) $)]
-    focus @[caret]
-    callbacks @[handle-callbacks]})
 
 (comment
   (get-in focus [:focus :id])
@@ -354,7 +349,7 @@
   [mouse-data]
   (def pos (get-mouse-position))
   (def [x y] pos)
-  
+
   (put mouse-data :just-double-clicked false)
   (put mouse-data :just-triple-clicked false)
   
@@ -410,9 +405,18 @@
             (put mouse-data :last-pos pos)
             (ec/push! mouse @[:drag (get-mouse-position)])))))))
 
+(def dependencies
+  @{mouse @[pp button button2 text-area search-area file-open-area]
+    keyboard @[|(:on-event (focus :focus) $)]
+    chars @[|(:on-event (focus :focus) $)]
+    focus @[caret]
+    callbacks @[handle-callbacks]})
 
 (def finally
   @{frame-chan [render caret]})
+
+(def deps @{:deps dependencies
+:finally finally})
 
 (varfn trigger
   [dt]
@@ -429,7 +433,7 @@
       # relevant for callback handling
       (ec/push! mouse @[:press (get-mouse-position)])))
   
-  (e/pull-deps dependencies finally))
+  (e/pull-deps (deps :deps) (deps :finally)))
 
 (comment
   (ec/push! mouse [:down [10 10]])

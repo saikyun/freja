@@ -38,7 +38,9 @@
   (put text-data :text (buffer (text-data :after))))
 
 (varfn save-file
-  [props path]
+  [props]
+  (def path (props :path))
+
   (with [f (file/open path :w)]
     (file/write f (-> props
                       commit!
@@ -64,7 +66,7 @@
 (varfn save-and-dofile
   [props]
   (def path (props :path))
-  (save-file props path)
+  (save-file props)
   
   (inner-dofile (get-in props [:context :top-env]) path)
   

@@ -318,7 +318,7 @@
       (set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
       
-      (init-window 1310 700
+      (init-window 900 700
                    "Textfield")
       
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
@@ -387,7 +387,7 @@
 (var server nil)
 
 (defn main [& args]
-  (set server (netrepl/server "127.0.0.1" "9365" env))
+  #(set server (netrepl/server "127.0.0.1" "9365" env))
   (pp args)
   (when-let [file (get args 1)]
     (load-file gb-data file))

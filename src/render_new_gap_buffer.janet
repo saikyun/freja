@@ -546,6 +546,7 @@ Render lines doesn't modify anything in gb."
   [gb]
   (-> gb
       deselect
+      reset-blink
       (put-caret (index-above-cursor gb))))
 
 (varfn select-move-up!
@@ -577,6 +578,8 @@ Render lines doesn't modify anything in gb."
   (if (i-at-beginning-of-line? gb (gb :caret))
     (put gb :stickiness :down)
     (put gb :stickiness :right))
+
+  (reset-blink gb)
 
   (put-caret gb (index-below-cursor gb)))
 
@@ -924,7 +927,7 @@ This function is pretty expensive since it redoes all word wrapping."
   #  (rl-mult-matrixf-screen-scale)
   
   #€   (rl-load-identity)
-  
+
   #  (rl-scalef 2 2 1)
   
   (draw-texture-pro
