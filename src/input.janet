@@ -280,7 +280,7 @@
       (set key k)))
 
   (array/push mods key)
-  (put-in kmap (tracev mods) f))
+  (put-in kmap mods f))
 
 (def global-set-key (partial set-key global-keys))
 

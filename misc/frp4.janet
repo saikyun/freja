@@ -127,9 +127,9 @@
       ev
       (fn [kind f]
         (push-callback! ev (fn []
-                               (f)
-                               (e/put! focus :focus self)
-                               (put (self :gb) :changed true)))))))
+                             (f)
+                             (e/put! focus :focus self)
+                             (put (self :gb) :changed true)))))))
 
 (merge-into file-open-data {:binds file-open-binds})
 
@@ -182,6 +182,19 @@
           (put :selection (gb-find-backward! gb-data search-term))
           (put :changed-selection true)))))
 
+(varfn search-backward
+  [props]
+  (let [search-term (string (content props))]
+    (put-caret gb-data (if (gb-data :selection)
+                         (min (gb-data :selection)
+                              (gb-data :caret))
+                         (gb-data :caret)))
+    (when-let [i (gb-find-backward! gb-data search-term)]
+      (-> gb-data
+          (reset-blink)
+          (put-caret i)
+          (put :selection (gb-find-forward! gb-data search-term))
+          (put :changed-selection true)))))
 
 (put search-data :binds
      @{:escape
@@ -193,20 +206,7 @@
 
        :control @{:f search
 
-                  :b
-                  (fn [props]
-                    (let [search-term (string (content props))]
-                      (put-caret gb-data (if (gb-data :selection)
-                                           (min (gb-data :selection)
-                                                (gb-data :caret))
-                                           (gb-data :caret)))
-                      (when-let [i (gb-find-backward! gb-data search-term)]
-                        (-> gb-data
-                            (reset-blink)
-                            (put-caret i)
-                            (put :selection (gb-find-forward! gb-data search-term))
-                            (put :changed-selection true))
-                        (swap! gb-ref (fn [_] gb-data)))))}
+                  :b search-backward}
        #
 })
 
