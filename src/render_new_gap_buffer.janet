@@ -316,13 +316,43 @@ Returns `nil` if the max width is never exceeded."
             #:blue
 ))))))
 
+(varfn abs-x
+  [gb x]
+  (+ ((gb :position) 0)
+     x))
+
+(varfn rel-text-x
+  [gb x]
+  (+ ((gb :offset) 0)
+     (gb :width-of-last-line-number)
+     x))
+
+(varfn abs-text-x
+  [gb x]
+  (+ ((gb :position) 0)
+     ((gb :offset) 0)
+     (gb :width-of-last-line-number)
+     x))
+
+(varfn abs-text-y
+  [gb y]
+  (+ ((gb :position) 1)
+     ((gb :offset) 1)
+     y))
+
+(varfn rel-y
+  [gb y]
+  (+ ((gb :offset) 1)
+     y))
+
 (varfn render-lines
   "Renders the lines in gap buffer.
 Also renders selection boxes.
 Render lines doesn't modify anything in gb."
-  [sizes conf gb lines start-index start-y h y-limit]
+  [sizes conf gb lines start-index unused-start-y h y-limit]
   (def {:screen-scale screen-scale
         :delim-ps delim-ps
+        :y-poses y-poses
         :line-numbers line-numbers
         :highlighting highlighting
         :offset offset
@@ -333,8 +363,6 @@ Render lines doesn't modify anything in gb."
 
   (def default-text-color (colors :text))
 
-  (var y 0)
-
   (var delim-i 0)
   (var hl-i 0)
 
@@ -343,86 +371,104 @@ Render lines doesn't modify anything in gb."
     (print "from " start-index " to ")
     (pp lines))
 
-  (var last start-index)
+  (var last-gb-index start-index)
 
   (var s (buffer/new 1))
 
   (var x 0)
 
-  (var i 0)
+  # position relative to local top
+  # local top = y offset
+  # if we scrolled 30px, and y offset is 5px
+  # line-start-y is 35px, which means we skip lines above 35px
+  (def line-start-y (+ (+ #(offset 1)
+                          (- (gb :scroll)))))
 
-  (loop [l :in lines]
-    (when (> y (- start-y h))
-      (do (set x 0)
+  # current line
+  (var line-i nil)
 
-        ## TODO: If line in selection, draw selection box here
-        (render-selection-box gb last l (- y start-y))
+  ### first skip all lines that are outside of the screen
+  ### this would be lines scrolled path
 
-        (let [lns (string/format "%d" (line-numbers i))
-              lns-offset (defn measure-text
-                           [tc text]
-                           (measure-text-ex (tc :font)
-                                            text
-                                            (math/floor (* (tc :mult) (tc :size)))
-                                            (* (tc :mult) (tc :spacing))))]
-          (draw-text*2 conf lns [0 (- y start-y)] :gray x-scale))
+  (loop [i :range [0 (length lines)]
+         :let [line-y (y-poses i)]]
+    (when (>= line-y (- line-start-y h)) # subtract h so partial lines will render
+      (set last-gb-index (if (= i 0)
+                           0
+                           (lines i)))
+      (set line-i i)
+      (break)))
 
-        (gb-iterate
-          gb
-          last l
-          i c
-          (let [[w h] (get-size sizes c)]
-            (put s 0 c)
+  (if (= line-i nil)
+    :do-nothing
+    (loop [i :range [line-i (length lines)]
+           :let [l (lines i)
+                 line-y (y-poses i)]]
+      (set x 0)
 
-            (when debug
-              (print "last: " last " - l: " l)
-              (prin s)
-              (print (length s))
-              #(print "x: " x " - y: " y)
+      ## TODO: If line in selection, draw selection box here
+      (render-selection-box gb last-gb-index l (- line-y line-start-y))
+
+      (let [lns (string/format "%d" (line-numbers i))
+            lns-offset (defn measure-text
+                         [tc text]
+                         (measure-text-ex (tc :font)
+                                          text
+                                          (math/floor (* (tc :mult) (tc :size)))
+                                          (* (tc :mult) (tc :spacing))))]
+        (draw-text*2 conf lns [0
+                               (rel-y gb (- line-y line-start-y))] :gray x-scale))
+
+      (gb-iterate
+        gb
+        last-gb-index l
+        i c
+        (let [[w h] (get-size sizes c)]
+          (put s 0 c)
+
+          (when debug
+            (print "last: " last-gb-index " - l: " l)
+            (prin s)
+            (print (length s))
+            #(print "x: " x " - y: " y)
 )
 
-            (do
-              (while (and delim-ps
-                          (< delim-i (length delim-ps))
-                          (< (first (delim-ps delim-i)) i))
-                (++ delim-i))
+          (do
+            (while (and delim-ps
+                        (< delim-i (length delim-ps))
+                        (< (first (delim-ps delim-i)) i))
+              (++ delim-i))
 
-              (while (and highlighting
-                          (< hl-i (length highlighting))
-                          (< ((highlighting hl-i) 1) i))
-                (++ hl-i)))
+            (while (and highlighting
+                        (< hl-i (length highlighting))
+                        (< ((highlighting hl-i) 1) i))
+              (++ hl-i)))
 
-            (draw-text*2 conf s [(+ x-offset
-                                    (gb :width-of-last-line-number)
-                                    x)
-                                 (- y start-y)]
-                         (cond (in-selection? gb i)
-                           :white
+          (draw-text*2 conf s [(rel-text-x gb x)
+                               (rel-y gb (- line-y line-start-y))]
+                       (cond (in-selection? gb i)
+                         :white
 
-                           (and delim-ps
-                                (< delim-i (length delim-ps))
-                                (= ((delim-ps delim-i) 0) i))
-                           (get rb/colors ((delim-ps delim-i) 1) :pink)
+                         (and delim-ps
+                              (< delim-i (length delim-ps))
+                              (= ((delim-ps delim-i) 0) i))
+                         (get rb/colors ((delim-ps delim-i) 1) :pink)
 
-                           (and highlighting
-                                (< hl-i (length highlighting))
-                                (<= ((highlighting hl-i) 0) i))
-                           (get colors ((highlighting hl-i) 2) default-text-color)
+                         (and highlighting
+                              (< hl-i (length highlighting))
+                              (<= ((highlighting hl-i) 0) i))
+                         (get colors ((highlighting hl-i) 2) default-text-color)
 
-                           # else
-                           default-text-color)
-                         x-scale)
+                         # else
+                         default-text-color)
+                       x-scale)
 
-            (+= x (* x-scale w))))))
+          (+= x (* x-scale w))))
 
-    (++ i)
+      (when debug
+        (print))
 
-    (+= y h)
-
-    (when debug
-      (print))
-
-    (set last l)))
+      (set last-gb-index l))))
 
 (varfn line-of-i
   [gb i]
@@ -431,9 +477,9 @@ Render lines doesn't modify anything in gb."
         :stickiness stickiness} gb)
 
   (let [line-index (->> (binary-search-closest lines |(compare i $))
-                        (max 0)
                         ## binary-search-closest returns length of 
                         ## array when outside length of array
+                        (max 0)
                         (min (dec (length lines))))
         line-flag (line-flags line-index)]
 
@@ -618,7 +664,7 @@ This function is pretty expensive since it redoes all word wrapping."
 
   # a possible improvement would be to store the min / max indexes
   # used during the last word wrap calculation
-  # then if the index is oeoahnsehontsahetnsoautside that, redo the calculation
+  # then if the index is outside that, redo the calculation
   # another alternative would be to generally to rendering
   # relative to indexes rather than having a global scroll which
   # is dependent on all lines before it
@@ -786,6 +832,12 @@ This function is pretty expensive since it redoes all word wrapping."
 
   (end-texture-mode))
 
+(defn document-bottom
+  [gb y]
+  (+ y
+     (- (gb :scroll))
+     (min (get-screen-height) (height gb))))
+
 (varfn gb-pre-render
   [gb]
   (def {:position position
@@ -872,7 +924,7 @@ This function is pretty expensive since it redoes all word wrapping."
                                          w
                                          font-h
                                          y
-                                         (- (height gb) scroll))))
+                                         (+ y (- (height gb) scroll)))))
                  lines))
 
     (put gb :width-of-last-line-number
@@ -884,19 +936,17 @@ This function is pretty expensive since it redoes all word wrapping."
     (when changed-x-pos
       (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
 
-    (when (or changed changed-nav)
+    (when (and (not (gb :dont-refocus)) (or changed changed-nav))
       (timeit "carety things"
               (let [caret-y ((gb :caret-pos) 1)
                     scroll (* (conf :mult) (- (gb :scroll)))]
-                (when (< caret-y scroll) ### fix so this works going down as well
+                (when (< caret-y scroll)
                   (focus-caret gb))
 
-                (when (>= caret-y
-                          (- (+ scroll
-                                (min (get-screen-height) (height gb)))
-                             (offset 1)
-                             (position 1)
-                             font-h))
+                # caret-y is relative to document
+                (when (and (> caret-y 0)
+                           (>= caret-y
+                               (document-bottom gb (- font-h))))
 
                   ## index->pos! recalculates lines etc
                   ## in order to find the "real" position of the caret
@@ -1003,20 +1053,16 @@ This function is pretty expensive since it redoes all word wrapping."
 
   (when-let [[x y] (and (< (gb :blink) 30)
                         (gb :caret-pos))
-             cx (+ (* (position 0))
-                   (* (conf :mult) (offset 0))
-                   (* (conf :mult) width-of-last-line-number)
-                   x)]
+             cx (abs-text-x gb x)
+             cy (abs-text-y gb (+ y scroll))]
+
+    (put gb :dbg-y2 scroll)
+    (put gb :dbg-y1 y)
+    (put gb :dbg-y (abs-text-y gb (+ y scroll)))
 
     (draw-line-ex
-      [cx (+ (+ (offset 1)
-                (position 1))
-             y
-             (* (conf :mult) scroll))]
-      [cx (+ (+ (offset 1)
-                (position 1))
-             y
-             font-h (* (conf :mult) scroll))]
+      [cx cy]
+      [cx (+ cy font-h)]
       1
       (get-in gb [:colors :caret])))
 

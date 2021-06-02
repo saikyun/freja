@@ -80,7 +80,7 @@
 
 (do (merge-into gb-data
                 @{:size [800 :max]
-                  :position [5 30]
+                  :position [5 60]
                   :offset [10 0]
                   
                   :id :main})
@@ -89,9 +89,10 @@
 (set file-open-data (new-gap-buffer))
 
 (do (merge-into file-open-data
-                @{:size [800 18]
-                  :position [5 5]
-                  :offset [30 0]})
+                @{:size [800 48]
+                  :position [5 65]
+                  :offset [30 0]
+:bg :blue})
   :ok)
 
 (set search-data (new-gap-buffer))

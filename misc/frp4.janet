@@ -55,13 +55,13 @@
   []
   (let [move (get-mouse-wheel-move)]
     (when (not= move 0)
-      (ec/push! mouse @[:scroll (* move 30)]))))
+      (ec/push! mouse @[:scroll (* move 30) (get-mouse-position)]))))
 
 # table of callbacks, eg @{@[:down [10 10]  [|(print "hello") |(print "other")]}
 #                          ^ a mouse event  ^ queued callbacks
 #                                           ^ is actually a ev/chan
 #                                           ^ but using struct to visualise
-(def callbacks @{:changed false})
+(def callbacks @{:event/changed false})
 
 (defn push-callback!
   [ev cb]
@@ -73,7 +73,7 @@
 (defn handle-callbacks
   [callbacks]
   (loop [[ev cbs] :pairs callbacks
-         :when (not= ev :changed)]
+         :when (not= ev :event/changed)]
     (e/pull-all cbs [apply]))
 
   (loop [k :in (keys callbacks)]
@@ -114,13 +114,26 @@
     (do
       (handle-keyboard2
         (self :gb)
-        k))
+        k)
+	(put self :event/changed true)
+)
     [:char k]
+    (do
     (handle-keyboard-char
       (self :gb)
       k)
-    [:scroll n]
+	(put self :event/changed true)
+	)
+    [:scroll n mp]
+    (when  (in-rec? mp
+                 (gb-rec (self :gb)))
+		 (print (self :id))
+   
+   (push-callback! ev (fn []
     (handle-scroll-event (self :gb) n)
+	(put self :event/changed true)
+	)))
+	
     ['(mouse-events (first ev)) _]
     (handle-mouse-event
       (self :gb)
@@ -129,9 +142,15 @@
         (push-callback! ev (fn []
                              (f)
                              (e/put! focus :focus self)
-                             (put (self :gb) :changed true)))))))
+                             (put (self :gb) :event/changed true)
+
+))))))
 
 (merge-into file-open-data {:binds file-open-binds})
+
+(defn open-file
+  [_]
+  (e/put! focus :focus file-open-area))
 
 (def text-area
   @{:id :main
@@ -145,8 +164,7 @@
               (e/put! focus :focus search-area))
 
             :open-file
-            (fn [props]
-              (e/put! focus :focus file-open-area))})
+            open-file})
 
     :draw (fn [self]
             (rl-pop-matrix)
@@ -200,7 +218,7 @@
      @{:escape
        (fn [props]
          (put focus :focus text-area)
-         (put focus :changed true))
+         (put focus :event/changed true))
 
        :enter search
 

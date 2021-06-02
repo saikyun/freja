@@ -22,8 +22,8 @@
   [pullable pullers]
   (when-let [v (case (type pullable)
                  :core/channel (ec/pop pullable)
-                 :table (when (pullable :changed)
-                          (put pullable :changed false))
+                 :table (when (pullable :event/changed)
+                          (put pullable :event/changed false))
                  (error (string (type pullable) " is not a pullable.")))]
     (loop [puller :in pullers]
       (try
@@ -50,13 +50,13 @@
   [state k v]
   (-> state
       (put k v)
-      (put :changed true)))
+      (put :event/changed true)))
 
 (defn update!
   [state f & args]
   (-> state
       (update f ;args)
-      (put :changed true)))
+      (put :event/changed true)))
 
 (defn record-all
   [pullables]
@@ -79,7 +79,7 @@
   [pullable]
   (case (type pullable)
     :core/channel (pos? (ev/count pullable))
-    :table (pullable :changed)))
+    :table (pullable :event/changed)))
 
 (varfn pull-deps
   [deps &opt finally]
