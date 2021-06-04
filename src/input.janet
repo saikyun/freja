@@ -146,7 +146,7 @@
 
 (defn quit
   [props]
-  (put (tracev (props :context)) :quit true))
+  (put (props :context) :quit true))
 
 (defn open-file
   [props]

@@ -1080,8 +1080,7 @@ This function is pretty expensive since it redoes all word wrapping."
 
   #  (rl-scalef 2 2 1)
 
-  (when-let [[x y] (and (< (gb :blink) 30)
-                        (gb :caret-pos))
+  (when-let [[x y] (gb :caret-pos)
              cx (abs-text-x gb x)
              cy (abs-text-y gb (+ y scroll -2))]
 

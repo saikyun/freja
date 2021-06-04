@@ -7,3 +7,4 @@
 /.janet-usages
 /.judge
 /init.janet
+/janet_libs

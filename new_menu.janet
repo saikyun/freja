@@ -291,13 +291,6 @@
                      :on-event menu-event})
 
   (def dependencies
-    @{frp/mouse @[frp/text-area frp/search-area frp/file-open-area]
-      frp/keyboard @[|(:on-event (state/focus123 :focus) $)]
-      frp/chars @[|(:on-event (state/focus123 :focus) $)]
-      state/focus123 @[frp/caret]
-      frp/callbacks @[frp/handle-callbacks]})
-
-  (def dependencies
     @{frp/mouse @[frp/text-area frp/search-area frp/file-open-area menu]
       frp/keyboard @[#pp
                      |(-?> (state/focus123 :focus) (:on-event $))]

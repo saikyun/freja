@@ -115,24 +115,21 @@
       (i/handle-keyboard2
         (self :gb)
         k)
-	(put self :event/changed true)
-)
+      (put self :event/changed true))
     [:char k]
     (do
-    (i/handle-keyboard-char
-      (self :gb)
-      k)
-	(put self :event/changed true)
-	)
+      (i/handle-keyboard-char
+        (self :gb)
+        k)
+      (put self :event/changed true))
     [:scroll n mp]
-    (when  (in-rec? mp
-                 (i/gb-rec (self :gb)))
-   
-   (push-callback! ev (fn []
-    (i/handle-scroll-event (self :gb) n)
-	(put self :event/changed true)
-	)))
-	
+    (when (in-rec? mp
+                   (i/gb-rec (self :gb)))
+
+      (push-callback! ev (fn []
+                           (i/handle-scroll-event (self :gb) n)
+                           (put self :event/changed true))))
+
     ['(mouse-events (first ev)) _]
     (i/handle-mouse-event
       (self :gb)
@@ -141,9 +138,7 @@
         (push-callback! ev (fn []
                              (f)
                              (e/put! state/focus123 :focus self)
-                             (put (self :gb) :event/changed true)
-
-))))))
+                             (put (self :gb) :event/changed true)))))))
 
 (merge-into state/file-open-data {:binds i/file-open-binds})
 
@@ -189,9 +184,9 @@
   [props]
   (let [search-term (string (content props))]
     (put-caret state/gb-data (if (state/gb-data :selection)
-                         (max (state/gb-data :selection)
-                              (state/gb-data :caret))
-                         (state/gb-data :caret)))
+                               (max (state/gb-data :selection)
+                                    (state/gb-data :caret))
+                               (state/gb-data :caret)))
     (when-let [i (gb-find-forward! state/gb-data search-term)]
       (-> state/gb-data
           (reset-blink)
@@ -203,9 +198,9 @@
   [props]
   (let [search-term (string (content props))]
     (put-caret state/gb-data (if (state/gb-data :selection)
-                         (min (state/gb-data :selection)
-                              (state/gb-data :caret))
-                         (state/gb-data :caret)))
+                               (min (state/gb-data :selection)
+                                    (state/gb-data :caret))
+                               (state/gb-data :caret)))
     (when-let [i (gb-find-backward! state/gb-data search-term)]
       (-> state/gb-data
           (reset-blink)
@@ -293,28 +288,29 @@
 
 (def caret
   @{:draw (fn [self]
-            (when-let [gb (self :gb)]
+            (when-let [gb (and (self :on)
+                               (self :gb))]
               (render-cursor gb)))
 
     :on true
 
     :on-event (fn [self ev]
-
                 (match ev
                   {:focus state/focus123}
-                  (do
-		  (when (get-in state/focus123 [:gb :caret-pos])
+                  (when (get-in state/focus123 [:gb :gap])
                     (put self :gb (state/focus123 :gb))
                     (set ((self :gb) :blink) 0)
-                    (put self :on true)))
+                    (put self :on true))
 
                   [:dt dt]
                   (when (self :gb)
-                    (when (and (> ((self :gb) :blink) 30)
+                    (update (self :gb) :blink + dt)
+
+                    (when (and (> ((self :gb) :blink) 0.6)
                                (self :on))
                       (put self :on false))
 
-                    (when (> ((self :gb) :blink) 60)
+                    (when (> ((self :gb) :blink) 1.0)
                       (set ((self :gb) :blink) 0)
                       (put self :on true)))))})
 
