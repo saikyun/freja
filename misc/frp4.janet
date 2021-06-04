@@ -304,15 +304,21 @@
 
                   [:dt dt]
                   (when (self :gb)
+                    (when (zero? ((self :gb) :blink))
+                      (put self :on true))
+
                     (update (self :gb) :blink + dt)
 
-                    (when (and (> ((self :gb) :blink) 0.6)
+                    (cond (and (> ((self :gb) :blink) 0.6)
                                (self :on))
-                      (put self :on false))
+                      (put self :on false)
 
-                    (when (> ((self :gb) :blink) 1.0)
-                      (set ((self :gb) :blink) 0)
-                      (put self :on true)))))})
+                      (> ((self :gb) :blink) 1.0)
+                      (do (set ((self :gb) :blink) 0)
+                        (put self :on true))
+
+                      #
+))))})
 
 (def button2
   (table/setproto
