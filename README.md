@@ -11,11 +11,12 @@ Janet -- https://janet-lang.org/
 ### steps
 
 ```
-git clone https://github.com/Saikyun/text-experiment
-cd text-experiment
-jpm deps
-jpm build
-janet src/main.janet
+git clone https://github.com/Saikyun/freja
+cd freja
+mkdir janet_libs
+JANET_PATH=./janet_libs jpm deps
+JANET_PATH=./janet_libs jpm build
+JANET_PATH=./janet_libs anet src/main.janet
 ```
 
 ### changing the theme
