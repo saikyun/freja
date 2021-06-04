@@ -16,7 +16,7 @@ cd freja
 mkdir janet_libs
 JANET_PATH=./janet_libs jpm deps
 JANET_PATH=./janet_libs jpm build
-JANET_PATH=./janet_libs anet src/main.janet
+JANET_PATH=./janet_libs janet src/main.janet
 ```
 
 ### changing the theme
