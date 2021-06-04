@@ -1,5 +1,33 @@
 (use ./new_gap_buffer)
 
+(defn rgba->f
+  [r g b & [a]]
+  [(/ r 255)
+   (/ g 255)
+   (/ b 255)
+   (or a 1)])
+
+(def colors
+  @{1 (rgba->f 120 11 151)
+    2 0x77cc77ff
+    3 :dark-blue
+    4 0xee99ddff
+    5 0x228822ff
+    6 :sky-blue
+    7 :dark-purple
+    8 0x77cc77ff
+    9 :dark-blue
+    10 0xee99ddff
+    11 0x228822ff
+    12 :sky-blue
+    13 :dark-purple})
+
+
+(comment
+(((((((((())))))))))
+)
+
+
 (var depth 0)
 
 (varfn inc-depth
@@ -60,27 +88,6 @@
 (* 5 # 123 )
 )
 ``))
-
-(defn rgba->f
-  [r g b & [a]]
-  [(/ r 255)
-   (/ g 255)
-   (/ b 255)
-   (or a 1)])
-
-(def colors
-  @{1 (rgba->f 180 21 191)
-    2 (rgba->f 42 143 39)
-    3 (rgba->f 82 144 199)
-    4 (rgba->f 72 184 87)
-    5 (rgba->f 186 104 172)
-    6 (rgba->f 21 191 186)
-    7 (rgba->f 140 1 151)
-    8 (rgba->f 2 103 9)
-    9 (rgba->f 42 104 159)
-    10 (rgba->f 32 144 47)
-    11 (rgba->f 146 64 132)
-    12 (rgba->f 1 151 146)})
 
 (varfn gb->delim-ps
   [gb]
