@@ -155,7 +155,7 @@
             #
 ]
 
-     :edit [:rec {:rec [(unit 8) ((menu :rec) 3) 180 70]
+     :edit [:rec {:rec [(unit 8) ((menu :rec) 3) 180 130]
                   :bg 0x3E3E3Eff}
             #   [:button {:pos (urec 10 7)
             #            :on-click |(do (put menu :submenu nil)
@@ -166,6 +166,9 @@
             [:+ {}
              (let [btns [[i/undo!2 "Undo"]
                          [i/redo! "Redo"]
+                         [i/cut! "Cut"]
+                         [gb/copy "Copy"]
+                         [i/paste! "Paste"]
                          [i/search2 "Search"]
                          #
 ]]
