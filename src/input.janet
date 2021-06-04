@@ -1,8 +1,8 @@
 (use jaylib)
 (import ./eval :prefix "")
 (import ./state :prefix "")
-(import ./new_gap_buffer :prefix "")
-(import ./render_new_gap_buffer :prefix "")
+(import ./new_gap_buffer :as gb)
+(import ./render_new_gap_buffer :as render-gb)
 (import ./file_handling :prefix "")
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
@@ -42,6 +42,10 @@
     ([err fib]
       (debug/stacktrace fib err))))
 
+(varfn search2
+  [props]
+  (:search props))
+
 (varfn meta-down?
   []
   (if (= :macos (os/which))
@@ -74,167 +78,110 @@
 ## delay of each repetition thereafter
 (var repeat-delay 0.03)
 
-(def kw->f {:paste (fn [props]
-                     (when (meta-down?)
-                       (reset-blink props)
-
-                       (paste! props)))})
+(def undo!2 (comp reset-blink gb/undo!))
+(def paste! (comp reset-blink gb/paste!))
+(def cut! (comp reset-blink gb/cut!))
+(def redo! (comp reset-blink gb/redo!))
+(def select-backward-word (comp reset-blink gb/select-backward-word))
+(def select-forward-word (comp reset-blink gb/select-forward-word))
+(def delete-word-backward! (comp reset-blink gb/delete-word-backward!))
+(def delete-word-forward! (comp reset-blink gb/delete-word-forward!))
+(def backward-word (comp reset-blink gb/backward-word))
+(def forward-word (comp reset-blink gb/forward-word))
+(def select-backward-char (comp reset-blink gb/select-backward-char))
+(def select-forward-char (comp reset-blink gb/select-forward-char))
+(def backward-char (comp reset-blink gb/backward-char))
+(def forward-char (comp reset-blink gb/forward-char))
+(def move-to-start-of-line (comp reset-blink render-gb/move-to-start-of-line))
+(def move-to-end-of-line (comp reset-blink render-gb/move-to-end-of-line))
+(def delete-after-caret! (comp reset-blink gb/delete-after-caret!))
+(def delete-before-caret! (comp reset-blink gb/delete-before-caret!))
+(def move-up! (comp reset-blink render-gb/move-up!))
+(def move-down! (comp reset-blink render-gb/move-down!))
 
 (def global-keys
-  @{:alt @{:shift @{:left (comp reset-blink select-backward-word)
-                    :right (comp reset-blink select-forward-word)
+  @{:alt @{:shift @{:left select-backward-word
+                    :right select-forward-word
                     #
 }
 
-           :backspace (comp reset-blink delete-word-backward!)
-           :delete (comp reset-blink delete-word-forward!)
+           :backspace delete-word-backward!
+           :delete delete-word-forward!
 
-           :left (comp reset-blink backward-word)
-           :right (comp reset-blink forward-word)
+           :left backward-word
+           :right forward-word
            #
 }
 
-    :control @{:a select-all
-               :x (comp reset-blink cut!)
-               :c copy
-               :v (comp reset-blink paste!)
-               :z (comp reset-blink undo!)
-               :y (comp reset-blink redo!)}
+    :control @{:a gb/select-all
+               :x cut!
+               :c gb/copy
+               :v paste!
+               :z undo!2
+               :y redo!}
 
-    :shift @{:home select-to-start-of-line
-             :end select-to-end-of-line
-             :left (comp reset-blink select-backward-char)
-             :right (comp reset-blink select-forward-char)
-             :up select-move-up!
-             :down select-move-down!
+    :shift @{:home render-gb/select-to-start-of-line
+             :end render-gb/select-to-end-of-line
+             :left select-backward-char
+             :right select-forward-char
+             :up render-gb/select-move-up!
+             :down render-gb/select-move-down!
 
              #
 }
 
-    :left (comp reset-blink backward-char)
-    :right (comp reset-blink forward-char)
+    :left backward-char
+    :right forward-char
     :up move-up!
     :down move-down!
 
-    :home (comp reset-blink move-to-start-of-line)
-    :end (comp reset-blink move-to-end-of-line)
+    :home move-to-start-of-line
+    :end move-to-end-of-line
 
-    :delete (comp reset-blink delete-after-caret!)
-    :backspace (comp reset-blink backspace!)
+    :delete delete-after-caret!
+    :backspace delete-before-caret!
 
     #
 })
+
+(defn quit
+  [props]
+  (put (tracev (props :context)) :quit true))
+
+(defn open-file
+  [props]
+  (:open-file props))
 
 (def gb-binds @{:control @{:shift @{:f (comp reset-blink format-code)
                                     #
 }
 
-                           :f |(:search $)
-                           :o |(:open-file $)
+                           :f search2
+                           :o open-file
                            :l save-and-dofile
                            :s save-file
-                           :q |(put ($ :data) :quit true)
+                           :q quit
 
                            :enter |(eval-it2 (get-in $ [:context :top-env])
                                              (gb-get-last-sexp $))
                            #
 }
-                :enter (comp reset-blink |(insert-char! $ (chr "\n")))})
+                :enter (comp reset-blink |(gb/insert-char! $ (chr "\n")))})
 
 (table/setproto gb-binds global-keys)
 
 (def file-open-binds @{:escape
                        (fn [props]
-                         (deselect props)
+                         (gb/deselect props)
                          (swap! focus-ref (fn [_] :main))
                          #(unfocus props)
 )
 
                        :enter (fn [props]
                                 (reset-blink props)
-                                ((props :on-enter) props (string ((commit! props) :text))))})
+                                ((props :on-enter) props (string ((gb/commit! props) :text))))})
 
 (table/setproto file-open-binds global-keys)
-
-(comment
-  (put gb-data :binds gb-binds))
-
-(defn add-bind
-  ``
-  Take a button kw, and a function or a key in `kw->f`. Adds that key and function to the global bindings.
-  
-  Examples:
-  `(add-bind :b :paste)`
-  `(add-bind :c (fn [props] (pp props)))`
-  `(add-bind :c (fn [props] (when (meta-down?) (print "meta-c!"))))`
-  ``
-  [binds button f-or-kw]
-  (def f (if (keyword? f-or-kw) (kw->f f-or-kw) f-or-kw))
-  (put binds button f))
-
-(def game-binds @{})
-(def pressed-game-binds @{})
-
-(varfn handle-keyboard
-  [props data]
-
-  (print "handling kb (should not happen)")
-
-  (def dt (data :dt))
-
-  (def {:binds binds} props)
-
-  (put props :data data)
-
-  (var k (get-char-pressed))
-
-  # TODO: Need to add get-char-pressed
-
-  (while (not= 0 k)
-    (reset-blink props)
-
-    (unless (and (binds k)
-                 ((binds k) props))
-      (cond
-        (or (key-down? :left-shift)
-            (key-down? :right-shift))
-        (insert-char-upper! props k)
-
-        (insert-char! props k)))
-
-    (scroll-to-focus props)
-
-    (set k (get-char-pressed)))
-
-  (loop [[k dl] :pairs delay-left
-         :let [left ((update delay-left k - dt) k)]]
-    (when (<= left 0)
-      ((binds k) props)
-      (put delay-left k repeat-delay)
-      (scroll-to-focus props)))
-
-  (loop [k :keys binds
-         :when (not= k (keyword "("))]
-    (when (key-released? k)
-      (put delay-left k nil)
-      (scroll-to-focus props))
-
-    (when (key-pressed? k)
-      (reset-blink props)
-      (put delay-left k initial-delay)
-      ((binds k) props)
-
-      (scroll-to-focus props)))
-
-  (loop [k :keys game-binds]
-    (when (key-down? k)
-      (print "wat?")
-      ((game-binds k))))
-
-  (loop [k :keys pressed-game-binds]
-    (when (key-pressed? k)
-      (print "wat 2?")
-      ((pressed-game-binds k)))))
 
 (varfn handle-keyboard-char
   [props k]
@@ -248,9 +195,9 @@
   (cond
     (or (key-down? :left-shift)
         (key-down? :right-shift))
-    (insert-char-upper! props k)
+    (gb/insert-char-upper! props k)
 
-    (insert-char! props k))
+    (gb/insert-char! props k))
 
   (scroll-to-focus props))
 
@@ -300,6 +247,34 @@
     (when-let [p (and (not ret-f)
                       (table/getproto kmap))]
       (hotkey-triggered p k-down))))
+
+(defn get-hotkey
+  [kmap f &opt keys]
+  (default keys [])
+
+  (var ret-ks nil)
+
+  (loop [[k f2] :pairs kmap]
+    (cond (and (function? f2)
+               (= f f2))
+      (do (set ret-ks [;keys k])
+        (break))
+
+      (or (table? f2) (struct? f2))
+      (set ret-ks (get-hotkey f2 f [;keys k]))
+      (when ret-ks (break))))
+
+  (if ret-ks ret-ks
+    (when-let [p (table/getproto kmap)]
+      (get-hotkey p f keys))))
+
+(comment
+  (= global-keys (table/getproto (gb-data :binds)))
+  (get-hotkey (gb-data :binds) redo!)
+  (get-hotkey global-keys redo!)
+  (get-hotkey global-keys gb/copy)
+  #
+)
 
 
 (varfn handle-keyboard2
@@ -358,7 +333,7 @@
                           0
                           (lines (dec line-index)))
           row-end-pos (lines line-index)
-          char-i (index-passing-middle-max-width
+          char-i (render-gb/index-passing-middle-max-width
                    props
                    row-start-pos
                    row-end-pos
@@ -369,7 +344,7 @@
           flag (line-flags (max 0 (dec line-index)))]
 
       (min
-        (gb-length props)
+        (gb/gb-length props)
         (cond (and (= flag :regular)
                    (= row-start-pos char-i)) ## to the left of \n
           (inc char-i)
@@ -396,7 +371,7 @@
   (if (nil? (props :selection))
     (cb kind |(-> props
                   (put :selection (props :caret))
-                  (put-caret (get-mouse-pos props mouse-pos))
+                  (gb/put-caret (get-mouse-pos props mouse-pos))
                   (put :stickiness (if (< x x-offset) :down :right))
                   (put :changed-selection true)))
 
@@ -408,7 +383,7 @@
                          (if (> curr-pos start)
                            start
                            stop))
-                    (put-caret curr-pos)
+                    (gb/put-caret curr-pos)
                     (put :stickiness (if (< x x-offset) :down :right))
                     (put :changed-selection true))))))
 
@@ -461,16 +436,16 @@
       (cb kind |(put props :down-index nil))
 
       (= kind :triple-click)
-      (cb kind |(select-region props ;(gb-find-surrounding-paragraph!
-                                        props
-                                        (get-mouse-pos props mouse-pos))))
+      (cb kind |(gb/select-region props ;(gb/find-surrounding-paragraph!
+                                           props
+                                           (get-mouse-pos props mouse-pos))))
       #                       should maybe remember original pos
 
       (and (= kind :double-click)
            (not (key-down? :left-shift))
            (not (key-down? :right-shift)))
-      (cb kind |(select-region props ;(word-at-index props
-                                                     (get-mouse-pos props mouse-pos))))
+      (cb kind |(gb/select-region props ;(gb/word-at-index props
+                                                           (get-mouse-pos props mouse-pos))))
       #                                    should maybe remember original pos
 
       (and (or (= kind :press)

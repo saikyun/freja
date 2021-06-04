@@ -19,14 +19,7 @@
 (defonce focus-ref @{:ch (ev/chan 1) :data nil :only-last true})
 
 
-
-
-
-
-
-(def focus     @{})
-
-
+(def focus123 @{})
 
 
 (defn ev/check
@@ -48,31 +41,6 @@
       (put ref :data new-data))))
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 (var file-open-data nil)
 (var search-data nil)
 
@@ -80,54 +48,34 @@
 
 (do (merge-into gb-data
                 @{:size [800 :max]
-                  :position [5 60]
-                  :offset [10 0]
-                  
+                  :position [5 24]
+                  :offset [10 6]
+                  :show-line-numbers true
+
                   :id :main})
   :ok)
 
 (set file-open-data (new-gap-buffer))
 
+(def comp-cols {:background 0x882491ff
+                :text/color 0xffffffee
+                :caret/color 0xffffff80})
+
 (do (merge-into file-open-data
-                @{:size [800 48]
-                  :position [5 65]
-                  :offset [30 0]
-:bg :blue})
+                @{:size [:max 24]
+                  :position [0 24]
+                  :offset [88 6]}
+                comp-cols)
   :ok)
 
 (set search-data (new-gap-buffer))
 
 (do (merge-into search-data
-                @{:size [800 14]
-                  :position [5 5]
-                  :offset [30 0]})
+                @{:size [:max 24]
+                  :position [0 24]
+                  :offset [88 6]}
+                comp-cols)
   :ok)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 (def focus-checks @[])

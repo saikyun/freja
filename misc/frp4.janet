@@ -10,10 +10,10 @@
 
 (import ./../src/extra_channel :as ec :fresh true)
 (import ./../src/events :as e :fresh true)
-(import ./../src/state :prefix "" :fresh true)
+(import ./../src/state :as state)
 (import ./../src/keyboard :as kb :fresh true)
 (import ./../vector_math :as v :fresh true)
-(import ./../src/input :prefix "")
+(import ./../src/input :as i)
 (import ./../src/file_handling :prefix "")
 (import ./../backwards2 :prefix "")
 (import ./../src/render_new_gap_buffer :prefix "")
@@ -41,14 +41,14 @@
          :let [left ((update delay-left k - dt) k)]]
     (when (<= left 0)
       (ec/push! keyboard @[:key-down k])
-      (put delay-left k repeat-delay)))
+      (put delay-left k i/repeat-delay)))
 
   (loop [k :in kb/possible-keys]
     (when (key-released? k)
       (put delay-left k nil))
 
     (when (key-pressed? k)
-      (put delay-left k initial-delay)
+      (put delay-left k i/initial-delay)
       (ec/push! keyboard @[:key-down k]))))
 
 (varfn handle-scroll
@@ -112,56 +112,55 @@
   (match ev
     [:key-down k]
     (do
-      (handle-keyboard2
+      (i/handle-keyboard2
         (self :gb)
         k)
 	(put self :event/changed true)
 )
     [:char k]
     (do
-    (handle-keyboard-char
+    (i/handle-keyboard-char
       (self :gb)
       k)
 	(put self :event/changed true)
 	)
     [:scroll n mp]
     (when  (in-rec? mp
-                 (gb-rec (self :gb)))
-		 (print (self :id))
+                 (i/gb-rec (self :gb)))
    
    (push-callback! ev (fn []
-    (handle-scroll-event (self :gb) n)
+    (i/handle-scroll-event (self :gb) n)
 	(put self :event/changed true)
 	)))
 	
     ['(mouse-events (first ev)) _]
-    (handle-mouse-event
+    (i/handle-mouse-event
       (self :gb)
       ev
       (fn [kind f]
         (push-callback! ev (fn []
                              (f)
-                             (e/put! focus :focus self)
+                             (e/put! state/focus123 :focus self)
                              (put (self :gb) :event/changed true)
 
 ))))))
 
-(merge-into file-open-data {:binds file-open-binds})
+(merge-into state/file-open-data {:binds i/file-open-binds})
 
 (defn open-file
   [_]
-  (e/put! focus :focus file-open-area))
+  (e/put! state/focus123 :focus file-open-area))
 
 (def text-area
   @{:id :main
 
     :gb (merge-into
-          gb-data
-          @{:binds gb-binds
+          state/gb-data
+          @{:binds i/gb-binds
 
             :search
             (fn [props]
-              (e/put! focus :focus search-area))
+              (e/put! state/focus123 :focus search-area))
 
             :open-file
             open-file})
@@ -189,52 +188,52 @@
 (varfn search
   [props]
   (let [search-term (string (content props))]
-    (put-caret gb-data (if (gb-data :selection)
-                         (max (gb-data :selection)
-                              (gb-data :caret))
-                         (gb-data :caret)))
-    (when-let [i (gb-find-forward! gb-data search-term)]
-      (-> gb-data
+    (put-caret state/gb-data (if (state/gb-data :selection)
+                         (max (state/gb-data :selection)
+                              (state/gb-data :caret))
+                         (state/gb-data :caret)))
+    (when-let [i (gb-find-forward! state/gb-data search-term)]
+      (-> state/gb-data
           (reset-blink)
           (put-caret i)
-          (put :selection (gb-find-backward! gb-data search-term))
+          (put :selection (gb-find-backward! state/gb-data search-term))
           (put :changed-selection true)))))
 
-(varfn search-backward
+(varfn search-backward2
   [props]
   (let [search-term (string (content props))]
-    (put-caret gb-data (if (gb-data :selection)
-                         (min (gb-data :selection)
-                              (gb-data :caret))
-                         (gb-data :caret)))
-    (when-let [i (gb-find-backward! gb-data search-term)]
-      (-> gb-data
+    (put-caret state/gb-data (if (state/gb-data :selection)
+                         (min (state/gb-data :selection)
+                              (state/gb-data :caret))
+                         (state/gb-data :caret)))
+    (when-let [i (gb-find-backward! state/gb-data search-term)]
+      (-> state/gb-data
           (reset-blink)
           (put-caret i)
-          (put :selection (gb-find-forward! gb-data search-term))
+          (put :selection (gb-find-forward! state/gb-data search-term))
           (put :changed-selection true)))))
 
-(put search-data :binds
+(put state/search-data :binds
      @{:escape
        (fn [props]
-         (put focus :focus text-area)
-         (put focus :event/changed true))
+         (put state/focus123 :focus text-area)
+         (put state/focus123 :event/changed true))
 
        :enter search
 
        :control @{:f search
 
-                  :b search-backward}
+                  :b search-backward2}
        #
 })
 
-(table/setproto (search-data :binds) global-keys)
+(table/setproto (state/search-data :binds) i/global-keys)
 
 (merge-into
   search-area
   @{:id :search
 
-    :gb search-data
+    :gb state/search-data
 
     :draw (fn [self]
             (rl-pop-matrix)
@@ -260,7 +259,7 @@
   file-open-area
   @{:id :file-open
 
-    :gb file-open-data
+    :gb state/file-open-data
 
     :draw (fn [self]
             (rl-pop-matrix)
@@ -283,14 +282,14 @@
                 (text-area-on-event self ev))})
 
 
-(merge-into (file-open-data :binds)
+(merge-into (state/file-open-data :binds)
             {:escape
              (fn [props]
-               (e/put! focus :focus text-area))
+               (e/put! state/focus123 :focus text-area))
 
              :enter (fn [props]
-                      (load-file gb-data (string ((commit! props) :text)))
-                      (e/put! focus :focus text-area))})
+                      (load-file state/gb-data (string ((commit! props) :text)))
+                      (e/put! state/focus123 :focus text-area))})
 
 (def caret
   @{:draw (fn [self]
@@ -302,11 +301,12 @@
     :on-event (fn [self ev]
 
                 (match ev
-                  {:focus focus}
+                  {:focus state/focus123}
                   (do
-                    (put self :gb (focus :gb))
+		  (when (get-in state/focus123 [:gb :caret-pos])
+                    (put self :gb (state/focus123 :gb))
                     (set ((self :gb) :blink) 0)
-                    (put self :on true))
+                    (put self :on true)))
 
                   [:dt dt]
                   (when (self :gb)
@@ -318,8 +318,6 @@
                       (set ((self :gb) :blink) 0)
                       (put self :on true)))))})
 
-(e/put! focus :focus text-area)
-
 (def button2
   (table/setproto
     @{:rec [350 30 100 50]
@@ -327,7 +325,7 @@
     button))
 
 (comment
-  (get-in focus [:focus :id])
+  (get-in state/focus123 [:focus :id])
 
   (loop [[pullable pullers] :pairs dependencies]
     (when-let [hi-i (find-index |(and (table? $) ($ :history)) pullers)]
@@ -346,7 +344,7 @@
 # (e/record-all dependencies)
 # need to make gb-data not contain circular references etc
 
-(def mouse-data (new-mouse-data))
+(def mouse-data (i/new-mouse-data))
 
 (varfn handle-mouse
   [mouse-data]
@@ -412,13 +410,13 @@
 
 (def dependencies
   @{mouse @[text-area search-area file-open-area]
-    keyboard @[|(:on-event (focus :focus) $)]
-    chars @[|(:on-event (focus :focus) $)]
-    focus @[caret]
+    keyboard @[|(:on-event (state/focus123 :focus) $)]
+    chars @[|(:on-event (state/focus123 :focus) $)]
+    state/focus123 @[caret]
     callbacks @[handle-callbacks]})
 
 (def draws @[|(:draw text-area)
-             |(case (focus :focus)
+             |(case (state/focus123 :focus)
                 search-area (:draw search-area)
                 file-open-area (:draw file-open-area))
              |(:draw caret)])

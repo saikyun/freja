@@ -2,6 +2,7 @@
 
 (import spork/test)
 (import ./code_api :prefix "")
+(import ./../new_menu :as menu)
 (import ./textfield :as t)
 #(import ./../misc/frp3 :prefix "")
 (import ./../misc/frp4 :prefix "")
@@ -76,7 +77,7 @@
   [dt]
   (clear-background :blank)
   #  (draw-text* (conf :text) (string (data :latest-res)) [605 660] :blue)
-  )
+)
 
 (var texture nil)
 
@@ -109,7 +110,7 @@
     [0 0]
     0
     :white)
-  
+
   (rl-pop-matrix))
 
 
@@ -128,7 +129,7 @@
   (def dt (get-frame-time))
 
   (put data :dt dt)
-  
+
   (put data :changed-focus false)
   (try
     (loop [o :in focus-checks]
@@ -143,97 +144,93 @@
   (comment
     (unless (data :changed-focus)
       (put data :focus gb-data)))
-  
+
   (comment
     (when-let [active-data (data :focus)]
       (handle-mouse mouse-data active-data)
-      (handle-scroll active-data))
-    )
-  
+      (handle-scroll active-data)))
+
   (when (window-resized?)
     (put gb-data :resized true))
-  
+
   (def [x-scale y-scale] screen-scale)
-  
+
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
-  
+
   (comment (loop [f :in updates]
              (:update f data)))
-  
+
   (def changed (or (gb-data :changed)
                    (gb-data :changed-nav)
                    (gb-data :changed-scroll)))
-  
+
   (if (gb-data :changed)
     (-> gb-data
         (put :not-changed-timer 0)
         (put :styled false))
     (update gb-data :not-changed-timer + dt))
-  
+
   (when (and (not (gb-data :styled))
              (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
     (def thread (thread/new styling-worker 32))
     (:send thread (content gb-data))
-    
+
     (put gb-data :styled true))
-  
+
   # (gb-pre-render debug-data)
   (comment
     (cond
-      
+
       (= (data :focus) file-open-data)
       (gb-pre-render file-open-data)
-      
+
       (= (data :focus) search-data)
       (gb-pre-render search-data)
-      
+
       nil))
-  
+
   (begin-drawing)
-  
-  (clear-background (colors :background))  
-  
+
+  (clear-background (colors :background))
+
   (render-all fs)
-  
-  
-  
+
   (comment (rl-viewport 0 0 w h)
-    (rl-matrix-mode :rl-projection)
-    (rl-load-identity)
-    (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
-    (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
-    (rl-load-identity)) # Reset internal modelview matrix
-  
-  
+           (rl-matrix-mode :rl-projection)
+           (rl-load-identity)
+           (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
+           (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
+           (rl-load-identity)) # Reset internal modelview matrix
+
+
   #(when changed (print "render"))
   #(gb-render-text debug-data)
-  
+
   #(print)
-  
+
   #(print)
-  
+
   (cond (= (data :focus) file-open-data)
     (gb-render-text file-open-data)
-    
+
     (= (data :focus) search-data)
     (gb-render-text search-data)
-    
+
     nil)
-  
+
   (when-let [focus (cond
                      (= (data :focus) gb-data) gb-data
                      (= (data :focus) file-open-data) file-open-data
                      (= (data :focus) search-data) search-data)]
     #    (render-cursor focus)
-    )
+)
 
   (trigger dt)
-  
+
   (try
     (loop [f :in draws]
-      (:draw f data)
-      )
+      (:draw f data))
     ([err fib]
       (print "draws")
       (put data :latest-res (string "Error: " err))
@@ -313,14 +310,14 @@
 (defn start
   []
   (try
-    (do 
+    (do
       (set-config-flags :vsync-hint)
       (set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
-      
+
       (init-window 900 700
                    "Textfield")
-      
+
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 
       (let [[xs ys] (get-window-scale-dpi)]
@@ -346,27 +343,28 @@
         (put gb-data :context data)
         (put gb-data :screen-scale [x-scale y-scale])
         (put gb-data :colors colors)
-        
+
         (set conf (load-font search-data tc))
         (put search-data :context data)
         (put search-data :screen-scale [x-scale y-scale])
         (put search-data :colors colors)
-        
+
         (set conf2 (load-font file-open-data tc))
         (put file-open-data :context data)
         (put file-open-data :screen-scale [x-scale y-scale])
         (put file-open-data :colors colors)
-        
-        (array/push updates file-open-data)
-        
-        (array/push updates search-data)
 
+        (array/push updates file-open-data)
+
+        (array/push updates search-data)
 
         (put data :mouse (new-mouse-data))
 
         (set-target-fps 60)
 
         (run-init-file)
+
+        (menu/init)
 
         (set texture (load-render-texture 500 500))
 

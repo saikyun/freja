@@ -29,6 +29,33 @@
        oy)
     h))
 
+(varfn inner-width
+  [{:position position
+    :offset offset
+    :size size}]
+  (def [x _] position)
+  (def [ox _] offset)
+  (def [w _] size)
+
+  (if (= w :max)
+    (- (get-screen-width)
+       x
+       ox)
+    w))
+
+(varfn width
+  [{:position position
+    :offset offset
+    :size size}]
+  (def [x _] position)
+  (def [ox _] offset)
+  (def [w _] size)
+
+  (if (= w :max)
+    (- (get-screen-width)
+       x)
+    w))
+
 (varfn get-size
   [sizes c]
   (let [sz (get sizes c)]
@@ -309,7 +336,7 @@ Returns `nil` if the max width is never exceeded."
             [(+ (offset 0)
                 width-of-last-line-number
                 start-x)
-             (- y (* y-scale 3))
+             (+ (- y (* y-scale 3)) (offset 1))
              (- stop-x start-x)
              (* y-scale line-h)]
             (colors :selected-text-background)
@@ -406,18 +433,19 @@ Render lines doesn't modify anything in gb."
                  line-y (y-poses i)]]
       (set x 0)
 
-      ## TODO: If line in selection, draw selection box here
       (render-selection-box gb last-gb-index l (- line-y line-start-y))
 
-      (let [lns (string/format "%d" (line-numbers i))
-            lns-offset (defn measure-text
-                         [tc text]
-                         (measure-text-ex (tc :font)
-                                          text
-                                          (math/floor (* (tc :mult) (tc :size)))
-                                          (* (tc :mult) (tc :spacing))))]
-        (draw-text*2 conf lns [0
-                               (rel-y gb (- line-y line-start-y))] :gray x-scale))
+      ### render line numbers
+      (when (gb :show-line-numbers)
+        (let [lns (string/format "%d" (line-numbers i))
+              lns-offset (defn measure-text
+                           [tc text]
+                           (measure-text-ex (tc :font)
+                                            text
+                                            (math/floor (* (tc :mult) (tc :size)))
+                                            (* (tc :mult) (tc :spacing))))]
+          (draw-text*2 conf lns [0
+                                 (rel-y gb (- line-y line-start-y))] :gray x-scale)))
 
       (gb-iterate
         gb
@@ -460,7 +488,8 @@ Render lines doesn't modify anything in gb."
                          (get colors ((highlighting hl-i) 2) default-text-color)
 
                          # else
-                         default-text-color)
+                         (get gb :text/color
+                              default-text-color))
                        x-scale)
 
           (+= x (* x-scale w))))
@@ -685,7 +714,7 @@ This function is pretty expensive since it redoes all word wrapping."
 
     gb
     0 index
-    ((gb :size) 0)
+    (inner-width gb)
     font-h
     0
     99999999)
@@ -705,7 +734,7 @@ This function is pretty expensive since it redoes all word wrapping."
 
       gb
       0 (gb-length gb)
-      ((gb :size) 0)
+      (inner-width gb)
       font-h
       0
       pos)
@@ -875,7 +904,7 @@ This function is pretty expensive since it redoes all word wrapping."
     (put gb :texture nil))
 
   (when (not (gb :texture))
-    (put gb :texture (load-render-texture (* x-scale w)
+    (put gb :texture (load-render-texture (* x-scale (width gb))
                                           (* y-scale (height gb)) #screen-w screen-h
 )))
 
@@ -921,7 +950,7 @@ This function is pretty expensive since it redoes all word wrapping."
                                          gb
                                          0
                                          (gb-length gb)
-                                         w
+                                         (inner-width gb)
                                          font-h
                                          y
                                          (+ y (- (height gb) scroll)))))
@@ -992,7 +1021,6 @@ This function is pretty expensive since it redoes all word wrapping."
   (def [x-scale y-scale] screen-scale)
 
   (def [x y] position)
-  (def [w _] size)
 
   (def screen-w (* x-scale (get-screen-width)))
   (def screen-h (* y-scale (get-screen-height)))
@@ -1000,6 +1028,7 @@ This function is pretty expensive since it redoes all word wrapping."
   (rl-push-matrix)
 
   (def h (height gb))
+  (def w (width gb))
 
   #  (rl-mult-matrixf-screen-scale)
 
@@ -1054,7 +1083,7 @@ This function is pretty expensive since it redoes all word wrapping."
   (when-let [[x y] (and (< (gb :blink) 30)
                         (gb :caret-pos))
              cx (abs-text-x gb x)
-             cy (abs-text-y gb (+ y scroll))]
+             cy (abs-text-y gb (+ y scroll -2))]
 
     (put gb :dbg-y2 scroll)
     (put gb :dbg-y1 y)
@@ -1062,9 +1091,9 @@ This function is pretty expensive since it redoes all word wrapping."
 
     (draw-line-ex
       [cx cy]
-      [cx (+ cy font-h)]
+      [cx (+ cy (- font-h 1))]
       1
-      (get-in gb [:colors :caret])))
+      (or (gb :caret/color) (get-in gb [:colors :caret]))))
 
   (rl-pop-matrix))
 

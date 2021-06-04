@@ -642,11 +642,16 @@ Updates caret etc as expected."
     (when (= (gb :caret) 0)
       (break gb))
 
+(if selection
+(delete-selection! gb)
+(do
     (if (empty? gap)
       (-> gb
+          (put :changed true)
           (update :gap-start |(max 0 (dec $)))
           (update :caret |(max 0 (dec $))))
       (-> gb
+          (put :changed true)
           (update :gap
                   (fn [gap]
                     (let [to-the-right (buffer/slice gap gap-i)]
@@ -662,7 +667,7 @@ Updates caret etc as expected."
              :selection-before selection
              :content to-delete
              :caret-after (gb :caret)
-             :selection-after (gb :selection)})))
+             :selection-after (gb :selection)})))))
 
 (varfn delete-word-forward!
   "Deletes the word after the cursor."
@@ -1032,7 +1037,7 @@ Otherwise moves the caret backward one character."
   #=> @[(0 3)]
   )
 
-(varfn gb-find-surrounding-paragraph!
+(varfn find-surrounding-paragraph!
   [gb index]
   # if index is before the first paragraph, we want the first paragraph
   (def pgs (find-paragraphs (content gb)))
