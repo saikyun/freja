@@ -122,6 +122,10 @@
 
 (defn menu-root
   [props]
+  (defn menu-height
+    [n-items]
+    (+ (* n-items 20) 10))
+
   [:+
    {}
    [:button {:pos (urec 2 1)
@@ -139,42 +143,47 @@
                           (put menu :submenu :edit))}
     "Edit"]
    (case (props :submenu)
-     :file [:rec {:rec [0 ((menu :rec) 3) 180 70]
-                  :bg 0x3E3E3Eff}
-
-            [:+ {}
-             (let [btns [[i/open-file "Open"]
-                         [fh/save-file "Save"]
-                         [i/quit "Quit"]
-                         #
+     :file (let [btns [[i/open-file "Open"]
+                       [fh/save-file "Save"]
+                       [i/quit "Quit"]
+                       #
 ]]
+             [:rec {:rec [0 ((menu :rec) 3)
+                          180 (menu-height (length btns))]
+                    :bg 0x3E3E3Eff}
+
+              [:+ {}
                ;(seq [i :range [0 (length btns)]
                       :let [[f s] (btns i)
                             rec (urec 2 (+ 7 (* i 5)))]]
-                  (menu-button rec f s)))]
+                  (menu-button rec f s))]
             #
-]
+])
 
-     :edit [:rec {:rec [(unit 8) ((menu :rec) 3) 180 70]
-                  :bg 0x3E3E3Eff}
-            #   [:button {:pos (urec 10 7)
-            #            :on-click |(do (put menu :submenu nil)
-            #                          (e/put! state/focus123 :focus frp/text-area)
-            #                         (i/undo!2 gb-data))}
-            #   "Undo"]
-
-            [:+ {}
-             (let [btns [[i/undo!2 "Undo"]
-                         [i/redo! "Redo"]
-                         [i/search2 "Search"]
-                         #
+     :edit (let [btns [[i/undo!2 "Undo"]
+                       [i/redo! "Redo"]
+                       [i/cut! "Cut"]
+                       [gb/copy "Copy"]
+                       [i/paste! "Paste"]
+                       [i/search2 "Search"]
+                       #
 ]]
+             [:rec {:rec [(unit 8) ((menu :rec) 3)
+                          180 (menu-height (length btns))]
+                    :bg 0x3E3E3Eff}
+              #   [:button {:pos (urec 10 7)
+              #            :on-click |(do (put menu :submenu nil)
+              #                          (e/put! state/focus123 :focus frp/text-area)
+              #                         (i/undo!2 gb-data))}
+              #   "Undo"]
+
+              [:+ {}
                ;(seq [i :range [0 (length btns)]
                       :let [[f s] (btns i)
                             rec (urec 10 (+ 7 (* i 5)))]]
-                  (menu-button rec f s)))]
+                  (menu-button rec f s))]
             #
-])
+]))
    #
 ])
 #
