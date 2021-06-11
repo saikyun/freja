@@ -48,7 +48,7 @@
 
 (do (merge-into gb-data
                 @{:size [800 :max]
-                  :position [5 24]
+                  :position [5 30]
                   :offset [10 6]
                   :show-line-numbers true
 
@@ -62,8 +62,8 @@
                 :caret/color 0xffffff80})
 
 (do (merge-into file-open-data
-                @{:size [:max 24]
-                  :position [0 24]
+                @{:size [:max 30]
+                  :position [0 30]
                   :offset [88 6]}
                 comp-cols)
   :ok)
@@ -71,8 +71,8 @@
 (set search-data (new-gap-buffer))
 
 (do (merge-into search-data
-                @{:size [:max 24]
-                  :position [0 24]
+                @{:size [:max 30]
+                  :position [0 30]
                   :offset [88 6]}
                 comp-cols)
   :ok)

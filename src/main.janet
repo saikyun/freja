@@ -316,7 +316,7 @@
       (set-config-flags :window-resizable)
 
       (init-window 900 700
-                   "Textfield")
+                   "Freja")
 
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 
@@ -326,7 +326,7 @@
 
       (let [[x-scale y-scale] screen-scale
             tc @{:font-path "./assets/fonts/Monaco.ttf"
-                 :size (* 14 x-scale)
+                 :size (* 18 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
                  :glyphs default-glyphs

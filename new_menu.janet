@@ -10,7 +10,7 @@
 (import ./backwards2 :as b)
 (use jaylib)
 
-(def font-size 16)
+(def font-size 18)
 (def text-color 0xffffffff)
 (def def-spacing 1)
 (var menu-font nil)
@@ -157,7 +157,7 @@
                       :let [[f s] (btns i)
                             rec (urec 2 (+ 7 (* i 5)))]]
                   (menu-button rec f s))]
-            #
+              #
 ])
 
      :edit (let [btns [[i/undo!2 "Undo"]
@@ -182,7 +182,7 @@
                       :let [[f s] (btns i)
                             rec (urec 10 (+ 7 (* i 5)))]]
                   (menu-button rec f s))]
-            #
+              #
 ]))
    #
 ])
@@ -245,9 +245,20 @@
 
 # (draw-text-ex font t pos font-size spacing color)
 
+(varfn menu-rec
+  [[x y w h]]
+  [x
+   y
+   (match w
+     :max (- (get-screen-width) x)
+     w w)
+   (match h
+     :max (- (get-screen-height) y)
+     h h)])
+
 (defn menu-draw
   [menu]
-  (draw-rectangle-rec (menu :rec) def-bg)
+  (draw-rectangle-rec (menu-rec (menu :rec)) def-bg)
 
   (comment
     (let [t (string (get menu :submenu "<inactive>"))]
@@ -265,7 +276,7 @@
   [menu ev]
 
   (when (frp/mouse-events (first ev))
-    (when (b/in-rec? (ev 1) (menu :rec))
+    (when (b/in-rec? (ev 1) (menu-rec (menu :rec)))
       (frp/push-callback! ev noop))) # done so that nothing below menu reacts
 
   (match ev
@@ -294,7 +305,7 @@
 (defn init
   []
 
-  (merge-into menu @{:rec [0 0 (get-screen-width) (unit 6)]
+  (merge-into menu @{:rec [0 0 :max (unit 7.5)]
                      :submenu nil
                      :draw menu-draw
                      :on-event menu-event})
@@ -312,9 +323,9 @@
       frp/callbacks @[frp/handle-callbacks]})
 
   (def finally
-    @{frp/frame-chan [frp/render-deps
-                      frp/caret
-                      |(update-in frp/text-area [:gb :not-changed-timer] + ($ 1))]})
+    @{frp/frame-chan @[frp/render-deps
+                       frp/caret
+                       |(update-in frp/text-area [:gb :not-changed-timer] + ($ 1))]})
 
   (def draws @[|(:draw frp/text-area)
                |(get-in frp/text-area [:gb :not-changed-timer])

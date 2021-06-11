@@ -454,3 +454,20 @@
 
 (comment
   (ec/push! mouse [:down [10 10]]))
+
+(defn subscribe!
+  "Take an event emitter (e.g. a ev/channel)
+and a callback (e.g. single arity function).
+Creates a regular subscription."
+  [emitter cb]
+  (unless (find |(= $ cb) (get-in deps [:deps emitter]))
+    (update-in deps [:deps emitter] array/push cb)))
+
+
+(defn subscribe-finally!
+  "Take an event emitter (e.g. a ev/channel)
+and a callback (e.g. single arity function).
+Creates a finally subscription."
+  [emitter cb]
+  (unless (find |(= $ cb) (get-in deps [:finally emitter]))
+    (update-in deps [:finally emitter] array/push cb)))

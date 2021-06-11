@@ -8,7 +8,7 @@
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
 
-(def font-h 17)
+(def font-h 21)
 
 (defn reset-blink
   [props]
@@ -202,6 +202,8 @@ Returns `nil` if the max width is never exceeded."
         (set x 0)
         (set w 0)
         (set beginning-of-word-i (inc i)))
+
+(chr "\r") (do)
 
       space
       (let [old-w w]
