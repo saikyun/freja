@@ -4,8 +4,7 @@
 (import ./code_api :prefix "")
 (import ./../new_menu :as menu)
 (import ./textfield :as t)
-#(import ./../misc/frp3 :prefix "")
-(import ./../misc/frp4 :prefix "")
+(import ./frp :as frp)
 (import ./../backwards2 :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
@@ -21,7 +20,7 @@
 (import ./theme :prefix "")
 (import spork/netrepl)
 (import ./font :prefix "")
-(import ./state :prefix "")
+(import ./state :as state)
 (setdyn :pretty-format "%.40M")
 
 (defmacro defonce
@@ -48,7 +47,6 @@
 (var conf3 nil)
 
 (var data @{:latest-res @""
-            :focus gb-data
             :quit false
             :top-env top-env})
 
@@ -81,48 +79,11 @@
 
 (var texture nil)
 
-(varfn draw-frame
-  [dt]
-  (begin-texture-mode texture)
-  (rl-push-matrix)
-
-  (try (frame dt)
-    ([err fib]
-      (print "hmm")
-      (put data :latest-res (string "Error: " err))
-      (print (debug/stacktrace fib err))))
-
-  (rl-pop-matrix)
-  (end-texture-mode)
-
-  (rl-push-matrix)
-
-  (draw-texture-pro
-    (get-render-texture texture)
-    [0
-     0
-     (* 1 500)
-     (* 1 (- 500))]
-    [(+ (get-in gb-data [:position 0])
-        (get-in gb-data [:size 0]))
-     10
-     500 500]
-    [0 0]
-    0
-    :white)
-
-  (rl-pop-matrix))
-
-
 (defn styling-worker
   [parent]
   (def content (thread/receive))
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
-
-(array/push draws {:draw (fn [_ data] (draw-frame (data :dt)))})
-
-#_(array/concat fs [gb-data])
 
 (varfn internal-frame
   []
@@ -130,133 +91,21 @@
 
   (put data :dt dt)
 
-  (put data :changed-focus false)
-  (try
-    (loop [o :in focus-checks]
-      (when (and (o :focus?)
-                 (:focus? o data))
-        (put data :focus o)
-        (put data :changed-focus true)))
-    ([err fib]
-      (print "draws")
-      (put data :latest-res (string "Error: " err))
-      (print (debug/stacktrace fib err))))
-  (comment
-    (unless (data :changed-focus)
-      (put data :focus gb-data)))
-
-  (comment
-    (when-let [active-data (data :focus)]
-      (handle-mouse mouse-data active-data)
-      (handle-scroll active-data)))
-
-  (when (window-resized?)
-    (put gb-data :resized true))
-
   (def [x-scale y-scale] screen-scale)
 
   (def w (* x-scale (get-screen-width)))
   (def h (* y-scale (get-screen-height)))
 
-  (comment (loop [f :in updates]
-             (:update f data)))
-
-  (def changed (or (gb-data :changed)
-                   (gb-data :changed-nav)
-                   (gb-data :changed-scroll)))
-
-  (if (gb-data :changed)
-    (-> gb-data
-        (put :not-changed-timer 0)
-        (put :styled false))
-    (update gb-data :not-changed-timer + dt))
-
-  (when (and (not (gb-data :styled))
-             (>= (gb-data :not-changed-timer) 0.3)) ## delay before re-styling
-    (def thread (thread/new styling-worker 32))
-    (:send thread (content gb-data))
-
-    (put gb-data :styled true))
-
-  # (gb-pre-render debug-data)
-  (comment
-    (cond
-
-      (= (data :focus) file-open-data)
-      (gb-pre-render file-open-data)
-
-      (= (data :focus) search-data)
-      (gb-pre-render search-data)
-
-      nil))
-
   (begin-drawing)
 
   (clear-background (colors :background))
 
-  (render-all fs)
 
-  (comment (rl-viewport 0 0 w h)
-           (rl-matrix-mode :rl-projection)
-           (rl-load-identity)
-           (rl-ortho 0 w h 0 0 1) # Recalculate internal projection matrix      
-           (rl-matrix-mode :rl-modelview) # Enable internal modelview matrix        
-           (rl-load-identity)) # Reset internal modelview matrix
-
-
-  #(when changed (print "render"))
-  #(gb-render-text debug-data)
-
-  #(print)
-
-  #(print)
-
-  (cond (= (data :focus) file-open-data)
-    (gb-render-text file-open-data)
-
-    (= (data :focus) search-data)
-    (gb-render-text search-data)
-
-    nil)
-
-  (when-let [focus (cond
-                     (= (data :focus) gb-data) gb-data
-                     (= (data :focus) file-open-data) file-open-data
-                     (= (data :focus) search-data) search-data)]
-    #    (render-cursor focus)
-)
-
-  (trigger dt)
-
-  (try
-    (loop [f :in draws]
-      (:draw f data))
-    ([err fib]
-      (print "draws")
-      (put data :latest-res (string "Error: " err))
-      (print (debug/stacktrace fib err))))
+  (frp/trigger dt)
 
   (end-drawing)
 
-  (try
-    (let [[kind res] (thread/receive 0)]
-      (case kind
-        :hl
-        (do
-          (-> gb-data
-              (put :highlighting res)
-              (put :changed-styling true)))
-
-        # else
-        (print "unmatched message"))
-      :ok)
-    ([err fib])))
-
-(comment
-  (ez-gb file-open-data)
-  (ez-gb gb-data)
-
-  (focus {:context data :id :main}))
+)
 
 (defn loop-it
   []
@@ -299,7 +148,7 @@
   (def env (data :top-env))
   (try
     (do
-      (dofile "./init.janet"
+      (dofile (string state/freja-dir "./init.janet")
               #             :env (fiber/getenv (fiber/current))
               :env env)
       (merge-into env env))
@@ -325,38 +174,34 @@
         (put screen-scale 1 ys))
 
       (let [[x-scale y-scale] screen-scale
-            tc @{:font-path "./assets/fonts/Monaco.ttf"
+            tc @{:font-path (string state/freja-dir "./assets/fonts/Monaco.ttf")
                  :size (* 18 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
                  :glyphs default-glyphs
                  :spacing 0.5}
 
-            tc2 @{:font-path "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf"
+            tc2 @{:font-path (string state/freja-dir "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf")
                   :line-height 1.1
                   :size (* 20 x-scale)
                   :mult (/ 1 x-scale)
                   :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
                   :spacing 2}]
 
-        (set conf (load-font gb-data tc))
-        (put gb-data :context data)
-        (put gb-data :screen-scale [x-scale y-scale])
-        (put gb-data :colors colors)
+        (set conf (load-font state/gb-data tc))
+        (put state/gb-data :context data)
+        (put state/gb-data :screen-scale [x-scale y-scale])
+        (put state/gb-data :colors colors)
 
-        (set conf (load-font search-data tc))
-        (put search-data :context data)
-        (put search-data :screen-scale [x-scale y-scale])
-        (put search-data :colors colors)
+        (set conf (load-font state/search-data tc))
+        (put state/search-data :context data)
+        (put state/search-data :screen-scale [x-scale y-scale])
+        (put state/search-data :colors colors)
 
-        (set conf2 (load-font file-open-data tc))
-        (put file-open-data :context data)
-        (put file-open-data :screen-scale [x-scale y-scale])
-        (put file-open-data :colors colors)
-
-        (array/push updates file-open-data)
-
-        (array/push updates search-data)
+        (set conf2 (load-font state/file-open-data tc))
+        (put state/file-open-data :context data)
+        (put state/file-open-data :screen-scale [x-scale y-scale])
+        (put state/file-open-data :colors colors)
 
         (put data :mouse (new-mouse-data))
 
@@ -387,6 +232,9 @@
 (defn main [& args]
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   (pp args)
+  (buffer/push-string state/freja-dir (os/getenv "FREJA_PATH"))
+  (buffer/push-string state/freja-dir "/")
   (when-let [file (get args 1)]
-    (load-file gb-data file))
+    (load-file state/gb-data file)
+    )
   (start))

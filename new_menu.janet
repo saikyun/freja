@@ -1,3 +1,8 @@
+(setdyn :doc ````
+* a
+* b
+````)
+
 (import ./vector_math :prefix "")
 (import ./src/events :as e :fresh true)
 (import ./src/input :as i)
@@ -6,7 +11,7 @@
 (import ./src/render_new_gap_buffer :as render-gb)
 (import ./src/font :prefix "")
 (import ./src/state :as state)
-(import ./misc/frp4 :as frp)
+(import ./src/frp :as frp)
 (import ./backwards2 :as b)
 (use jaylib)
 
@@ -335,7 +340,7 @@
                |(:draw frp/caret)
                |(:draw menu)])
 
-  (set menu-font (default-load-font "assets/fonts/FiraSans-Regular.ttf" font-size))
+  (set menu-font (default-load-font (string state/freja-dir "./assets/fonts/FiraSans-Regular.ttf") font-size))
   (put frp/deps :deps dependencies)
   (put frp/deps :finally finally)
   (put frp/deps :draws draws)

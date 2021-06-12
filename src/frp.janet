@@ -1,17 +1,28 @@
-(setdyn :doc
-````
+(comment
+ "b"
+  (import ./misc/frp4)
+  (doc ./misc/frp4)
+  (doc loop)
+  #
+)
+
+(setdyn
+  :doc
+  ````
 ## Overview
 
 frp4 is used to:
-- display things on screen
-- react to input from keyboard and mouse
-- prioritize which ui elements get inputs
+
+* display things on screen
+* react to input from keyboard and mouse
+* prioritize which ui elements get inputs
 
 frp4 works by going through a table of
 "things that can happen"
 and
 "things that want to know what happened"
 e.g.
+
 ```
 @{mouse [flash-cursor-position]
 ```

@@ -1,14 +1,14 @@
 (declare-project
   :name "Freja"
   :author "saikyun"
-  :dependencies [## using my own fork due to problem with latest raylib release
+  :dependencies ["https://github.com/janet-lang/spork"
+
+                 ## using my own fork due to additions to jaylib
                  "https://github.com/Saikyun/freja-jaylib"
-                 #"file:////Users/test/programmering/janet/freja-jaylib"
-                 
+
                  # example of how to use `:tag`
                  # {:repo "https://...." :tag "abcdcbdc"}
-                 
-                 "https://github.com/janet-lang/spork"])
+])
 
 (declare-native
   :name "text-rendering"
@@ -21,12 +21,12 @@
   (string proj-root "/src"))
 
 (declare-source
-  :source [(string src-root "/main.janet")])
+  :source @[src-root "freja"])
 
-(comment
-  (declare-executable
-    :name "myexec"
-    :entry (string src-root "/main.janet")))
+(declare-executable
+  :name "freja"
+  :entry (string src-root "/main.janet")
+  :install true)
 
 (phony "judge" ["build"]
        (os/execute ["jg-verdict"

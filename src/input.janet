@@ -1,6 +1,6 @@
 (use jaylib)
 (import ./eval :prefix "")
-(import ./state :prefix "")
+#(import ./state :prefix "")
 (import ./new_gap_buffer :as gb)
 (import ./render_new_gap_buffer :as render-gb)
 (import ./file_handling :prefix "")
@@ -173,8 +173,6 @@
 (def file-open-binds @{:escape
                        (fn [props]
                          (gb/deselect props)
-                         (swap! focus-ref (fn [_] :main))
-                         #(unfocus props)
 )
 
                        :enter (fn [props]
