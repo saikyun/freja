@@ -2,6 +2,7 @@
 
 (import spork/test)
 (import ./code_api :prefix "")
+(import ./derp :as derp)
 (import ./../new_menu :as menu)
 (import ./textfield :as t)
 (import ./frp :as frp)
@@ -231,6 +232,7 @@
 
 (defn main [& args]
   #(set server (netrepl/server "127.0.0.1" "9365" env))
+  (buffer/push-string derp/derp "from main")
   (pp args)
   (buffer/push-string state/freja-dir (os/getenv "FREJA_PATH"))
   (buffer/push-string state/freja-dir "/")
