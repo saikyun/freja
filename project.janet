@@ -20,9 +20,6 @@
 (def src-root
   (string proj-root "/src"))
 
-(declare-source
-  :source @[src-root "freja"])
-
 (comment
 (declare-executable
   :name "freja"
