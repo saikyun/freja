@@ -23,10 +23,12 @@
 (declare-source
   :source @[src-root "freja"])
 
+(comment
 (declare-executable
   :name "freja"
   :entry (string src-root "/main.janet")
   :install true)
+)
 
 (phony "judge" ["build"]
        (os/execute ["jg-verdict"
