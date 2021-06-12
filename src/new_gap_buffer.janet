@@ -804,6 +804,7 @@ Deletes selection."
   (def gb (delete-selection! gb))
 
   (let [k (case k
+            :backslash (chr "\\")
             :space (chr " ")
             :grave (chr "`")
             :left-bracket (chr "[")
