@@ -20,14 +20,14 @@
 (def src-root
   (string proj-root "/src"))
 
-(declare-source @["src"])
+(declare-source
+  :source @["src"])
 
 (comment
-(declare-executable
-  :name "freja"
-  :entry (string src-root "/main.janet")
-  :install true)
-)
+  (declare-executable
+    :name "freja"
+    :entry (string src-root "/main.janet")
+    :install true))
 
 (phony "judge" ["build"]
        (os/execute ["jg-verdict"
