@@ -2,7 +2,7 @@
 
 (import spork/test)
 (import ./code_api :prefix "")
-(import ./derp :as derp)
+(import src/derp :as derp)
 (import ./../new_menu :as menu)
 (import ./textfield :as t)
 (import ./frp :as frp)
