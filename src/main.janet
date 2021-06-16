@@ -1,8 +1,10 @@
 (use jaylib)
 
+(def mods (require "./../mods"))
+(import ./../mods)
+
 (import spork/test)
 (import ./code_api :prefix "")
-(import src/derp :as derp)
 (import ./../new_menu :as menu)
 (import ./textfield :as t)
 (import ./frp :as frp)
@@ -231,11 +233,18 @@
 (var server nil)
 
 (defn main [& args]
+  (put module/cache "mods" mods)
+  (mods/inc-mods)
+  (eval-string "(import mods) (print mods/hello)   (mods/inc-mods)")
+
   #(set server (netrepl/server "127.0.0.1" "9365" env))
-  (buffer/push-string derp/derp "from main")
+  #(buffer/push-string derp/derp "from main")
   (pp args)
-  (buffer/push-string state/freja-dir (os/getenv "FREJA_PATH"))
+  (buffer/push-string state/freja-dir (or (os/getenv "FREJA_PATH") "."))
   (buffer/push-string state/freja-dir "/")
+
+(frp/init-chans)
+
   (when-let [file (get args 1)]
     (load-file state/gb-data file)
     )

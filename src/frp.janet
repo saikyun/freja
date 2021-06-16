@@ -1,11 +1,3 @@
-(comment
- "b"
-  (import ./misc/frp4)
-  (doc ./misc/frp4)
-  (doc loop)
-  #
-)
-
 (setdyn
   :doc
   ````
@@ -144,11 +136,11 @@ Emits events when rerendering is needed.
 (import ./../src/render_new_gap_buffer :prefix "")
 (import ./../src/new_gap_buffer :prefix "")
 
-(def mouse (ev/chan 100))
-(def chars (ev/chan 100))
-(def keyboard (ev/chan 100))
-(def frame-chan (ev/chan 1))
-(def rerender (ev/chan 1))
+(var mouse nil)
+(var chars nil)
+(var keyboard nil)
+(var frame-chan nil)
+(var rerender nil)
 
 
 (var delay-left @{})
@@ -558,6 +550,16 @@ Emits events when rerendering is needed.
 (merge-into deps @{:deps dependencies
                    :draws draws
                    :finally finally})
+
+(varfn init-chans
+  []
+  (print "initing chans")
+  (set mouse (ev/chan 100))
+
+  (set chars (ev/chan 100))
+  (set keyboard (ev/chan 100))
+  (set frame-chan (ev/chan 1))
+  (set rerender (ev/chan 1)))
 
 (varfn trigger
   [dt]
