@@ -1,10 +1,17 @@
+(def jaylib (require "jaylib"))
 (use jaylib)
 
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./../new_menu :as menu)
 (import ./textfield :as t)
+
+(def frp (require "./frp"))
 (import ./frp :as frp)
+
+(def state (require "./state"))
+(import ./state :as state)
+
 (import ./../backwards2 :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
@@ -20,7 +27,6 @@
 (import ./theme :prefix "")
 (import spork/netrepl)
 (import ./font :prefix "")
-(import ./state :as state)
 (setdyn :pretty-format "%.40M")
 
 (defmacro defonce
@@ -100,12 +106,9 @@
 
   (clear-background (colors :background))
 
-
   (frp/trigger dt)
 
-  (end-drawing)
-
-)
+  (end-drawing))
 
 (defn loop-it
   []
@@ -230,11 +233,18 @@
 (var server nil)
 
 (defn main [& args]
+  (put module/cache "jaylib" jaylib)
+  (put module/cache "freja/frp" frp)
+  (put module/cache "freja/state" state)
+
   #(set server (netrepl/server "127.0.0.1" "9365" env))
+  #(buffer/push-string derp/derp "from main")
   (pp args)
-  (buffer/push-string state/freja-dir (os/getenv "FREJA_PATH"))
+  (buffer/push-string state/freja-dir (or (os/getenv "FREJA_PATH") "."))
   (buffer/push-string state/freja-dir "/")
+
+  (frp/init-chans)
+
   (when-let [file (get args 1)]
-    (load-file state/gb-data file)
-    )
+    (load-file state/gb-data file))
   (start))

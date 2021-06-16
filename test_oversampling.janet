@@ -1,4 +1,4 @@
-(import ./src/state :as s)
+(import ./freja/state :as s)
 
 (def font-size 10)
 (def diff 2)

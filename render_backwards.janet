@@ -1,4 +1,4 @@
-(import ./src/state :as s)
+(import ./freja/state :as s)
 (use spork/test)
 
 (var mouse true)

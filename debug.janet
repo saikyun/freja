@@ -1,4 +1,4 @@
-(import ./src/events :as e :fresh true)
+(import ./freja/events :as e :fresh true)
 
 (var debug-data (new-gap-buffer))
 

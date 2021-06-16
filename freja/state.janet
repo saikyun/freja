@@ -2,8 +2,6 @@
 
 (def freja-dir @"")
 
-(def lul123 (ev/chan 1))
-
 (def focus123 @{})
 
 

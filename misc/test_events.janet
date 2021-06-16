@@ -1,5 +1,5 @@
-(import ./../src/events :prefix "")
-(import ./../src/extra_channel :prefix "")
+(import ./../freja/events :prefix "")
+(import ./../freja/extra_channel :prefix "")
 
 ### ------------ initialization starts here ----------
 

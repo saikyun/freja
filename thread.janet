@@ -1,5 +1,5 @@
-(use ./src/highlighting)
-(use ./src/new_gap_buffer)
+(use ./freja/highlighting)
+(use ./freja/new_gap_buffer)
 
 (defn styling-worker
   [parent]

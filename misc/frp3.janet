@@ -2,10 +2,10 @@
 
 (use jaylib)
 (import ./../backwards2 :prefix "")
-(import ./../src/state :prefix "")
+(import ./../freja/state :prefix "")
 (import ./defonce :prefix "")
-(import ./../src/render_new_gap_buffer :prefix "")
-(import ./../src/input :prefix "")
+(import ./../freja/render_new_gap_buffer :prefix "")
+(import ./../freja/input :prefix "")
 (import ./../top_bar2 :as tb)
 
 123

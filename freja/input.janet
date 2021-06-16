@@ -35,12 +35,15 @@
 
 (varfn eval-it2
   [env code]
-  (print "Eval! " code)
-  (try (do (fiber/setenv (fiber/current) env)
-         (def res (eval-string code))
-         (pp res))
-    ([err fib]
-      (debug/stacktrace fib err))))
+  (print "Evaling! " code)
+  (pp (eval-string code))
+#  (try (do (fiber/setenv (fiber/current) env)
+#         (def res (eval-string code))
+#         (pp res))
+#    ([err fib]
+#      (debug/stacktrace fib err)))
+
+)
 
 (varfn search2
   [props]

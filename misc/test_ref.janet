@@ -1,5 +1,5 @@
 (import ./frp3 :prefix "")
-(import ./../src/state :prefix "")
+(import ./../freja/state :prefix "")
 
 
 (def thing-ref @{:ch (ev/chan 5)})

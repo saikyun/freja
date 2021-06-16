@@ -1,4 +1,4 @@
-(use ./src/new_gap_buffer)
+(use ./freja/new_gap_buffer)
 
 (put (gb-data :binds)
      (chr "(") (fn [gb]

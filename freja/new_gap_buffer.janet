@@ -31,33 +31,33 @@ See `usages/new_gap_buffer.janet` -> ### iterators for examples.
    c-sym
    & body]
   ~(label stop-gb-iterate
-          (def {:gap-start gap-start
-                :gap-stop gap-stop
-                :text text
-                :gap gap} ,gb)
+     (def {:gap-start gap-start
+           :gap-stop gap-stop
+           :text text
+           :gap gap} ,gb)
 
-          (loop [,i-sym :range [(max ,start 0)
-                                (min ,stop gap-start)]
-                 :let [,c-sym (text ,i-sym)]]
-            ,;body)
+     (loop [,i-sym :range [(max ,start 0)
+                           (min ,stop gap-start)]
+            :let [,c-sym (text ,i-sym)]]
+       ,;body)
 
-          (loop [,i-sym :range [(max (- ,start gap-start) 0)
-                                (min (- ,stop gap-start) (length gap))]
-                 :let [,c-sym (gap ,i-sym)
-                       ,i-sym (+ ,i-sym gap-start)]]
-            ,;body)
+     (loop [,i-sym :range [(max (- ,start gap-start) 0)
+                           (min (- ,stop gap-start) (length gap))]
+            :let [,c-sym (gap ,i-sym)
+                  ,i-sym (+ ,i-sym gap-start)]]
+       ,;body)
 
-          (loop [,i-sym :range [(max (+ (- ,start (length gap))
-                                        (- gap-stop gap-start))
-                                     gap-stop)
-                                (min (+ (- ,stop (length gap))
-                                        (- gap-stop gap-start))
-                                     (length text))]
-                 :let [,c-sym (text ,i-sym)
-                       ,i-sym (- (+ ,i-sym
-                                    (length gap))
-                                 (- gap-stop gap-start))]]
-            ,;body)))
+     (loop [,i-sym :range [(max (+ (- ,start (length gap))
+                                   (- gap-stop gap-start))
+                                gap-stop)
+                           (min (+ (- ,stop (length gap))
+                                   (- gap-stop gap-start))
+                                (length text))]
+            :let [,c-sym (text ,i-sym)
+                  ,i-sym (- (+ ,i-sym
+                               (length gap))
+                            (- gap-stop gap-start))]]
+       ,;body)))
 
 (varfn index-char-backward
   "Iterates over gap buffer `gb`, starting from the end and going backwards to the beginning.
@@ -337,7 +337,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-forward (string->gb "12|34 67") word-delimiter? 7)
   #=> 7
-  )
+)
 
 (varfn search-backward
   "Gets the position of the start of the word before start.
@@ -373,7 +373,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-backward (string->gb "12|34 67") word-delimiter? 0)
   #=> 0
-  )
+)
 
 (varfn word-at-index
   [gb i]
@@ -390,7 +390,7 @@ Doesn't skip delimiters in the beginning."
   (word-at-index (string->gb "12|34 67") 5) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 6) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 7) #=> [5 7]
-  )
+)
 
 (varfn end-of-next-word
   "Gets the position of the end of the word after the caret."
@@ -642,32 +642,34 @@ Updates caret etc as expected."
     (when (= (gb :caret) 0)
       (break gb))
 
-(if selection
-(delete-selection! gb)
-(do
-    (if (empty? gap)
-      (-> gb
-          (put :changed true)
-          (update :gap-start |(max 0 (dec $)))
-          (update :caret |(max 0 (dec $))))
-      (-> gb
-          (put :changed true)
-          (update :gap
-                  (fn [gap]
-                    (let [to-the-right (buffer/slice gap gap-i)]
-                      (buffer/popn gap (inc (- (length gap) gap-i)))
-                      (buffer/push-string gap to-the-right))))
-          (update :caret |(max 0 (dec $)))))
+    (if selection
+      (delete-selection! gb)
+      (do
+        (if (empty? gap)
+          (-> gb
+              (put :changed true)
+              (put :changed-x-pos true)
+              (update :gap-start |(max 0 (dec $)))
+              (update :caret |(max 0 (dec $))))
+          (-> gb
+              (put :changed true)
+              (put :changed-x-pos true)
+              (update :gap
+                      (fn [gap]
+                        (let [to-the-right (buffer/slice gap gap-i)]
+                          (buffer/popn gap (inc (- (length gap) gap-i)))
+                          (buffer/push-string gap to-the-right))))
+              (update :caret |(max 0 (dec $)))))
 
-    (update gb :actions array/push
-            {:kind :delete
-             :start (gb :caret)
-             :stop caret
-             :caret-before caret
-             :selection-before selection
-             :content to-delete
-             :caret-after (gb :caret)
-             :selection-after (gb :selection)})))))
+        (update gb :actions array/push
+                {:kind :delete
+                 :start (gb :caret)
+                 :stop caret
+                 :caret-before caret
+                 :selection-before selection
+                 :content to-delete
+                 :caret-after (gb :caret)
+                 :selection-after (gb :selection)})))))
 
 (varfn delete-word-forward!
   "Deletes the word after the cursor."
@@ -1036,7 +1038,7 @@ Otherwise moves the caret backward one character."
 
   (find-paragraphs "aoe\n\n")
   #=> @[(0 3)]
-  )
+)
 
 (varfn find-surrounding-paragraph!
   [gb index]
@@ -1088,16 +1090,16 @@ Otherwise moves the caret backward one character."
     :gap-stop 0
     :gap @""
     :caret 0
-    
+
     :actions @[]
     :redo-queue @[]
-    
+
     :selection nil
-    
+
     :size [100 100]
     :position [0 0]
     :offset [0 0]
-    
+
     :changed true
     :scroll 0
     :blink 0

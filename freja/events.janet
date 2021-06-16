@@ -4,17 +4,7 @@
 
 (import ./extra_channel :as ec)
 
-# first some example queues
-# we use ev/chan just because it's a queue
-# we won't use the event handling of ev
-(def mouse (ev/chan 10)) # mouse events, such as `[:down  [30  100]]`
-#                                                  ^ kind  ^ x ^ y
-
-(def tick (ev/chan 1)) # delta times, eg `10` (ms)
-(def render-q (ev/chan 1)) # render calls, will just call the render function
-#                              # when pulled. you can put any value here
-
-# then we want to be able to pull
+# we want to be able to pull
 # multiple things should be able to pull from it
 # essentially splitting the value
 
@@ -42,9 +32,6 @@
   (while
     (pull pullable pullers)
     nil))
-
-(print)
-(ec/vs mouse)
 
 (defn put!
   [state k v]

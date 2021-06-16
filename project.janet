@@ -12,16 +12,16 @@
 
 (declare-native
   :name "text-rendering"
-  :source @["src/text_rendering.c"])
+  :source @["freja/text_rendering.c"])
 
 (def proj-root
   (os/cwd))
 
 (def src-root
-  (string proj-root "/src"))
+  (string proj-root "/freja"))
 
 (declare-source
-  :source @["src"])
+  :source @["freja"])
 
 (declare-executable
   :name "freja"

@@ -1,5 +1,5 @@
-(import ./src/frp :as frp)
-(import ./src/state :as state)
+(import ./freja/frp :as frp)
+(import ./freja/state :as state)
 (import jaylib :as jay)
 
 (defonce component @{})

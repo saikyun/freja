@@ -1,5 +1,5 @@
 (import ./frp4 :prefix "")
-(import ./../src/input :as i)
+(import ./../freja/input :as i)
 
 (def dependencies
   @{mouse @[button button2 text-area search-area file-open-area]

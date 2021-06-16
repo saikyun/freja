@@ -1,6 +1,6 @@
 (use jaylib)
-(import ./src/state :as s)
-(import ./src/font :prefix "")
+(import ./freja/state :as s)
+(import ./freja/font :prefix "")
 
 (when (dyn 'top-bar)
   (print "removing f")

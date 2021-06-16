@@ -26,13 +26,13 @@
 
 (comment
   (replace-content gb-data "")
-  (let [_ (load-file gb-data "src/test_main.janet")]
+  (let [_ (load-file gb-data "freja/test_main.janet")]
     :ok)
 
-  (let [_ (load-file2 text-data "src/main.janet")]
+  (let [_ (load-file2 text-data "freja/main.janet")]
     :ok)
 
-  (let [_ (load-file text-data "src/text_rendering_ints.janet")]
+  (let [_ (load-file text-data "freja/text_rendering_ints.janet")]
     :ok)
 
   (put text-data :text (buffer (text-data :after))))
@@ -82,11 +82,11 @@
   (df "misc/frp3.janet")
   
 
-  (dofile "/Users/test/programmering/janet/textfield/src/text_rendering_ints.janet"
+  (dofile "/Users/test/programmering/janet/textfield/freja/text_rendering_ints.janet"
           :env (fiber/getenv (fiber/current)))
 
-  (dofile "/Users/test/programmering/janet/textfield/src/new_gap_buffer.janet"
+  (dofile "/Users/test/programmering/janet/textfield/freja/new_gap_buffer.janet"
           :env (fiber/getenv (fiber/current)))
 
-  (dofile "/Users/test/programmering/janet/textfield/src/main.janet"
+  (dofile "/Users/test/programmering/janet/textfield/freja/main.janet"
           {:env (get-in text-data [:context :top-env])}))
