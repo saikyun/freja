@@ -340,7 +340,7 @@
                |(:draw frp/caret)
                |(:draw menu)])
 
-  (set menu-font (default-load-font (string state/freja-dir "./assets/fonts/FiraSans-Regular.ttf") font-size))
+  (set menu-font (default-load-font (string state/freja-dir "./fonts/FiraSans-Regular.ttf") font-size))
   (put frp/deps :deps dependencies)
   (put frp/deps :finally finally)
   (put frp/deps :draws draws)

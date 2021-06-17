@@ -8,7 +8,7 @@
 
 (varfn init
   []
-  (set font (default-load-font "assets/fonts/FiraSans-Regular.ttf" font-size)))
+  (set font (default-load-font "fonts/FiraSans-Regular.ttf" font-size)))
 
 (defn unit [v]
   (* v 4))

@@ -3,8 +3,8 @@
 (def font-size 10)
 (def diff 2)
 (def spacing 1)
-(def font (default-load-font "assets/fonts/Monaco.ttf" font-size))
-(def font2 (default-load-font "assets/fonts/Monaco.ttf" (+ font-size diff)))
+(def font (default-load-font "fonts/Monaco.ttf" font-size))
+(def font2 (default-load-font "fonts/Monaco.ttf" (+ font-size diff)))
 
 (varfn draw-text**
   [t pos color]

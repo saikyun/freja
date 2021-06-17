@@ -9,7 +9,7 @@
 
 (def font-size 16)
 (def spacing 1)
-(def font (default-load-font "assets/fonts/FiraSans-Regular.ttf" font-size))
+(def font (default-load-font "fonts/FiraSans-Regular.ttf" font-size))
 
 (defn unit [v]
   (* v 4))

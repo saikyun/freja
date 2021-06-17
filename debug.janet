@@ -91,7 +91,7 @@
 
 (defn init-debug
   []
-  (def tc @{:font-path "./assets/fonts/Monaco.ttf"
+  (def tc @{:font-path "./fonts/Monaco.ttf"
             :size (* 14 1)
             :line-height 1.2
             :mult (/ 1 1)

@@ -26,6 +26,7 @@
 (import ./render_new_gap_buffer :prefix "")
 (import ./theme :prefix "")
 (import spork/netrepl)
+(import spork/path)
 (import ./font :prefix "")
 (setdyn :pretty-format "%.40M")
 
@@ -177,14 +178,14 @@
         (put screen-scale 1 ys))
 
       (let [[x-scale y-scale] screen-scale
-            tc @{:font-path (string state/freja-dir "./assets/fonts/Monaco.ttf")
+            tc @{:font-path (string state/freja-dir "fonts/Monaco.ttf")
                  :size (* 18 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
                  :glyphs default-glyphs
                  :spacing 0.5}
 
-            tc2 @{:font-path (string state/freja-dir "./assets/fonts/Texturina-VariableFont_opsz,wght.ttf")
+            tc2 @{:font-path (string state/freja-dir "fonts/Texturina-VariableFont_opsz,wght.ttf")
                   :line-height 1.1
                   :size (* 20 x-scale)
                   :mult (/ 1 x-scale)
@@ -237,11 +238,18 @@
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/state" state)
 
+  (print "exec: " (dyn :executable))
+
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
   (pp args)
-  (buffer/push-string state/freja-dir (or (os/getenv "FREJA_PATH") "."))
-  (buffer/push-string state/freja-dir "/")
+  (buffer/push-string state/freja-dir
+                      (or (os/getenv "FREJA_PATH")
+                          (when-let [a (first args)]
+                            (if (string/has-suffix? "freja/main.janet" a)
+                              (tracev (string (path/dirname a) ".." path/sep))
+                              (tracev (path/dirname a))))
+                          "./"))
 
   (frp/init-chans)
 
