@@ -29,6 +29,7 @@
 (import spork/path)
 (import ./font :prefix "")
 (setdyn :pretty-format "%.40M")
+(import whereami :as wai)
 
 (defmacro defonce
   "Define a value once."
@@ -238,18 +239,22 @@
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/state" state)
 
-  (print "exec: " (dyn :executable))
-
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
   (pp args)
-  (buffer/push-string state/freja-dir
-                      (or (os/getenv "FREJA_PATH")
-                          (when-let [a (first args)]
-                            (if (string/has-suffix? "freja/main.janet" a)
-                              (tracev (string (path/dirname a) ".." path/sep))
-                              (tracev (path/dirname a))))
-                          "./"))
+
+  (buffer/push-string
+    state/freja-dir
+    (or (os/getenv "FREJA_PATH")
+        (let [p (wai/get-executable-path)]
+          ### unless running as script
+          (unless (string/has-suffix? "janet" p)
+            (path/dirname p)))
+        (when-let [a (dyn :executable)]
+          ### running as script
+          (when (string/has-suffix? "freja/main.janet" a)
+            (string (path/dirname a) ".." path/sep)))
+        "./"))
 
   (frp/init-chans)
 

@@ -3,6 +3,8 @@
   :author "saikyun"
   :dependencies ["https://github.com/janet-lang/spork"
 
+                 "https://github.com/Saikyun/janet-whereami"
+
                  ## using my own fork due to additions to jaylib
                  "https://github.com/Saikyun/freja-jaylib"
 
