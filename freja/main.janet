@@ -246,6 +246,8 @@
   (buffer/push-string
     state/freja-dir
     (or (os/getenv "FREJA_PATH")
+        (when (os/stat (string (os/getenv "HOME") path/sep ".freja"))
+          (string (os/getenv "HOME") path/sep ".freja" path/sep))
         (let [p (wai/get-executable-path)]
           ### unless running as script
           (unless (string/has-suffix? "janet" p)
