@@ -180,9 +180,12 @@
 
       (let [[x-scale y-scale] screen-scale
             tc @{:font-path
+                 #"fonts/FantasqueSansMono-Regular.otf"
+                 #"fonts/TamzenForPowerline10x20b.ttf"
                  "fonts/MplusCodeLatin60-Medium.otf"
+                 #"fonts/MplusCodeLatin60-Regular.otf"
                  #"fonts/EBGaramond12-Regular.otf"
-                 :size (* 22 x-scale)
+                 :size (* 20 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
                  :glyphs default-glyphs

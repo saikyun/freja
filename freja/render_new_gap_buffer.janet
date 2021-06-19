@@ -8,7 +8,7 @@
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
 
-(def font-h 21)
+(def font-h 19)
 
 (defn reset-blink
   [props]
@@ -338,7 +338,7 @@ Returns `nil` if the max width is never exceeded."
             [(+ (offset 0)
                 width-of-last-line-number
                 start-x)
-             (+ (- y (* y-scale 3)) (offset 1))
+             (+ (- y (* y-scale 0)) (offset 1))
              (- stop-x start-x)
              (* y-scale line-h)]
             (colors :selected-text-background)
@@ -1090,7 +1090,7 @@ This function is pretty expensive since it redoes all word wrapping."
 
   (when-let [[x y] (gb :caret-pos)
              cx (abs-text-x gb x)
-             cy (abs-text-y gb (+ y scroll -2))]
+             cy (abs-text-y gb (+ y scroll))]
 
     (put gb :dbg-y2 scroll)
     (put gb :dbg-y1 y)

@@ -55,7 +55,7 @@
 
 (do (merge-into search-data
                 @{:size [:max 30]
-                  :position [0 30]
+                  :position [0 28]
                   :offset [88 6]}
                 comp-cols)
   :ok)
