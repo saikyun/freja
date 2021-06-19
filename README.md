@@ -8,7 +8,13 @@ Textarea for Janet.
 
 Janet -- https://janet-lang.org/
 
-### steps
+### installation
+
+```
+jpm install https://github.com/Saikyun/freja
+```
+
+### steps to run from source
 
 ```
 git clone https://github.com/Saikyun/freja
