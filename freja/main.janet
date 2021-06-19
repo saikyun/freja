@@ -180,8 +180,8 @@
 
       (let [[x-scale y-scale] screen-scale
             tc @{:font-path
-                 #"fonts/OfficeCodePro-Medium.otf"
                  "fonts/MplusCodeLatin60-Medium.otf"
+                 #"fonts/EBGaramond12-Regular.otf"
                  :size (* 22 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
