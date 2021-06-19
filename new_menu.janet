@@ -15,7 +15,7 @@
 (import ./backwards2 :as b)
 (use jaylib)
 
-(def font-size 18)
+(def font-size 22)
 (def text-color 0xffffffff)
 (def def-spacing 1)
 (var menu-font nil)
@@ -340,7 +340,9 @@
                |(:draw frp/caret)
                |(:draw menu)])
 
-  (set menu-font (default-load-font (string state/freja-dir "./fonts/FiraSans-Regular.ttf") font-size))
+  (set menu-font (default-load-font #(string state/freja-dir "./fonts/FiraSans-Regular.ttf") 
+"./fonts/Poppins-Regular.otf"
+font-size))
   (put frp/deps :deps dependencies)
   (put frp/deps :finally finally)
   (put frp/deps :draws draws)

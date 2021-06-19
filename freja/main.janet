@@ -179,8 +179,10 @@
         (put screen-scale 1 ys))
 
       (let [[x-scale y-scale] screen-scale
-            tc @{:font-path (string state/freja-dir "fonts/Monaco.ttf")
-                 :size (* 18 x-scale)
+            tc @{:font-path
+                 #"fonts/OfficeCodePro-Medium.otf"
+                 "fonts/MplusCodeLatin60-Medium.otf"
+                 :size (* 22 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
                  :glyphs default-glyphs

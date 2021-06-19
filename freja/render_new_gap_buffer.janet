@@ -203,7 +203,7 @@ Returns `nil` if the max width is never exceeded."
         (set w 0)
         (set beginning-of-word-i (inc i)))
 
-(chr "\r") (do)
+      (chr "\r") (do)
 
       space
       (let [old-w w]
@@ -446,8 +446,12 @@ Render lines doesn't modify anything in gb."
                                             text
                                             (math/floor (* (tc :mult) (tc :size)))
                                             (* (tc :mult) (tc :spacing))))]
-          (draw-text*2 conf lns [0
-                                 (rel-y gb (- line-y line-start-y))] :gray x-scale)))
+          (draw-text*2 conf
+                       lns
+                       [0
+                        (rel-y gb (- line-y line-start-y))]
+                       :gray
+                       x-scale)))
 
       (gb-iterate
         gb
@@ -474,8 +478,10 @@ Render lines doesn't modify anything in gb."
                         (< ((highlighting hl-i) 1) i))
               (++ hl-i)))
 
-          (draw-text*2 conf s [(rel-text-x gb x)
-                               (rel-y gb (- line-y line-start-y))]
+          (draw-text*2 conf
+                       s
+                       [(math/floor (rel-text-x gb x))
+                        (math/floor (rel-y gb (- line-y line-start-y)))]
                        (cond (in-selection? gb i)
                          :white
 
