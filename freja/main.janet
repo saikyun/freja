@@ -24,7 +24,10 @@
 (import ./new_gap_buffer :prefix "")
 (import ./new_gap_buffer_util :prefix "")
 (import ./render_new_gap_buffer :prefix "")
-(import ./theme :prefix "")
+
+(def theme (require "./theme"))
+(import ./theme :as theme)
+
 (import spork/netrepl)
 (import spork/path)
 (import ./font :prefix "")
@@ -106,7 +109,7 @@
 
   (begin-drawing)
 
-  (clear-background (colors :background))
+  (clear-background (theme/colors :background))
 
   (frp/trigger dt)
 
@@ -146,7 +149,7 @@
     (put text-data :sizes (glyphs->size-struct t (t :glyphs)))
 
     {:text t
-     :colors colors}))
+     :colors theme/colors}))
 
 (def mplus-font (slurp "fonts/MplusCodeLatin60-Medium.otf"))
 
@@ -167,7 +170,7 @@
     (put text-data :sizes (glyphs->size-struct t (t :glyphs)))
 
     {:text t
-     :colors colors}))
+     :colors theme/colors}))
 
 (defn run-init-file
   []
@@ -211,17 +214,17 @@
         (set conf (load-font-from-mem state/gb-data tc))
         (put state/gb-data :context data)
         (put state/gb-data :screen-scale [x-scale y-scale])
-        (put state/gb-data :colors colors)
+        (put state/gb-data :colors theme/colors)
 
         (set conf (load-font-from-mem state/search-data tc))
         (put state/search-data :context data)
         (put state/search-data :screen-scale [x-scale y-scale])
-        (put state/search-data :colors colors)
+        (put state/search-data :colors theme/colors)
 
         (set conf2 (load-font-from-mem state/file-open-data tc))
         (put state/file-open-data :context data)
         (put state/file-open-data :screen-scale [x-scale y-scale])
-        (put state/file-open-data :colors colors)
+        (put state/file-open-data :colors theme/colors)
 
         (put data :mouse (new-mouse-data))
 
@@ -253,6 +256,7 @@
   (put module/cache "jaylib" jaylib)
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/state" state)
+  (put module/cache "freja/theme" theme)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
