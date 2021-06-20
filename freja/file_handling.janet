@@ -13,12 +13,15 @@
 
 (varfn load-file
   [props path]
-  (-> props
+
+  (-> (props :gb)
       (replace-content (read-file path))
       (put :path path)
       (put :caret 0)
       (put :scroll 0)
-      (put :selection nil)))
+      (put :selection nil))
+
+  (put props :event/changed true))
 
 (varfn load-file2
   [props path]
@@ -50,9 +53,9 @@
 
 (varfn inner-dofile
   [top-env path]
-  
+
   (def env (make-env top-env))
-  
+
   (try
     (do
       (dofile path
@@ -67,9 +70,9 @@
   [props]
   (def path (props :path))
   (save-file props)
-  
+
   (inner-dofile (get-in props [:context :top-env]) path)
-  
+
   (print "Loaded file: " path))
 
 (varfn df
@@ -80,7 +83,6 @@
 (comment
 
   (df "misc/frp3.janet")
-  
 
   (dofile "/Users/test/programmering/janet/textfield/freja/text_rendering_ints.janet"
           :env (fiber/getenv (fiber/current)))

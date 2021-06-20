@@ -399,7 +399,7 @@ Emits events when rerendering is needed.
                (e/put! state/focus123 :focus text-area))
 
              :enter (fn [props]
-                      (load-file state/gb-data (string ((commit! props) :text)))
+                      (load-file text-area (string ((commit! props) :text)))
                       (e/put! state/focus123 :focus text-area))})
 
 (def caret

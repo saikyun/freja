@@ -6,6 +6,8 @@
 (import ./../new_menu :as menu)
 (import ./textfield :as t)
 
+(import ./update-window-title)
+
 (def frp (require "./frp"))
 (import ./frp :as frp)
 
@@ -225,7 +227,7 @@
         (set conf2 (load-font-from-mem state/file-open-data tc))
         (put state/file-open-data :context data)
         (put state/file-open-data :screen-scale [x-scale y-scale])
-        (put state/file-open-data :colors theme/f)
+        (put state/file-open-data :colors theme/colors)
 
         (put data :mouse (new-mouse-data))
 
@@ -234,6 +236,7 @@
         (run-init-file)
 
         (menu/init)
+        (update-window-title/init)
 
         (set texture (load-render-texture 500 500))
 
@@ -282,5 +285,5 @@
   (frp/init-chans)
 
   (when-let [file (get args 1)]
-    (load-file state/gb-data file))
+    (load-file frp/text-area file))
   (start))
