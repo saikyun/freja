@@ -62,7 +62,7 @@ The above is a port of the Monokai theme by Wimer Hazenberg.
 
 Thanks to sogaiu and rhine for initial testing. <3
 
-## License (applies to all but the font which is from google fonts)
+## License
 
 Copyright 2020 Jona Ekenberg
 
