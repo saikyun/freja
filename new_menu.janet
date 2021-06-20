@@ -12,6 +12,7 @@
 (import ./freja/font :prefix "")
 (import ./freja/state :as state)
 (import ./freja/frp :as frp)
+(import ./freja/fonts)
 (import ./backwards2 :as b)
 (use jaylib)
 
@@ -307,8 +308,6 @@
 #
 # stuff to add menu to deps
 
-(def poppins-font (slurp "./fonts/Poppins-Regular.otf"))
-
 (defn init
   []
 
@@ -344,7 +343,7 @@
 
   (set menu-font (default-load-font-from-memory
                    ".otf"
-                   poppins-font
+                   fonts/poppins
                    font-size))
   (put frp/deps :deps dependencies)
   (put frp/deps :finally finally)

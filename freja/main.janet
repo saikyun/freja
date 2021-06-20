@@ -12,6 +12,9 @@
 (def state (require "./state"))
 (import ./state :as state)
 
+(def fonts (require "./fonts"))
+(import ./fonts :as fonts)
+
 (import ./../backwards2 :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
@@ -151,8 +154,6 @@
     {:text t
      :colors theme/colors}))
 
-(def mplus-font (slurp "fonts/MplusCodeLatin60-Medium.otf"))
-
 (defn load-font-from-mem
   [text-data opts]
 
@@ -177,7 +178,7 @@
   (def env (data :top-env))
   (try
     (do
-      (dofile (string state/freja-dir "./init.janet")
+      (dofile (string state/freja-dir "init.janet")
               #             :env (fiber/getenv (fiber/current))
               :env env)
       (merge-into env env))
@@ -203,7 +204,7 @@
         (put screen-scale 1 ys))
 
       (let [[x-scale y-scale] screen-scale
-            tc @{:font-data mplus-font
+            tc @{:font-data fonts/mplus
                  :ext ".otf"
                  :size (* 20 x-scale)
                  :line-height 1.2
@@ -224,7 +225,7 @@
         (set conf2 (load-font-from-mem state/file-open-data tc))
         (put state/file-open-data :context data)
         (put state/file-open-data :screen-scale [x-scale y-scale])
-        (put state/file-open-data :colors theme/colors)
+        (put state/file-open-data :colors theme/f)
 
         (put data :mouse (new-mouse-data))
 
@@ -254,6 +255,7 @@
 
 (defn main [& args]
   (put module/cache "jaylib" jaylib)
+  (put module/cache "freja/fonts" fonts)
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/state" state)
   (put module/cache "freja/theme" theme)
