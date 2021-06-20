@@ -11,7 +11,7 @@ Janet -- https://janet-lang.org/
 ### installation
 
 ```
-jpm install https://github.com/Saikyun/freja
+[sudo] jpm install https://github.com/Saikyun/freja
 ```
 
 ### steps to run from source
