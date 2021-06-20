@@ -14,6 +14,8 @@ Janet -- https://janet-lang.org/
 [sudo] jpm install https://github.com/Saikyun/freja
 ```
 
+If you get an old version, try running `[sudo] jpm clear-cache` before re-running the above command.
+
 ### steps to run from source
 
 ```
