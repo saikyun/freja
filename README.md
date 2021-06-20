@@ -1,6 +1,6 @@
-# text-experiment
+# freja
 
-Textarea for Janet.
+Self-modifiable text editor implemented in Janet.
 
 ## try it
 
@@ -27,13 +27,13 @@ JANET_PATH=./janet_libs janet src/main.janet
 
 ### changing the theme
 
-NOTE: `Meta` means `Ctrl` on Windows / Linux and `Cmd` on MacOS.
+NOTE: Use `Ctrl` on Windows / Linux and `Cmd` on MacOS.
 
 1. Start the editor
-2. Press `Meta+O`, write `init.janet`, hit `Enter`
+2. Press `Ctrl/Cmd+O`, write `init.janet`, hit `Enter`
 3. Copy the following into the file
 ```
-(import ./src/theme :prefix "")
+(import freja/theme :prefix "")
 
 (merge-into colors
             @{:text (rgba 248 248 243)
@@ -51,7 +51,7 @@ NOTE: `Meta` means `Ctrl` on Windows / Linux and `Cmd` on MacOS.
               :string (rgba 230 219 115)
               :keyword (rgba 174 128 255)})
 ```
-4. Press `Meta+L`
+4. Press `Ctrl/Cmd+L`
 
 The above is a port of the Monokai theme by Wimer Hazenberg.
 
