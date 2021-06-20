@@ -307,6 +307,8 @@
 #
 # stuff to add menu to deps
 
+(def poppins-font (slurp "./fonts/Poppins-Regular.otf"))
+
 (defn init
   []
 
@@ -340,9 +342,10 @@
                |(:draw frp/caret)
                |(:draw menu)])
 
-  (set menu-font (default-load-font #(string state/freja-dir "./fonts/FiraSans-Regular.ttf") 
-"./fonts/Poppins-Regular.otf"
-font-size))
+  (set menu-font (default-load-font-from-memory
+                   ".otf"
+                   poppins-font
+                   font-size))
   (put frp/deps :deps dependencies)
   (put frp/deps :finally finally)
   (put frp/deps :draws draws)

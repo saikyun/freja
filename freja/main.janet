@@ -148,6 +148,27 @@
     {:text t
      :colors colors}))
 
+(def mplus-font (slurp "fonts/MplusCodeLatin60-Medium.otf"))
+
+(defn load-font-from-mem
+  [text-data opts]
+
+  (let [font (load-font-from-memory (opts :ext)
+                                    (opts :font-data)
+                                    (length (opts :font-data))
+                                    (opts :size)
+                                    (opts :glyphs))]
+
+    (put opts :font font)
+
+    (def t (freeze opts))
+
+    (put text-data :conf t)
+    (put text-data :sizes (glyphs->size-struct t (t :glyphs)))
+
+    {:text t
+     :colors colors}))
+
 (defn run-init-file
   []
   (def env (data :top-env))
@@ -179,36 +200,25 @@
         (put screen-scale 1 ys))
 
       (let [[x-scale y-scale] screen-scale
-            tc @{:font-path
-                 #"fonts/FantasqueSansMono-Regular.otf"
-                 #"fonts/TamzenForPowerline10x20b.ttf"
-                 "fonts/MplusCodeLatin60-Medium.otf"
-                 #"fonts/MplusCodeLatin60-Regular.otf"
-                 #"fonts/EBGaramond12-Regular.otf"
+            tc @{:font-data mplus-font
+                 :ext ".otf"
                  :size (* 20 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
                  :glyphs default-glyphs
-                 :spacing 0.5}
+                 :spacing 0.5}]
 
-            tc2 @{:font-path (string state/freja-dir "fonts/Texturina-VariableFont_opsz,wght.ttf")
-                  :line-height 1.1
-                  :size (* 20 x-scale)
-                  :mult (/ 1 x-scale)
-                  :glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\")
-                  :spacing 2}]
-
-        (set conf (load-font state/gb-data tc))
+        (set conf (load-font-from-mem state/gb-data tc))
         (put state/gb-data :context data)
         (put state/gb-data :screen-scale [x-scale y-scale])
         (put state/gb-data :colors colors)
 
-        (set conf (load-font state/search-data tc))
+        (set conf (load-font-from-mem state/search-data tc))
         (put state/search-data :context data)
         (put state/search-data :screen-scale [x-scale y-scale])
         (put state/search-data :colors colors)
 
-        (set conf2 (load-font state/file-open-data tc))
+        (set conf2 (load-font-from-mem state/file-open-data tc))
         (put state/file-open-data :context data)
         (put state/file-open-data :screen-scale [x-scale y-scale])
         (put state/file-open-data :colors colors)
