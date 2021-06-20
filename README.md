@@ -30,8 +30,8 @@ JANET_PATH=./janet_libs janet src/main.janet
 NOTE: Use `Ctrl` on Windows / Linux and `Cmd` on MacOS.
 
 1. Start the editor
-2. Press `Ctrl/Cmd+O`, write `init.janet`, hit `Enter`
-3. Copy the following into the file
+   1. Linux / MacOS: `mkdir ~/.freja && freja ~/.freja/init.janet`
+1. Copy the following into the file
 ```
 (import freja/theme :prefix "")
 
@@ -51,7 +51,8 @@ NOTE: Use `Ctrl` on Windows / Linux and `Cmd` on MacOS.
               :string (rgba 230 219 115)
               :keyword (rgba 174 128 255)})
 ```
-4. Press `Ctrl/Cmd+L`
+3. Press `Ctrl/Cmd+L`
+4. Press a button to force the text area to rerender
 
 The above is a port of the Monokai theme by Wimer Hazenberg.
 
