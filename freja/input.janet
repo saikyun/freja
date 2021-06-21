@@ -1,6 +1,6 @@
 (use jaylib)
 (import ./eval :prefix "")
-#(import ./state :prefix "")
+(import ./state)
 (import ./new_gap_buffer :as gb)
 (import ./render_new_gap_buffer :as render-gb)
 (import ./file_handling :prefix "")
@@ -24,26 +24,13 @@
     :last-text-pos nil})
 
 (varfn eval-it
-  [data code]
-  (print "Eval! " code)
-  (try (do (fiber/setenv (fiber/current) (data :top-env))
-         (def res (eval-string code))
-         (put data :latest-res (string/format "%.4m" res)))
-    ([err fib]
-      (put data :latest-res err)))
-  (pp (data :latest-res)))
-
-(varfn eval-it2
   [env code]
   (print "Evaling! " code)
-  (pp (eval-string code))
-#  (try (do (fiber/setenv (fiber/current) env)
-#         (def res (eval-string code))
-#         (pp res))
-#    ([err fib]
-#      (debug/stacktrace fib err)))
-
-)
+  (try (do (fiber/setenv (fiber/current) state/user-env)
+         (def res (eval-string code))
+         (pp res))
+    ([err fib]
+      (debug/stacktrace fib err))))
 
 (varfn search2
   [props]
@@ -165,7 +152,7 @@
                            :s save-file
                            :q quit
 
-                           :enter |(eval-it2 (get-in $ [:context :top-env])
+                           :enter |(eval-it (get-in $ [:context :top-env])
                                              (gb-get-last-sexp $))
                            #
 }
@@ -175,8 +162,7 @@
 
 (def file-open-binds @{:escape
                        (fn [props]
-                         (gb/deselect props)
-)
+                         (gb/deselect props))
 
                        :enter (fn [props]
                                 (reset-blink props)

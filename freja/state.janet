@@ -4,6 +4,8 @@
 
 (def focus123 @{})
 
+(var user-env (make-env))
+
 
 (defn ev/check
   [chan]

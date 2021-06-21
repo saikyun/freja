@@ -1,5 +1,6 @@
 (import ./new_gap_buffer :prefix "")
 (import ./text_api :as old)
+(import ./state)
 
 (varfn read-file
   [path]
@@ -54,14 +55,15 @@
 (varfn inner-dofile
   [top-env path]
 
-  (def env (make-env top-env))
+  (set state/user-env (make-env top-env))
 
   (try
     (do
       (dofile path
               #             :env (fiber/getenv (fiber/current))
-              :env env)
-      (merge-into top-env env))
+              :env state/user-env)
+      #      (merge-into top-env env)
+)
     ([err fib]
       (print "nope")
       (print (debug/stacktrace fib err)))))
@@ -70,10 +72,8 @@
   [props]
   (def path (props :path))
   (save-file props)
-
-  (inner-dofile (get-in props [:context :top-env]) path)
-
-  (print "Loaded file: " path))
+  (print "Doing file: " path)
+  (inner-dofile (get-in props [:context :top-env]) path))
 
 (varfn df
   [path]

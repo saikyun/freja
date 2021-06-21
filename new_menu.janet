@@ -10,7 +10,8 @@
 (import ./freja/new_gap_buffer :as gb)
 (import ./freja/render_new_gap_buffer :as render-gb)
 (import ./freja/font :prefix "")
-(import ./freja/state :as state)
+(import ./freja/state)
+(import ./new_menu_state :as s)
 (import ./freja/frp :as frp)
 (import ./freja/fonts)
 (import ./backwards2 :as b)
@@ -19,7 +20,6 @@
 (def font-size 22)
 (def text-color 0xffffffff)
 (def def-spacing 1)
-(var menu-font nil)
 
 (defn noop [&])
 
@@ -35,7 +35,7 @@
   (default size font-size)
   (default spacing def-spacing)
   (default color text-color)
-  (default font menu-font)
+  (default font s/menu-font)
   (assert pos "need :pos")
   (draw-text-ex font t pos size spacing color))
 
@@ -48,7 +48,7 @@ but with optional keys one can modify these.
   [text &keys {:size size :spacing spacing :font font}]
   (default size font-size)
   (default spacing def-spacing)
-  (default font menu-font)
+  (default font s/menu-font)
   (measure-text-ex font
                    text
                    size
@@ -88,7 +88,7 @@ but with optional keys one can modify these.
   (default size font-size)
   (default spacing def-spacing)
   (default color text-color)
-  (default font menu-font)
+  (default font s/menu-font)
   (assert pos "need :pos")
   (assert text "need :text")
   (draw-text-ex font text pos size spacing color))
@@ -98,7 +98,7 @@ but with optional keys one can modify these.
   [{:text text :size size :spacing spacing :font font}]
   (default size font-size)
   (default spacing def-spacing)
-  (default font menu-font)
+  (default font s/menu-font)
   (measure-text-ex font
                    text
                    size
@@ -376,10 +376,10 @@ but with optional keys one can modify these.
                |(:draw frp/caret)
                |(:draw menu)])
 
-  (set menu-font (default-load-font-from-memory
-                   ".otf"
-                   fonts/poppins
-                   font-size))
+  (set s/menu-font (default-load-font-from-memory
+                     ".otf"
+                     fonts/poppins
+                     font-size))
   (put frp/deps :deps dependencies)
   (put frp/deps :finally finally)
   (put frp/deps :draws draws)
