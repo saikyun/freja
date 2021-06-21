@@ -40,14 +40,48 @@
   (draw-text-ex font t pos size spacing color))
 
 (varfn measure-text+
-  [t &keys {:size size :spacing spacing :font font}]
+  ````
+Takes string `text` and returns its size as `[w h]`
+By default uses the values set in new_menu,
+but with optional keys one can modify these.
+````
+  [text &keys {:size size :spacing spacing :font font}]
   (default size font-size)
   (default spacing def-spacing)
   (default font menu-font)
   (measure-text-ex font
-                   t
-                   font-size
+                   text
+                   size
                    spacing))
+
+(comment
+  ### Example usage:
+  (measure-text+ "ab")
+  #=> [21 22]
+
+  (measure-text+ "ab" :spacing 10)
+  #=> [30 22]
+
+  (measure-text+ "ab" :size 40)
+  #=> [37 40]
+
+  (measure-text+ "ab" :font (default-load-font-from-memory
+                              ".otf"
+                              fonts/mplus
+                              font-size))
+  #=> [19 22]
+
+
+  (measure-text+ "ab"
+                 :size 40
+                 :spacing 20
+                 :font (default-load-font-from-memory
+                         ".otf"
+                         fonts/mplus
+                         font-size))
+  #=> [52 40]
+  #
+)
 
 (varfn text+
   [{:text text :pos pos :size size :spacing spacing :text/color color :font font}]
@@ -60,13 +94,14 @@
   (draw-text-ex font text pos size spacing color))
 
 (varfn measure+
+  "Same as `measure-text+` but takes a single table/struct."
   [{:text text :size size :spacing spacing :font font}]
   (default size font-size)
   (default spacing def-spacing)
   (default font menu-font)
   (measure-text-ex font
                    text
-                   font-size
+                   size
                    spacing))
 
 (defn draw-file-open-area
