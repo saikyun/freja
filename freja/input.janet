@@ -72,6 +72,7 @@
 (def paste! (comp reset-blink gb/paste!))
 (def cut! (comp reset-blink gb/cut!))
 (def redo! (comp reset-blink gb/redo!))
+(def format! (comp reset-blink format-code))
 (def select-backward-word (comp reset-blink gb/select-backward-word))
 (def select-forward-word (comp reset-blink gb/select-forward-word))
 (def delete-word-backward! (comp reset-blink gb/delete-word-backward!))
@@ -142,7 +143,7 @@
   [props]
   (:open-file props))
 
-(def gb-binds @{:control @{:shift @{:f (comp reset-blink format-code)
+(def gb-binds @{:control @{:shift @{:f format!
                                     #
 }
 
