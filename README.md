@@ -58,6 +58,45 @@ NOTE: Use `Ctrl` on Windows / Linux and `Cmd` on MacOS.
 
 The above is a port of the Monokai theme by Wimer Hazenberg.
 
+## Evaluation environment
+
+Whenever you run hit `Ctrl/Cmd+L` you run `freja/file_handling/save-and-dofile`.  
+This saves the file, and then runs the file using janet's `dofile`.  
+This leads to a new environment table being created (using `make-env`).  
+This environment table is then used whenever you hit `Ctrl/Cmd+Enter`,  
+which calls `freja/input/eval-it`.  
+`eval-it` will run the code to the left of the cursor, specifically,  
+a symbol, keyword, string, number, or pair.  
+
+Some examples:
+```
+# | is the cursor
+1 2| 3
+# eval-it
+#=> 2
+
+"a b c"|
+# eval-it
+#=> "a b c"
+
+"a b| c"
+# eval-it
+#=> b is undefined
+
+(+ 1 2 3)|
+# eval-it
+#=> 6
+```
+This can be very useful when trying to run example code in files,  
+or just play around with the code.
+
+The main way to use this is to open a file, hit `Ctrl/Cmd+L`  
+which will make Freja look at the environment of that file.  
+Successive calls to `Ctrl/Cmd+Enter` will then act in that environment.  
+If you want to reset the environment (i.e. clear away `def` calls  
+you made using `Ctrl/Cmd+Énter`), you can reload the file using  
+`Ctrl/Cmd+L` again.
+
 ## Thanks
 
 Thanks to sogaiu and rhine for initial testing. <3
