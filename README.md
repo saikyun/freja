@@ -66,7 +66,7 @@ This leads to a new environment table being created (using `make-env`).
 This environment table is then used whenever you hit `Ctrl/Cmd+Enter`,  
 which calls `freja/input/eval-it`.  
 `eval-it` will run the code to the left of the cursor, specifically,  
-a symbol, keyword, string, number, structs, tables, tuples, arrays and calls.  
+a symbol, keyword, string, number, struct, table, tuple (including a function call), or array.  
 
 Some examples:
 ```
