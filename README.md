@@ -14,6 +14,8 @@ Janet -- https://janet-lang.org/
 [sudo] jpm install https://github.com/Saikyun/freja
 ```
 
+If you get an old version, try running `[sudo] jpm clear-cache` before re-running the above command.
+
 ### steps to run from source
 
 ```
@@ -60,7 +62,7 @@ The above is a port of the Monokai theme by Wimer Hazenberg.
 
 Thanks to sogaiu and rhine for initial testing. <3
 
-## License (applies to all but the font which is from google fonts)
+## License
 
 Copyright 2020 Jona Ekenberg
 
