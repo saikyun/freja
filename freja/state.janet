@@ -1,4 +1,5 @@
 (import ./new_gap_buffer :prefix "")
+(import ./theme :prefix "")
 
 (def freja-dir @"")
 
@@ -41,10 +42,6 @@
   :ok)
 
 (set file-open-data (new-gap-buffer))
-
-(def comp-cols {:background 0x882491ff
-                :text/color 0xffffffee
-                :caret/color 0xffffff80})
 
 (do (merge-into file-open-data
                 @{:size [:max 30]

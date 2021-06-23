@@ -132,7 +132,7 @@ Emits events when rerendering is needed.
 (import ./../vector_math :as v :fresh true)
 (import ./input :as i)
 (import ./file_handling :prefix "")
-(import ./../backwards2 :prefix "")
+(import ./collision :prefix "")
 (import ./render_new_gap_buffer :prefix "")
 (import ./new_gap_buffer :prefix "")
 
@@ -597,3 +597,11 @@ Creates a finally subscription."
   [emitter cb]
   (unless (find |(= $ cb) (get-in deps [:finally emitter]))
     (update-in deps [:finally emitter] array/push cb)))
+
+(defn unsubscribe-finally!
+  "Take an event emitter (e.g. a ev/channel)
+and a callback (e.g. single arity function).
+Removes a finally subscription."
+  [emitter cb]
+  (update-in deps [:finally emitter]
+             (fn [subs] (filter |(not= $ cb) subs))))

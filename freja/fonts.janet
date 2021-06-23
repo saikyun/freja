@@ -5,3 +5,6 @@
 # running `jpm build`
 (def mplus (slurp (path/join "fonts" "MplusCodeLatin60-Medium.otf")))
 (def poppins (slurp (path/join "fonts" "Poppins-Regular.otf")))
+
+# storage for loaded fonts
+(def fonts @{})

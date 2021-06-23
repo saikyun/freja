@@ -1,7 +1,7 @@
 # (df "misc/frp3.janet")
 
 (use jaylib)
-(import ./../backwards2 :prefix "")
+(import ./collision :prefix "")
 (import ./../freja/state :prefix "")
 (import ./defonce :prefix "")
 (import ./../freja/render_new_gap_buffer :prefix "")

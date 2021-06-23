@@ -17,7 +17,7 @@
 (def fonts (require "./fonts"))
 (import ./fonts :as fonts)
 
-(import ./../backwards2 :prefix "")
+(import ./collision :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
 (import ./text_rendering_ints :prefix "" :fresh true)
@@ -198,6 +198,11 @@
 
       (init-window 900 700
                    "Freja")
+
+      (put fonts/fonts :default (default-load-font-from-memory
+                                  ".otf"
+                                  fonts/poppins
+                                  theme/font-size))
 
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 

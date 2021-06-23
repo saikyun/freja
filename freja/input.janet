@@ -7,7 +7,7 @@
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
-(import ./../backwards2 :prefix "")
+(import ./collision :prefix "")
 
 (varfn new-mouse-data
   []

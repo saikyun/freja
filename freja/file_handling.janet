@@ -52,10 +52,14 @@
     (file/flush f)
     (print "Saved file: " path)))
 
+(var last-path nil)
+
 (varfn inner-dofile
   [top-env path]
 
-  (set state/user-env (make-env top-env))
+  (unless (= path last-path)
+    (set state/user-env (make-env top-env))
+    (set last-path path))
 
   (try
     (do
