@@ -61,11 +61,14 @@
     (set state/user-env (make-env top-env))
     (set last-path path))
 
+  (var temp-env (make-env state/user-env))
+
   (try
     (do
       (dofile path
               #             :env (fiber/getenv (fiber/current))
-              :env state/user-env)
+              :env temp-env)
+      (merge-into state/user-env temp-env)
       #      (merge-into top-env env)
 )
     ([err fib]
