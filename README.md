@@ -92,10 +92,7 @@ or just play around with the code.
 
 The main way to use this is to open a file, hit `Ctrl/Cmd+L`  
 which will make Freja look at the environment of that file.  
-Successive calls to `Ctrl/Cmd+Enter` will then act in that environment.  
-If you want to reset the environment (i.e. clear away `def` calls  
-you made using `Ctrl/Cmd+Énter`), you can reload the file using  
-`Ctrl/Cmd+L` again.
+Successive calls to `Ctrl/Cmd+Enter` and `Ctrl/Cmd+L` will then act in that environment.
 
 ## Thanks
 
