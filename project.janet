@@ -1,6 +1,10 @@
 (declare-project
   :name "Freja"
   :author "saikyun"
+  :license "MIT"
+  :description "Extendable text editor with a focus on quick game development and GUI creation. Like a minimal emacs with easy opengl access."
+  :url "https://github.com/saikyun/freja"
+  :repo "git+https://github.com/saikyun/freja"
   :dependencies ["https://github.com/janet-lang/spork"
 
                  "https://github.com/Saikyun/janet-whereami"
