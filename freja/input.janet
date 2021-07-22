@@ -1,6 +1,7 @@
 (use jaylib)
 (import ./eval :prefix "")
 (import ./state)
+(import ./dumb :prefix "")
 (import ./new_gap_buffer :as gb)
 (import ./render_new_gap_buffer :as render-gb)
 (import ./file_handling :prefix "")
@@ -154,7 +155,7 @@
                            :q quit
 
                            :enter |(eval-it (get-in $ [:context :top-env])
-                                             (gb-get-last-sexp $))
+                                            (gb-get-last-sexp $))
                            #
 }
                 :enter (comp reset-blink |(gb/insert-char! $ (chr "\n")))})
@@ -286,7 +287,7 @@
   (if-let [max-y (-?> (props :y-poses)
                       last
                       -
-                      (* ((props :screen-scale) 1)))]
+                      (* (screen-scale 1)))]
     (update props :scroll |(max max-y (min 0 (+ $ (* move 2)))))
     (update props :scroll |(min 0 (+ $ (* move 2)))))
 

@@ -130,6 +130,8 @@ Emits events when rerendering is needed.
 (import ./state :as state)
 (import ./keyboard :as kb :fresh true)
 (import ./../vector_math :as v :fresh true)
+(import ./theme)
+(import ./fonts)
 (import ./input :as i)
 (import ./file_handling :prefix "")
 (import ./collision :prefix "")
@@ -144,6 +146,14 @@ Emits events when rerendering is needed.
 
 
 (var delay-left @{})
+
+
+(def mouse-events {:press :press
+                   :drag :drag
+                   :release :release
+                   :double-click :double-click
+                   :triple-click :triple-click})
+
 
 (defn handle-keys
   [dt]
@@ -213,14 +223,6 @@ Emits events when rerendering is needed.
                   :press (when (in-rec? data (self :rec))
                            (push-callback! ev |(:cb self)))))})
 
-(def search-area @{})
-(def file-open-area @{})
-
-(def mouse-events {:press :press
-                   :drag :drag
-                   :release :release
-                   :double-click :double-click
-                   :triple-click :triple-click})
 
 (defn text-area-on-event
   [self ev]
@@ -253,48 +255,55 @@ Emits events when rerendering is needed.
       (fn [kind f]
         (push-callback! ev (fn []
                              (f)
+                             #(print "changing focus to: " (self :id))
                              (e/put! state/focus123 :focus self)
                              (put (self :gb) :event/changed true)))))))
 
-(merge-into state/file-open-data {:binds i/file-open-binds})
+(defn default-text-area
+  [&keys {:gap-buffer gap-buffer
+          :binds binds
+          :extra-binds extra-binds}]
+  (default gap-buffer (new-gap-buffer))
 
-(defn open-file
-  [_]
-  (e/put! state/focus123 :focus file-open-area))
+  (default binds (table/setproto @{} i/gb-binds))
 
-(def text-area
-  @{:id :main
+  (merge-into gap-buffer
+              {:binds binds
+               :colors theme/colors})
 
-    :gb (merge-into
-          state/gb-data
-          @{:binds i/gb-binds
+  (when extra-binds
+    (put gap-buffer :binds
+         (-> (merge-into @{} extra-binds)
+             (table/setproto i/gb-binds))))
 
-            :search
-            (fn [props]
-              (e/put! state/focus123 :focus search-area))
+  (unless (gap-buffer :conf)
+    (put gap-buffer
+         :conf
+         fonts/default-font-conf)
 
-            :open-file
-            open-file})
+    (put gap-buffer :sizes
+         (fonts/default-font-conf :sizes)))
+
+  @{:gb gap-buffer
 
     :draw (fn [self]
-            (rl-pop-matrix)
-
-            #(end-texture-mode)
-
+            #            (rl-push-matrix)
             (gb-pre-render (self :gb))
 
-            #(begin-texture-mode (rt-ref :data))
+            #            (rl-push-matrix)
 
-            (rl-push-matrix)
+            #            (rl-load-identity)
 
-            (rl-load-identity)
+            (gb-render-text (self :gb))
+            #            (rl-pop-matrix)
+            #            (rl-pop-matrix)
 
-            #(rl-scalef 2 2 1)
-
-            (gb-render-text (self :gb)))
+            (render-cursor (self :gb)))
 
     :on-event (fn [self ev]
                 (text-area-on-event self ev))})
+
+(def text-area @{})
 
 (varfn search
   [props]
@@ -324,83 +333,59 @@ Emits events when rerendering is needed.
           (put :selection (gb-find-forward! state/gb-data search-term))
           (put :changed-selection true)))))
 
-(put state/search-data :binds
-     @{:escape
-       (fn [props]
-         (put state/focus123 :focus text-area)
-         (put state/focus123 :event/changed true))
 
-       :enter search
+(def search-area (default-text-area
+                   :gap-buffer state/search-data
+                   :binds
+                   (->
+                     @{:escape
+                       (fn [props]
+                         (e/put! state/focus123 :focus text-area)
+                         state/focus123)
 
-       :control @{:f search
+                       :enter search
 
-                  :b search-backward2}
-       #
-})
+                       :control @{:f search
 
-(table/setproto (state/search-data :binds) i/global-keys)
+                                  :b search-backward2}}
 
-(merge-into
-  search-area
-  @{:id :search
+                     (table/setproto i/global-keys))))
 
-    :gb state/search-data
+(put search-area :id :search)
 
-    :draw (fn [self]
-            (rl-pop-matrix)
+(merge-into text-area (default-text-area
+                        :gap-buffer state/gb-data))
+(put text-area :id :main)
 
-            #(end-texture-mode)
+(def file-open-area @{})
 
-            (gb-pre-render (self :gb))
+(defn open-file
+  [_]
+  (e/put! state/focus123 :focus file-open-area))
 
-            #(begin-texture-mode (rt-ref :data))
+(merge-into state/gb-data
+            @{:search
+              (fn [props]
+                (e/put! state/focus123 :focus search-area))
 
-            (rl-push-matrix)
-
-            (rl-load-identity)
-
-            #(rl-scalef 2 2 1)
-
-            (gb-render-text (self :gb)))
-
-    :on-event (fn [self ev]
-                (text-area-on-event self ev))})
+              :open-file
+              open-file})
 
 (merge-into
   file-open-area
-  @{:id :file-open
+  (default-text-area
+    :gap-buffer state/file-open-data
+    :binds
+    (-> i/file-open-binds
+        (merge-into @{:escape
+                      (fn [props]
+                        (e/put! state/focus123 :focus text-area))
 
-    :gb state/file-open-data
+                      :enter (fn [props]
+                               (load-file text-area (string ((commit! props) :text)))
+                               (e/put! state/focus123 :focus text-area))}))))
 
-    :draw (fn [self]
-            (rl-pop-matrix)
-
-            #(end-texture-mode)
-
-            (gb-pre-render (self :gb))
-
-            #(begin-texture-mode (rt-ref :data))
-
-            (rl-push-matrix)
-
-            (rl-load-identity)
-
-            #(rl-scalef 2 2 1)
-
-            (gb-render-text (self :gb)))
-
-    :on-event (fn [self ev]
-                (text-area-on-event self ev))})
-
-
-(merge-into (state/file-open-data :binds)
-            {:escape
-             (fn [props]
-               (e/put! state/focus123 :focus text-area))
-
-             :enter (fn [props]
-                      (load-file text-area (string ((commit! props) :text)))
-                      (e/put! state/focus123 :focus text-area))})
+(put file-open-area :id :file-open)
 
 (def caret
   @{:draw (fn [self]

@@ -9,7 +9,6 @@
 (import ./freja/file_handling :as fh)
 (import ./freja/new_gap_buffer :as gb)
 (import ./freja/render_new_gap_buffer :as render-gb)
-(import ./freja/font :prefix "")
 (import ./freja/state)
 (import ./freja/frp :as frp)
 (import ./freja/fonts)
@@ -218,7 +217,10 @@
                             (put :not-changed-timer 0)
                             (put :styled false)))]
       frp/chars @[|(:on-event (state/focus123 :focus) $)]
-      state/focus123 @[frp/caret]
+      state/focus123 @[frp/caret
+                       #|(print "focus changed to: " (or (($ :focus) :id)
+                       #                                 (string/format "%.40M" $)))
+]
       frp/callbacks @[frp/handle-callbacks]})
 
   (def finally

@@ -1,4 +1,6 @@
-#(init-audio-device)
+(use jaylib)
+
+(init-audio-device)
 
 (def weak (->> [(load-wave "misc/sound/svag1.wav")
                 (load-wave "misc/sound/svag2.wav")
@@ -12,7 +14,7 @@
                   (load-wave "misc/sound/stark4.wav")]
                  (map load-sound-from-wave)))
 
-#(var last 0)
+(var last 0)
 
 (defn rand-pos [xs] (math/floor (* (length xs) (math/random))))
 

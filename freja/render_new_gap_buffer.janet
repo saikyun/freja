@@ -145,8 +145,7 @@ Returns `nil` if the max width is never exceeded."
   (var s (buffer/new 1))
   (var beginning-of-word-i 0)
 
-  (def {:screen-scale screen-scale
-        :offset offset
+  (def {:offset offset
         :width-of-last-line-number width-of-last-line-number} gb)
   (def [x-scale _] screen-scale)
 
@@ -270,7 +269,7 @@ Returns `nil` if the max width is never exceeded."
 
 (varfn width-between
   [gb start stop]
-  (def {:sizes sizes :screen-scale screen-scale} gb)
+  (def {:sizes sizes} gb)
   (def [x-scale y-scale] screen-scale)
   (var acc-w 0)
 
@@ -299,8 +298,7 @@ Returns `nil` if the max width is never exceeded."
         :caret caret
         :sizes sizes
         :offset offset
-        :width-of-last-line-number width-of-last-line-number
-        :screen-scale screen-scale} gb)
+        :width-of-last-line-number width-of-last-line-number} gb)
   (def [x-scale y-scale] screen-scale)
 
   (when selection
@@ -379,8 +377,7 @@ Returns `nil` if the max width is never exceeded."
 Also renders selection boxes.
 Render lines doesn't modify anything in gb."
   [sizes conf gb lines start-index unused-start-y h y-limit]
-  (def {:screen-scale screen-scale
-        :delim-ps delim-ps
+  (def {:delim-ps delim-ps
         :y-poses y-poses
         :line-numbers line-numbers
         :highlighting highlighting
@@ -838,7 +835,7 @@ This function is pretty expensive since it redoes all word wrapping."
 
   (rl-push-matrix)
 
-  #  (rl-load-identity)
+  (rl-load-identity)
 
   #  (rl-scalef 1 1 1)
 

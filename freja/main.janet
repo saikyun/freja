@@ -35,7 +35,6 @@
 
 (import spork/netrepl)
 (import spork/path)
-(import ./font :prefix "")
 (setdyn :pretty-format "%.40M")
 (import whereami :as wai)
 
@@ -142,39 +141,6 @@
                              (print (debug/stacktrace fib err))
                              (ev/sleep 1))))))))
 
-(defn load-font
-  [text-data opts]
-  (let [font (load-font-ex (opts :font-path) (opts :size) (opts :glyphs))]
-
-    (put opts :font font)
-
-    (def t (freeze opts))
-
-    (put text-data :conf t)
-    (put text-data :sizes (glyphs->size-struct t (t :glyphs)))
-
-    {:text t
-     :colors theme/colors}))
-
-(defn load-font-from-mem
-  [text-data opts]
-
-  (let [font (load-font-from-memory (opts :ext)
-                                    (opts :font-data)
-                                    (length (opts :font-data))
-                                    (opts :size)
-                                    (opts :glyphs))]
-
-    (put opts :font font)
-
-    (def t (freeze opts))
-
-    (put text-data :conf t)
-    (put text-data :sizes (glyphs->size-struct t (t :glyphs)))
-
-    {:text t
-     :colors theme/colors}))
-
 (defn run-init-file
   []
   (def env (data :top-env))
@@ -199,12 +165,14 @@
       (init-window 900 700
                    "Freja")
 
-      (put fonts/fonts :default (default-load-font-from-memory
+      (put fonts/fonts :default (fonts/default-load-font-from-memory
                                   ".otf"
                                   fonts/poppins
                                   theme/font-size))
 
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
+
+      (fonts/init-default-font)
 
       (let [[xs ys] (get-window-scale-dpi)]
         (put screen-scale 0 xs)
@@ -216,23 +184,14 @@
                  :size (* 20 x-scale)
                  :line-height 1.2
                  :mult (/ 1 x-scale)
-                 :glyphs default-glyphs
+                 :glyphs fonts/default-glyphs
                  :spacing 0.5}]
 
-        (set conf (load-font-from-mem state/gb-data tc))
-        (put state/gb-data :context data)
-        (put state/gb-data :screen-scale [x-scale y-scale])
-        (put state/gb-data :colors theme/colors)
+        (set conf (fonts/load-font-from-mem state/gb-data tc))
 
-        (set conf (load-font-from-mem state/search-data tc))
-        (put state/search-data :context data)
-        (put state/search-data :screen-scale [x-scale y-scale])
-        (put state/search-data :colors theme/colors)
+        (set conf (fonts/load-font-from-mem state/search-data tc))
 
-        (set conf2 (load-font-from-mem state/file-open-data tc))
-        (put state/file-open-data :context data)
-        (put state/file-open-data :screen-scale [x-scale y-scale])
-        (put state/file-open-data :colors theme/colors)
+        (set conf2 (fonts/load-font-from-mem state/file-open-data tc))
 
         (put data :mouse (new-mouse-data))
 
