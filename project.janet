@@ -1,6 +1,6 @@
 (declare-project
-  :name "Freja"
-  :author "saikyun"
+  :name "freja"
+  :author "Jona Ekenberg <saikyun@gmail.com>"
   :license "MIT"
   :description "Extendable text editor with a focus on quick game development and GUI creation. Like a minimal emacs with easy opengl access."
   :url "https://github.com/saikyun/freja"

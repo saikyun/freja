@@ -4,7 +4,7 @@
 (import ./dumb :prefix "")
 (import ./new_gap_buffer :as gb)
 (import ./render_new_gap_buffer :as render-gb)
-(import ./file_handling :prefix "")
+(import ./file_handling :as fh)
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
@@ -144,13 +144,17 @@
   [props]
   (:open-file props))
 
+(defn save-file
+  [& args]
+  (fh/save-file ;args))
+
 (def gb-binds @{:control @{:shift @{:f format!
                                     #
 }
 
                            :f search2
                            :o open-file
-                           :l save-and-dofile
+                           :l fh/save-and-dofile
                            :s save-file
                            :q quit
 

@@ -3,7 +3,6 @@
 
 (import spork/test)
 (import ./code_api :prefix "")
-(import ./../new_menu :as menu)
 (import ./textfield :as t)
 
 (import ./update-window-title)
@@ -22,7 +21,10 @@
 (import ./text_rendering :prefix "")
 (import ./text_rendering_ints :prefix "" :fresh true)
 (import ../build/text-rendering :prefix "")
-(import ./input :prefix "")
+
+(def input (require "./input"))
+(import ./input :as input)
+
 (import ./file_handling :prefix "")
 (import ./dumb :prefix "")
 (import ./find_row_etc :prefix "")
@@ -37,6 +39,8 @@
 (import spork/path)
 (setdyn :pretty-format "%.40M")
 (import whereami :as wai)
+
+(import ./../new_menu :as menu)
 
 (defmacro defonce
   "Define a value once."
@@ -193,7 +197,7 @@
 
         (set conf2 (fonts/load-font-from-mem state/file-open-data tc))
 
-        (put data :mouse (new-mouse-data))
+        (put data :mouse (input/new-mouse-data))
 
         (set-target-fps 60)
 
@@ -226,6 +230,7 @@
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/state" state)
   (put module/cache "freja/theme" theme)
+  (put module/cache "freja/input" input)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")

@@ -6,6 +6,7 @@
 (import ./vector_math :prefix "")
 (import ./freja/events :as e :fresh true)
 (import ./freja/input :as i)
+#(import freja/input :as i)
 (import ./freja/file_handling :as fh)
 (import ./freja/new_gap_buffer :as gb)
 (import ./freja/render_new_gap_buffer :as render-gb)
@@ -97,7 +98,7 @@
     "Edit"]
    (case (props :submenu)
      :file (let [btns [[i/open-file "Open"]
-                       [fh/save-file "Save"]
+                       [i/save-file "Save"]
                        [i/quit "Quit"]
                        #
 ]]
