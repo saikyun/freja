@@ -61,9 +61,9 @@
     (set state/user-env (make-env top-env))
     (set last-path path))
 
-
   (try
     (do
+      (put state/user-env :freja/loading-file true)
       (dofile path
               #             :env (fiber/getenv (fiber/current))
               :env state/user-env)

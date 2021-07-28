@@ -5,10 +5,19 @@
 (import ./code_api :prefix "")
 (import ./textfield :as t)
 
+(def assets (require "./assets"))
+(import ./assets :as assets)
+(put module/cache "freja/assets" assets)
+
 (import ./update-window-title)
 
 (def frp (require "./frp"))
 (import ./frp :as frp)
+(put module/cache "freja/frp" frp)
+
+(def events (require "./events"))
+(import ./events :as events)
+(put module/cache "freja/events" events)
 
 (def state (require "./state"))
 (import ./state :as state)
@@ -24,12 +33,16 @@
 
 (def input (require "./input"))
 (import ./input :as input)
+(put module/cache "freja/input" input)
 
 (import ./file_handling :prefix "")
 (import ./dumb :prefix "")
 (import ./find_row_etc :prefix "")
-(import ./new_gap_buffer :prefix "")
-(import ./new_gap_buffer_util :prefix "")
+
+(def new_gap_buffer (require "./new_gap_buffer"))
+(import ./new_gap_buffer :as new_gap_buffer)
+(put module/cache "freja/new_gap_buffer" new_gap_buffer)
+
 (import ./render_new_gap_buffer :prefix "")
 
 (def theme (require "./theme"))
@@ -40,7 +53,8 @@
 (setdyn :pretty-format "%.40M")
 (import whereami :as wai)
 
-(import ./../new_menu :as menu)
+(import ./../new_menu :as old-menu)
+(import ./../newest-menu :as menu)
 
 (defmacro defonce
   "Define a value once."
@@ -177,6 +191,7 @@
       (set-exit-key :f12) ### doing this because I don't have KEY_NULL
 
       (fonts/init-default-font)
+      (assets/register-default-fonts)
 
       (let [[xs ys] (get-window-scale-dpi)]
         (put screen-scale 0 xs)
@@ -203,6 +218,7 @@
 
         (run-init-file)
 
+        (old-menu/init)
         (menu/init)
         (update-window-title/init)
 
@@ -227,10 +243,13 @@
 (defn main [& args]
   (put module/cache "jaylib" jaylib)
   (put module/cache "freja/fonts" fonts)
+  (put module/cache "freja/events" events)
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/state" state)
   (put module/cache "freja/theme" theme)
   (put module/cache "freja/input" input)
+  (put module/cache "freja/assets" assets)
+  (put module/cache "freja/new_gap_buffer" new_gap_buffer)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")

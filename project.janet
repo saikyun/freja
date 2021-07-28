@@ -9,6 +9,8 @@
 
                  "https://github.com/Saikyun/janet-whereami"
 
+                 "https://github.com/Saikyun/freja-layout"
+
                  ## using my own fork due to additions to jaylib
                  "https://github.com/Saikyun/freja-jaylib"
 

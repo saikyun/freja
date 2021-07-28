@@ -210,7 +210,8 @@
                      :on-event menu-event})
 
   (def dependencies
-    @{frp/mouse @[frp/text-area frp/search-area frp/file-open-area menu]
+    @{frp/mouse @[frp/text-area frp/search-area frp/file-open-area #menu
+]
       frp/keyboard @[#pp
                      |(-?> (state/focus123 :focus) (:on-event $))]
       frp/text-area @[(fn [{:gb gb}]
@@ -235,10 +236,14 @@
                   frp/search-area (draw-search-area)
                   frp/file-open-area (draw-file-open-area))
                |(:draw frp/caret)
-               |(:draw menu)])
+#               |(:draw menu)
+])
 
   (put frp/deps :deps dependencies)
   (put frp/deps :finally finally)
   (put frp/deps :draws draws)
 
-  (e/put! state/focus123 :focus frp/text-area))
+  (e/put! state/focus123 :focus frp/text-area)
+#
+
+)
