@@ -247,6 +247,9 @@
 (var server nil)
 
 (defn main [& args]
+  (when-let [syspath (os/getenv "JANET_PATH")]
+    (setdyn :syspath syspath))
+
   (put module/cache "jaylib" jaylib)
   (put module/cache "freja/fonts" fonts)
   (put module/cache "freja/events" events)
@@ -280,4 +283,6 @@
 
   (when-let [file (get args 1)]
     (load-file frp/text-area file))
-  (start))
+  (start)
+
+  (print "JANET_PATH is: " (dyn :syspath)))
