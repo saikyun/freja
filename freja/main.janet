@@ -53,6 +53,12 @@
 (setdyn :pretty-format "%.40M")
 (import whereami :as wai)
 
+
+(def hiccup (require "./hiccup"))
+(import ./hiccup :as hiccup)
+(put module/cache "freja/hiccup" hiccup)
+
+
 (import ./../new_menu :as old-menu)
 (import ./../newest-menu :as menu)
 

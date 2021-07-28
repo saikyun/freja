@@ -1,9 +1,9 @@
 (import freja-layout/jaylib-tags :as jt)
-(import ./hiccup :as h)
 (import freja-layout/sizing/relative :as rs)
 (import freja-layout/compile-hiccup :as ch)
 (use freja-layout/put-many)
 
+(import freja/hiccup :as h)
 (import freja/events :as e)
 (import freja/frp)
 (import freja/input :as i)
