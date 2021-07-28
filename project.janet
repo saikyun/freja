@@ -7,12 +7,12 @@
   :repo "git+https://github.com/saikyun/freja"
   :dependencies ["https://github.com/janet-lang/spork"
 
-                 "https://github.com/Saikyun/janet-whereami"
+                 {:repo "https://github.com/saikyun/janet-whereami" :tag "main"}
 
-                 "https://github.com/Saikyun/freja-layout"
+                 {:repo "https://github.com/saikyun/freja-layout" :tag "main"}
 
                  ## using my own fork due to additions to jaylib
-                 "https://github.com/Saikyun/freja-jaylib"
+                 "https://github.com/saikyun/freja-jaylib"
 
                  # example of how to use `:tag`
                  # {:repo "https://...." :tag "abcdcbdc"}

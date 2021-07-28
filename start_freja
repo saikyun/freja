@@ -1,0 +1,2 @@
+#!/bin/bash
+janet freja/main.janet $1

@@ -1,0 +1,2 @@
+#!/bin/bash
+echo "hej $1, hej på dig också $2"
