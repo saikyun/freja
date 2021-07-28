@@ -6,8 +6,8 @@ Self-modifiable text editor implemented in Janet.
 
 ### prerequisites
 
-Janet -- https://janet-lang.org/
-Raylib dependencies -- https://github.com/raysan5/raylib#installing-and-building-raylib-on-multiple-platforms
+* Janet -- https://janet-lang.org/
+* Raylib dependencies -- https://github.com/raysan5/raylib#installing-and-building-raylib-on-multiple-platforms
 
 ### installation
 
