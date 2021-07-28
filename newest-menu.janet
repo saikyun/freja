@@ -68,10 +68,9 @@ happening inside of the layout bounding box.
              :text label}]]]
 
    [:block {:weight 1}
-    [:align {:horizontal :left}
      [:text {:color hotkey-color
              :size 22
-             :text (hotkey->string hotkey)}]]]])
+             :text (hotkey->string hotkey)}]]])
 
 (defn file-menu
   [props]
