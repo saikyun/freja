@@ -1,6 +1,11 @@
 (def jaylib (require "jaylib"))
 (use jaylib)
 
+(def state (require "./state"))
+(import ./state :as state)
+(put module/cache "freja/state" state)
+
+
 (import spork/test)
 (import ./code_api :prefix "")
 (import ./textfield :as t)
@@ -19,8 +24,6 @@
 (import ./events :as events)
 (put module/cache "freja/events" events)
 
-(def state (require "./state"))
-(import ./state :as state)
 
 (def fonts (require "./fonts"))
 (import ./fonts :as fonts)

@@ -1,6 +1,6 @@
 (import ./new_gap_buffer :prefix "")
 (import ./text_api :as old)
-(import ./state)
+(import freja/state)
 
 (varfn read-file
   [path]
