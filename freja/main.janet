@@ -258,6 +258,7 @@
   (put module/cache "freja/theme" theme)
   (put module/cache "freja/input" input)
   (put module/cache "freja/assets" assets)
+  (put module/cache "freja/hiccup" hiccup)
   (put module/cache "freja/new_gap_buffer" new_gap_buffer)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
