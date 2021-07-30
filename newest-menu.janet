@@ -67,10 +67,10 @@ happening inside of the layout bounding box.
              :size 22
              :text label}]]]
 
-   [:block {:weight 1}
-     [:text {:color hotkey-color
-             :size 22
-             :text (hotkey->string hotkey)}]]])
+   [:flow {:weight 1}
+    [:text {:color hotkey-color
+            :size 22
+            :text (hotkey->string hotkey)}]]])
 
 (defn file-menu
   [props]
@@ -159,8 +159,25 @@ happening inside of the layout bounding box.
           [:padding {:all 8
                      :top 3}
            [edit-menu props]]]]))]])
+(comment
+  (defn hiccup
+    [props & children]
+    [:padding {:top 40 :left 600}
+     [:background {:color :red}
+      [:shrink {}
+       [:row {}
+        [:flow {:weight 1}
+         [:align {:horizontal :left}
+          [:padding {:right 100}
+           "Open"]]]
 
+        [:flow {:weight 1}
+         "wat"]]]]]))
 (var c nil)
+
+(def b 10)
+
+b
 
 (defn init
   []
