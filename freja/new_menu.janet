@@ -7,7 +7,7 @@
 (import ./events :as e :fresh true)
 (import ./input :as i)
 #(import freja/input :as i)
-(import ./file_handling :as fh)
+(import ./file-handling :as fh)
 (import ./new_gap_buffer :as gb)
 (import ./render_new_gap_buffer :as render-gb)
 (import ./state)

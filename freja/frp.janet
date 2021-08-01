@@ -133,7 +133,7 @@ Emits events when rerendering is needed.
 (import ./theme)
 (import ./fonts)
 (import ./input :as i)
-(import ./file_handling :prefix "")
+(import ./file-handling :prefix "")
 (import ./collision :prefix "")
 (import ./render_new_gap_buffer :prefix "")
 (import ./new_gap_buffer :prefix "")

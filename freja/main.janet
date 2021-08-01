@@ -5,6 +5,10 @@
 (import ./state :as state)
 (put module/cache "freja/state" state)
 
+(def defonce (require "./defonce"))
+(import ./defonce :as defonce)
+(put module/cache "freja/defonce" defonce)
+
 
 (import spork/test)
 (import ./code_api :prefix "")
@@ -35,10 +39,14 @@
 (import ../build/text-rendering :prefix "")
 
 (def input (require "./input"))
-(import ./input :as input)
+(import ./input)
 (put module/cache "freja/input" input)
 
-(import ./file_handling :prefix "")
+(def file-handling (require "./file-handling"))
+(import ./file-handling)
+(put module/cache "freja/file-handling" file-handling)
+
+
 (import ./dumb :prefix "")
 (import ./find_row_etc :prefix "")
 
@@ -257,14 +265,17 @@
     (setdyn :syspath syspath))
 
   (put module/cache "jaylib" jaylib)
+    (put module/cache "freja/state" state)
+  (put module/cache "freja/defonce" defonce)
+
   (put module/cache "freja/fonts" fonts)
   (put module/cache "freja/events" events)
   (put module/cache "freja/frp" frp)
-  (put module/cache "freja/state" state)
   (put module/cache "freja/theme" theme)
   (put module/cache "freja/input" input)
   (put module/cache "freja/assets" assets)
   (put module/cache "freja/hiccup" hiccup)
+    (put module/cache "freja/file-handling" file-handling)
   (put module/cache "freja/new_gap_buffer" new_gap_buffer)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
@@ -289,7 +300,7 @@
   (frp/init-chans)
 
   (when-let [file (get args 1)]
-    (load-file frp/text-area file))
+    (file-handling/load-file frp/text-area file))
   (start)
 
   (print "JANET_PATH is: " (dyn :syspath)))
