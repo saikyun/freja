@@ -59,15 +59,18 @@ happening inside of the layout bounding box.
   (assert hotkey (string "no hotkey for " f))
 
   [:row {}
-   [:padding {:right 40}
-    [:clickable {:on-click (fn [_]
-                             (e/put! my-props :open-menu nil)
-                             (f (frp/text-area :gb)))}
-     [:text {:color label-color
-             :size 22
-             :text label}]]]
+   [:align {:horizontal :left
+            :weight 1}
+    [:padding {:right 40}
+     [:clickable {:on-click (fn [_]
+                              (e/put! my-props :open-menu nil)
+                              (f (frp/text-area :gb)))}
+      [:text {:color label-color
+              :size 22
+              :text label}]]]]
 
-   [:flow {:weight 1}
+   [:align {:horizontal :right
+            :weight 1}
     [:text {:color hotkey-color
             :size 22
             :text (hotkey->string hotkey)}]]])
