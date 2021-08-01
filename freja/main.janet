@@ -192,6 +192,9 @@
       (init-window 900 700
                    "Freja")
 
+      (put frp/screen-size :screen/width (get-screen-width))
+      (put frp/screen-size :screen/height (get-screen-height))
+
       (put fonts/fonts :default (fonts/default-load-font-from-memory
                                   ".otf"
                                   fonts/poppins

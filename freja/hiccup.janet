@@ -184,10 +184,10 @@
   (default render jt/render)
   (put render-tree :render render)
 
-  (default max-width (frp/screen-size :width))
+  (default max-width (frp/screen-size :screen/width))
   (put render-tree :max-width max-width)
 
-  (default max-width (frp/screen-size :height))
+  (default max-height (frp/screen-size :screen/height))
   (put render-tree :max-height max-height)
 
   (default tags jt/tags)
