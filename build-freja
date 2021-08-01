@@ -1,3 +1,0 @@
-#!/bin/bash
-jpm build
-cp -r fonts build

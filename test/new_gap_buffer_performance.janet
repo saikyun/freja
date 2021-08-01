@@ -1,4 +1,4 @@
-(import ../src/new_gap_buffer :prefix "")
+(import ../freja/new_gap_buffer :prefix "")
 (import spork/test)
 
 (comment

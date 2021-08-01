@@ -1,4 +1,0 @@
-JANET_PATH=./janet_libs janet src/main.janet ../TinySoundFont/examples/miniaudio.c
-
-cd ~/programmering/TinySoundFont/examples
-gcc -Wall miniaudio.c -lm -lraylib -ldl -lpthread -o miniaudio && ./miniaudio

@@ -1,5 +1,6 @@
 (use ./movement)
-(use ./vector_math)
+(use ./misc/vector_math)
+(use jaylib)
 
 (defn new-state
   [x y]
@@ -25,7 +26,7 @@
                         y (+ 250 y)]]
               (new-state x y)))
 
-(pp (data :focus))
+#(pp (data :focus))
 
 (var bullets @[])
 
@@ -101,11 +102,6 @@
   (clear-background :white)
 
   (def [mx my] (mp))
-
-  (if (> mx 0)
-    (put data :focus :game)
-    (when (= :game (data :focus))
-      (put data :focus :main)))
 
   (when (mouse-button-pressed? 0)
     (shoot state))

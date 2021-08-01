@@ -1,6 +1,6 @@
 (use jaylib)
-(import ../src/new_gap_buffer :prefix "")
-(import ../src/new_gap_buffer_util :prefix "")
+(import ../freja/new_gap_buffer :prefix "")
+(import ../freja/new_gap_buffer_util :prefix "")
 (import spork/test)
 
 ### iterators

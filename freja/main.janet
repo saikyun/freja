@@ -62,8 +62,8 @@
 (put module/cache "freja/hiccup" hiccup)
 
 
-(import ./../new_menu :as old-menu)
-(import ./../newest-menu :as menu)
+(import ./new_menu :as old-menu)
+(import ./newest-menu :as menu)
 
 (defmacro defonce
   "Define a value once."

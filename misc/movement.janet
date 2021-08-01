@@ -1,4 +1,4 @@
-(use ./vector_math)
+(use ./misc/vector_math)
 (use jaylib)
 
 (varfn mp

@@ -1,2 +1,0 @@
-JANET_PATH=../janet_lib janet src/main.janet 
-

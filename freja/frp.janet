@@ -129,7 +129,7 @@ Emits events when rerendering is needed.
 (import ./events :as e :fresh true)
 (import ./state :as state)
 (import ./keyboard :as kb :fresh true)
-(import ./../vector_math :as v :fresh true)
+(import ./vector-math :as v :fresh true)
 (import ./theme)
 (import ./fonts)
 (import ./input :as i)
