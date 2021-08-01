@@ -1,3 +1,4 @@
+
 (def jaylib (require "jaylib"))
 (use jaylib)
 
@@ -72,18 +73,6 @@
 
 (import ./new_menu :as old-menu)
 (import ./newest-menu :as menu)
-
-(defmacro defonce
-  "Define a value once."
-  [name & more]
-  (when (nil? (dyn name))
-    ~(def ,name ,;more)))
-
-(defmacro varonce
-  "Var a value once."
-  [name & more]
-  (when (nil? (dyn name))
-    ~(var ,name ,;more)))
 
 (comment
   (top-env 'ta/split-words))
