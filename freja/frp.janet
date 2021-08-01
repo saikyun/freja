@@ -143,6 +143,7 @@ Emits events when rerendering is needed.
 (var keyboard nil)
 (var frame-chan nil)
 (var rerender nil)
+(var screen-size @{})
 
 
 (var delay-left @{})
@@ -188,6 +189,14 @@ Emits events when rerendering is needed.
 #                                           ^ is actually a ev/chan
 #                                           ^ but using struct to visualise
 (def callbacks @{:event/changed false})
+
+
+(varfn handle-resize
+  []
+  (when (window-resized?)
+    (-> screen-size
+        (e/put! :screen/width (get-screen-width))
+        (e/put! :screen/height (get-screen-height)))))
 
 (defn push-callback!
   [ev cb]
@@ -550,6 +559,7 @@ Emits events when rerendering is needed.
   [dt]
   (handle-keys dt)
   (handle-scroll)
+  (handle-resize)
 
   (ec/push! frame-chan @[:dt dt])
 
@@ -571,8 +581,8 @@ Emits events when rerendering is needed.
 and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
-  (unless (find |(= $ cb) (get-in deps [:deps emitter]))
-    (update-in deps [:deps emitter] array/push cb)))
+  (unless (find |(= $ cb) (get-in deps [:deps emitter] []))
+    (update-in deps [:deps emitter] |(array/push (or $ @[]) cb))))
 
 
 (defn subscribe-finally!

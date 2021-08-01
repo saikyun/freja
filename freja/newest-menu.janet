@@ -1,6 +1,4 @@
-(import freja-layout/jaylib-tags :as jt)
 (import freja-layout/sizing/relative :as rs)
-(import freja-layout/compile-hiccup :as ch)
 (use freja-layout/put-many)
 
 (import freja/hiccup :as h)
@@ -9,7 +7,7 @@
 (import freja/input :as i)
 (import freja/new_gap_buffer :as gb)
 
-(use ./defonce)
+(use freja/defonce)
 (use jaylib)
 
 (setdyn :pretty-format "%.40M")
@@ -24,18 +22,6 @@
 (def dropdown-bg 0x3E3E3Eff)
 
 (def kws {:control "Ctrl"})
-
-(defn event-handler
-  ``
-Useful for handling any kind of event, even if it is not
-happening inside of the layout bounding box.
-``
-  [props & _]
-  (-> (dyn :element)
-      (put-many
-        :on-event (props :on-event)
-        :relative-sizing rs/flow-sizing
-        :props props)))
 
 (defn kw->string
   [kw]
@@ -117,10 +103,10 @@ happening inside of the layout bounding box.
 
 (defn hiccup
   [props & children]
-  [event-handler {:on-event
-                  (fn [self [ev-kind]]
-                    (when (= ev-kind :release)
-                      (e/put! my-props :open-menu nil)))}
+  [:event-handler {:on-event
+                   (fn [self [ev-kind]]
+                     (when (= ev-kind :release)
+                       (e/put! my-props :open-menu nil)))}
 
    [:padding {:left 0 :top 0}
     [:background {:color bar-bg}
@@ -159,53 +145,13 @@ happening inside of the layout bounding box.
           [:padding {:all 8
                      :top 3}
            [edit-menu props]]]]))]])
-(comment
-  (defn hiccup
-    [props & children]
-    [:padding {:top 40 :left 600}
-     [:background {:color :red}
-      [:shrink {}
-       [:row {}
-        [:flow {:weight 1}
-         [:align {:horizontal :left}
-          [:padding {:right 100}
-           "Open"]]]
-
-        [:flow {:weight 1}
-         "wat"]]]]]))
-(var c nil)
-
-(def b 10)
-
-b
 
 (defn init
   []
-  (set c (h/new-layer :test-layer2
-                      hiccup
-                      my-props
-                      :render jt/render
-                      :tags jt/tags
-                      :text/font "Poppins"
-                      :text/size 22
-                      :max-width (get-screen-width)
-                      :max-height (get-screen-height))))
+  (h/new-layer :menu-layer hiccup my-props))
 
+#
 # this will only be true when running load-file inside freja
 (when ((curenv) :freja/loading-file)
   (print "reiniting :)")
   (init))
-
-(comment
-  # the below can be used to print the render tree
-  (import freja-layout/compile-hiccup :as ch :fresh true)
-  (import freja-layout/sizing/definite :as ds :fresh true)
-  (import freja-layout/sizing/relative :as rs :fresh true)
-
-  (let [el (ch/compile [hiccup my-props]
-                       :tags jt/tags)
-        el (ds/set-definite-sizes el 800 600)
-        el (rs/set-relative-size el 800 600)]
-    (ch/print-tree el))
-  #
-)

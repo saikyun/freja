@@ -6,12 +6,9 @@
 (import freja-layout/sizing/definite :as def-siz)
 (import freja-layout/sizing/relative :as rel-siz)
 (import freja-layout/compile-hiccup :as ch)
+(import freja-layout/jaylib-tags :as jt)
 
 (import spork/test)
-
-
-# TODO: remove
-(use jaylib)
 
 (defonce render-tree @{})
 
@@ -79,23 +76,23 @@
 
   (with-dyns [:text/font text/font
               :text/size text/size
-	      :text/get-font a/font]
+              :text/get-font a/font]
     #(print "compiling tree...")
     (def root #(test/timeit
-    (ch/compile [hiccup props]
-                                       :tags tags
-                                       :element old-root)
-				       #)
-				       )
+      (ch/compile [hiccup props]
+                  :tags tags
+                  :element old-root)
+      #)
+)
 
     #(print "sizing tree...")
     (def root-with-sizes
       #(test/timeit
-        (-> root
-            (def-siz/set-definite-sizes max-width max-height)
-            (rel-siz/set-relative-size max-width max-height))
-	    #)
-	    )
+      (-> root
+          (def-siz/set-definite-sizes max-width max-height)
+          (rel-siz/set-relative-size max-width max-height))
+      #)
+)
 
     (put props :compilation/changed false)
 
@@ -119,6 +116,48 @@
     (put l :on-event (fn [& _])))
   (put named-layers name nil))
 
+(def default-hiccup-renderer
+  {:draw (fn [self dt]
+           (with-dyns [:text/get-font a/font]
+             ((self :render)
+               (self :root))))
+   :on-event (fn [self ev]
+               (match ev
+                 @{:screen/width w
+                   :screen/height h}
+                 (do
+                   (put self :max-width w)
+                   (put self :max-height h)
+
+                   (put self :root
+                        (compile-tree
+                          (self :hiccup)
+                          (self :props)
+                          :tags (self :tags)
+                          :max-width (self :max-width)
+                          :max-height (self :max-height)
+                          :text/font (self :text/font)
+                          :text/size (self :text/size)
+                          :old-root (self :root))))
+
+                 [:dt dt]
+                 (:draw self dt)
+
+                 '(table? ev)
+                 (do # (print "compiling tree!")
+                   (put self :props ev)
+                   (put self :root
+                        (compile-tree
+                          (self :hiccup)
+                          ev
+                          :tags (self :tags)
+                          :max-width (self :max-width)
+                          :max-height (self :max-height)
+                          :text/font (self :text/font)
+                          :text/size (self :text/size)
+                          :old-root (self :root))))
+
+                 (handle-ev (self :root) ev)))})
 
 (defn new-layer
   [name
@@ -142,65 +181,30 @@
 
   (put render-tree :hiccup hiccup)
 
-  (assert render "must provide a :render function to `new-layer`")
+  (default render jt/render)
   (put render-tree :render render)
 
+  (default max-width (frp/screen-size :width))
   (put render-tree :max-width max-width)
-  (assert max-width "must provide :max-width")
 
+  (default max-width (frp/screen-size :height))
   (put render-tree :max-height max-height)
-  (assert max-height "must provide :max-height")
 
+  (default tags jt/tags)
   (put render-tree :tags tags)
-  (assert tags "must provide :tags")
+
+  (put render-tree :text/font text/font)
+  (put render-tree :text/size text/size)
 
   (merge-into
     render-tree
-    @{:draw (fn [self dt]
-    (with-dyns [:text/get-font a/font]
-              ((self :render)
-                (self :root))))
-      :on-event (fn [self ev]
-                  (match ev
-                    [:dt dt]
-                    (do
-
-                      (when (window-resized?)
-                        (put self :max-width (get-screen-width))
-
-                        (put self :root
-                             (compile-tree
-                               (self :hiccup)
-                               (self :props)
-                               :tags tags
-                               :max-width (self :max-width)
-                               :max-height (self :max-height)
-                               :text/font text/font
-                               :text/size text/size
-                               :old-root (self :root))))
-
-                      (:draw self dt))
-
-                    '(table? ev)
-                    (do # (print "compiling tree!")
-                      (put self :props ev)
-                      (put self :root
-                           (compile-tree
-                             (self :hiccup)
-                             ev
-                             :tags tags
-                             :max-width (self :max-width)
-                             :max-height (self :max-height)
-                             :text/font text/font
-                             :text/size text/size
-                             :old-root (self :root))))
-
-                    (handle-ev (self :root) ev)))})
+    default-hiccup-renderer)
 
   (put props :event/changed true)
 
   (put-in frp/deps [:deps props] [render-tree])
   (frp/subscribe-finally! frp/frame-chan render-tree)
   (frp/subscribe! frp/mouse render-tree)
+  (frp/subscribe! frp/screen-size render-tree)
 
   render-tree)
