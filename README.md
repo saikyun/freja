@@ -7,6 +7,8 @@ Self-modifiable text editor implemented in Janet.
 ### prerequisites
 
 * Janet -- https://janet-lang.org/
+* libglfw3-dev
+  * (X)ubuntu: `sudo apt-get install libglfw3-dev`
 * Raylib dependencies -- https://github.com/raysan5/raylib#installing-and-building-raylib-on-multiple-platforms
 
 ### installation
