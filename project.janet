@@ -18,10 +18,6 @@
                  # {:repo "https://...." :tag "abcdcbdc"}
 ])
 
-(declare-native
-  :name "text-rendering"
-  :source @["freja/text_rendering.c"])
-
 (def proj-root
   (os/cwd))
 

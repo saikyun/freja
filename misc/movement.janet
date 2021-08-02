@@ -1,5 +1,5 @@
 (use ./misc/vector_math)
-(use jaylib)
+(use freja-jaylib)
 
 (varfn mp
   []

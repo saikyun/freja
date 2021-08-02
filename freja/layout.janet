@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 (import ./theme :as t)
 (import ./fonts :as f)
 (import ./collision :as c)

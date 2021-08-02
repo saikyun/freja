@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 (import spork/path)
 (import ./fonts :as f)
 

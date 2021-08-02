@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 
 (init-audio-device)
 

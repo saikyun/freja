@@ -1,6 +1,5 @@
-
-(def jaylib (require "jaylib"))
-(use jaylib)
+(def freja-jaylib (require "freja-jaylib"))
+(use freja-jaylib)
 
 (def state (require "./state"))
 (import ./state :as state)
@@ -36,8 +35,6 @@
 (import ./collision :prefix "")
 (use ./highlighting)
 (import ./text_rendering :prefix "")
-(import ./text_rendering_ints :prefix "" :fresh true)
-(import ../build/text-rendering :prefix "")
 
 (def input (require "./input"))
 (import ./input)
@@ -253,8 +250,8 @@
   (when-let [syspath (os/getenv "JANET_PATH")]
     (setdyn :syspath syspath))
 
-  (put module/cache "jaylib" jaylib)
-    (put module/cache "freja/state" state)
+  (put module/cache "freja-jaylib" freja-jaylib)
+  (put module/cache "freja/state" state)
   (put module/cache "freja/defonce" defonce)
 
   (put module/cache "freja/fonts" fonts)
@@ -264,7 +261,7 @@
   (put module/cache "freja/input" input)
   (put module/cache "freja/assets" assets)
   (put module/cache "freja/hiccup" hiccup)
-    (put module/cache "freja/file-handling" file-handling)
+  (put module/cache "freja/file-handling" file-handling)
   (put module/cache "freja/new_gap_buffer" new_gap_buffer)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))

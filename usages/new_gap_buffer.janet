@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 (import ../freja/new_gap_buffer :prefix "")
 (import ../freja/new_gap_buffer_util :prefix "")
 (import spork/test)

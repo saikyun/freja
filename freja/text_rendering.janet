@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 (import spork/test)
 (import ./find_row_etc :prefix "")
 

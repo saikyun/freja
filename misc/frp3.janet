@@ -1,6 +1,6 @@
 # (df "misc/frp3.janet")
 
-(use jaylib)
+(use freja-jaylib)
 (import ./collision :prefix "")
 (import ./../freja/state :prefix "")
 (import ./defonce :prefix "")

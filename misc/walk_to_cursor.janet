@@ -1,6 +1,6 @@
 (use ./movement)
 (use ./misc/vector_math)
-(use jaylib)
+(use freja-jaylib)
 
 (defn new-state
   [x y]

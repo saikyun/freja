@@ -1,6 +1,6 @@
 (import ./defonce :prefix "")
 (import ./frp)
-(use jaylib)
+(use freja-jaylib)
 
 (defonce change-window-title @{})
 

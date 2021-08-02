@@ -10,7 +10,7 @@ Generally used for internal stuff.
 
 (import spork/test)
 (import ./new_gap_buffer_util :prefix "")
-(use jaylib)
+(use freja-jaylib)
 
 ### iterators
 

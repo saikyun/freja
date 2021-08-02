@@ -15,7 +15,7 @@
 (import ./fonts)
 (import ./layout :prefix "")
 (import ./collision :as b)
-(use jaylib)
+(use freja-jaylib)
 
 (defn draw-file-open-area
   []

@@ -1,5 +1,5 @@
 (import spork/test)
-(use jaylib)
+(use freja-jaylib)
 (import ./dumb :prefix "")
 (import ./new_gap_buffer :prefix "")
 (import ./textfield_api :prefix "")

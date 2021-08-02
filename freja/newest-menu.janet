@@ -8,7 +8,7 @@
 (import freja/new_gap_buffer :as gb)
 
 (use freja/defonce)
-(use jaylib)
+(use freja-jaylib)
 
 (setdyn :pretty-format "%.40M")
 

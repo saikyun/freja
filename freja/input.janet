@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 (import ./eval :prefix "")
 (import freja/state)
 (import ./dumb :prefix "")

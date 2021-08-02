@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
 

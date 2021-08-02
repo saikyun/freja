@@ -123,7 +123,7 @@ Emits events when rerendering is needed.
 
 ````)
 
-(use jaylib)
+(use freja-jaylib)
 
 (import ./extra_channel :as ec :fresh true)
 (import ./events :as e :fresh true)

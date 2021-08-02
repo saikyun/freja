@@ -1,4 +1,4 @@
-(use jaylib)
+(use freja-jaylib)
 
 (defn content
   "Returns a big string of all the pieces in the text data."
