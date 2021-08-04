@@ -122,42 +122,49 @@
              ((self :render)
                (self :root))))
    :on-event (fn [self ev]
-               (match ev
-                 @{:screen/width w
-                   :screen/height h}
-                 (do
-                   (put self :max-width w)
-                   (put self :max-height h)
+               (try
+                 (match ev
+                   @{:screen/width w
+                     :screen/height h}
+                   (do
+                     (put self :max-width w)
+                     (put self :max-height h)
 
-                   (put self :root
-                        (compile-tree
-                          (self :hiccup)
-                          (self :props)
-                          :tags (self :tags)
-                          :max-width (self :max-width)
-                          :max-height (self :max-height)
-                          :text/font (self :text/font)
-                          :text/size (self :text/size)
-                          :old-root (self :root))))
+                     (put self :root
+                          (compile-tree
+                            (self :hiccup)
+                            (self :props)
+                            :tags (self :tags)
+                            :max-width (self :max-width)
+                            :max-height (self :max-height)
+                            :text/font (self :text/font)
+                            :text/size (self :text/size)
+                            :old-root (self :root))))
 
-                 [:dt dt]
-                 (:draw self dt)
+                   [:dt dt]
+                   (:draw self dt)
 
-                 '(table? ev)
-                 (do # (print "compiling tree!")
-                   (put self :props ev)
-                   (put self :root
-                        (compile-tree
-                          (self :hiccup)
-                          ev
-                          :tags (self :tags)
-                          :max-width (self :max-width)
-                          :max-height (self :max-height)
-                          :text/font (self :text/font)
-                          :text/size (self :text/size)
-                          :old-root (self :root))))
+                   '(table? ev)
+                   (do # (print "compiling tree!")
+                     (put self :props ev)
+                     (put self :root
+                          (compile-tree
+                            (self :hiccup)
+                            ev
+                            :tags (self :tags)
+                            :max-width (self :max-width)
+                            :max-height (self :max-height)
+                            :text/font (self :text/font)
+                            :text/size (self :text/size)
+                            :old-root (self :root))))
 
-                 (handle-ev (self :root) ev)))})
+                   (handle-ev (self :root) ev))
+                 ([err fib]
+                   (print "Error during event:")
+                   (pp ev)
+                   (debug/stacktrace fib err)
+                   (print "Removing layer: " (self :name))
+                   (remove-layer (self :name) (self :props)))))})
 
 (defn new-layer
   [name
@@ -170,6 +177,8 @@
           :text/font text/font
           :text/size text/size}]
 
+  (print "Adding hiccup layer: " name)
+
   (def render-tree (or (named-layers name)
                        (let [c @{}]
                          (put named-layers name c)
@@ -180,6 +189,9 @@
     (put render-tree k nil))
 
   (put render-tree :hiccup hiccup)
+
+  (put render-tree :name name)
+  (put render-tree :props props)
 
   (default render jt/render)
   (put render-tree :render render)

@@ -390,7 +390,7 @@
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
 
-  (def y-offset (+ y-pos oy (* (conf :mult) scroll)))
+  (def y-offset (+ y-pos oy)) # (* (conf :mult) scroll)))
   (def x-offset (+ x-pos ox))
 
   [x-offset
