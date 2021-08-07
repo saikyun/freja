@@ -7,10 +7,7 @@ Self-modifiable text editor implemented in Janet.
 ### prerequisites
 
 * Janet -- https://janet-lang.org/
-  * freja can't build on new JPM, so when building from source, use commit: `04ca945ecf0598e069caadb35a3c3089187a8186`
-  * Related issues
-    * https://github.com/saikyun/freja/issues/23
-    * https://github.com/janet-lang/jpm/issues/2
+  * needs to use this commit or later: `04ca945ecf0598e069caadb35a3c3089187a8186`
 * libglfw3-dev
   * (X)ubuntu: `sudo apt-get install libglfw3-dev`
 * Raylib dependencies -- https://github.com/raysan5/raylib#installing-and-building-raylib-on-multiple-platforms
