@@ -590,8 +590,9 @@ Creates a regular subscription."
 and a callback (e.g. single arity function).
 Creates a finally subscription."
   [emitter cb]
-  (unless (find |(= $ cb) (get-in deps [:finally emitter]))
-    (update-in deps [:finally emitter] array/push cb)))
+  (unless (find |(= $ cb) (get-in deps [:finally emitter] []))
+    (update-in deps [:finally emitter] |(array/push (or $ @[]) cb))))
+
 
 (defn unsubscribe-finally!
   "Take an event emitter (e.g. a ev/channel)

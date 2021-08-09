@@ -151,7 +151,8 @@
 
 (defn init
   []
-  (h/new-layer :menu-layer hiccup my-props))
+  (h/new-layer :menu hiccup my-props
+               :remove-layer-on-error true))
 
 #
 # this will only be true when running load-file inside freja

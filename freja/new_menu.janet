@@ -201,6 +201,8 @@
 #
 # stuff to add menu to deps
 
+(import freja/theme :as theme)
+
 (defn init
   []
 
@@ -209,8 +211,15 @@
                      :draw menu-draw
                      :on-event menu-event})
 
+  (-> (frp/text-area :gb)
+      (put :text/color (theme/colors :text))
+      (put :text/font "MplusCode")
+      (put :text/spacing 0.5)
+      (put :text/size 20)
+      (put :text/line-height 1))
+
   (def dependencies
-    @{frp/mouse @[frp/text-area frp/search-area frp/file-open-area #menu
+    @{frp/mouse @[#frp/text-area # frp/search-area frp/file-open-area #menu
 ]
       frp/keyboard @[#pp
                      |(-?> (state/focus123 :focus) (:on-event $))]
@@ -228,15 +237,16 @@
   (def finally
     @{frp/frame-chan @[frp/render-deps
                        frp/caret
+                       #pp
                        |(update-in frp/text-area [:gb :not-changed-timer] + ($ 1))]})
 
-  (def draws @[|(:draw frp/text-area)
-               |(get-in frp/text-area [:gb :not-changed-timer])
-               |(case (state/focus123 :focus)
-                  frp/search-area (draw-search-area)
-                  frp/file-open-area (draw-file-open-area))
-               |(:draw frp/caret)
-#               |(:draw menu)
+  (def draws @[#|(:draw frp/text-area)
+               #|(get-in frp/text-area [:gb :not-changed-timer])
+               #|(case (state/focus123 :focus)
+               #   frp/search-area (draw-search-area)
+               #   frp/file-open-area (draw-file-open-area))
+               #|(:draw frp/caret)
+               #               |(:draw menu)
 ])
 
   (put frp/deps :deps dependencies)
@@ -244,6 +254,5 @@
   (put frp/deps :draws draws)
 
   (e/put! state/focus123 :focus frp/text-area)
-#
-
+  #
 )

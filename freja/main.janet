@@ -12,7 +12,6 @@
 
 (import spork/test)
 (import ./code_api :prefix "")
-(import ./textfield :as t)
 
 (def assets (require "./assets"))
 (import ./assets :as assets)
@@ -32,7 +31,11 @@
 (def fonts (require "./fonts"))
 (import ./fonts :as fonts)
 
-(import ./collision :prefix "")
+(def collision (require "./collision"))
+(import ./collision :as collision)
+(put module/cache "freja/collision" collision)
+
+
 (use ./highlighting)
 (import ./text_rendering :prefix "")
 
@@ -56,6 +59,7 @@
 
 (def theme (require "./theme"))
 (import ./theme :as theme)
+(put module/cache "freja/theme" theme)
 
 (import spork/netrepl)
 (import spork/path)
@@ -70,6 +74,7 @@
 
 (import ./new_menu :as old-menu)
 (import ./newest-menu :as menu)
+(import ./init-text-areas)
 
 (comment
   (top-env 'ta/split-words))
@@ -134,7 +139,9 @@
 
   (begin-drawing)
 
-  (clear-background (theme/colors :background))
+  (clear-background :white
+# (theme/colors :background)
+)
 
   (frp/trigger dt)
 
@@ -213,9 +220,7 @@
                  :spacing 0.5}]
 
         (set conf (fonts/load-font-from-mem state/gb-data tc))
-
         (set conf (fonts/load-font-from-mem state/search-data tc))
-
         (set conf2 (fonts/load-font-from-mem state/file-open-data tc))
 
         (put data :mouse (input/new-mouse-data))
@@ -225,8 +230,9 @@
         (run-init-file)
 
         (old-menu/init)
-        (menu/init)
         (update-window-title/init)
+        (init-text-areas/init)
+        (menu/init)
 
         (set texture (load-render-texture 500 500))
 
@@ -256,6 +262,7 @@
 
   (put module/cache "freja/fonts" fonts)
   (put module/cache "freja/events" events)
+  (put module/cache "freja/collision" collision)
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/theme" theme)
   (put module/cache "freja/input" input)
@@ -286,7 +293,8 @@
   (frp/init-chans)
 
   (when-let [file (get args 1)]
-    (file-handling/load-file frp/text-area file))
+    (file-handling/load-file init-text-areas/text-area-state file))
+
   (start)
 
   (print "JANET_PATH is: " (dyn :syspath)))

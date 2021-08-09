@@ -77,7 +77,7 @@
   (with-dyns [:text/font text/font
               :text/size text/size
               :text/get-font a/font]
-    #(print "compiling tree...")
+    (print "compiling tree...")
     (def root #(test/timeit
       (ch/compile [hiccup props]
                   :tags tags
@@ -95,6 +95,8 @@
 )
 
     (put props :compilation/changed false)
+
+    (print "hiccup nil?" (nil? root-with-sizes))
 
     root-with-sizes)
 
@@ -162,9 +164,19 @@
                  ([err fib]
                    (print "Error during event:")
                    (pp ev)
+                   #(print "Hiccup: ")
+                   #(pp ((self :hiccup) (self :props)))
+                   #(print "Full tree:")
+                   #(pp (self :root))
+                   #(if (self :root)
+                   #  (do
+                   #    (print "Tree: ")
+                   #    (ch/print-tree (self :root)))
+                   #  (print "(self :root) is nil"))
                    (debug/stacktrace fib err)
-                   (print "Removing layer: " (self :name))
-                   (remove-layer (self :name) (self :props)))))})
+                   (when (self :remove-layer-on-error)
+                     (print "Removing layer: " (self :name))
+                     (remove-layer (self :name) (self :props))))))})
 
 (defn new-layer
   [name
@@ -175,7 +187,8 @@
           :max-height max-height
           :tags tags
           :text/font text/font
-          :text/size text/size}]
+          :text/size text/size
+          :remove-layer-on-error remove-layer-on-error}]
 
   (print "Adding hiccup layer: " name)
 
@@ -190,11 +203,16 @@
 
   (put render-tree :hiccup hiccup)
 
+  (put render-tree :remove-layer-on-error remove-layer-on-error)
+
   (put render-tree :name name)
   (put render-tree :props props)
 
   (default render jt/render)
-  (put render-tree :render render)
+  (put render-tree :render |(do
+                              #(when (= name :text-area)
+                              #  (print "rendering hiccup"))
+                              (render $)))
 
   (default max-width (frp/screen-size :screen/width))
   (put render-tree :max-width max-width)
@@ -214,7 +232,7 @@
 
   (put props :event/changed true)
 
-  (put-in frp/deps [:deps props] [render-tree])
+  (frp/subscribe! props render-tree)
   (frp/subscribe-finally! frp/frame-chan render-tree)
   (frp/subscribe! frp/mouse render-tree)
   (frp/subscribe! frp/screen-size render-tree)
