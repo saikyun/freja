@@ -149,12 +149,6 @@ Emits events when rerendering is needed.
 (var delay-left @{})
 
 
-(def mouse-events {:press :press
-                   :drag :drag
-                   :release :release
-                   :double-click :double-click
-                   :triple-click :triple-click})
-
 
 (defn handle-keys
   [dt]
@@ -257,7 +251,7 @@ Emits events when rerendering is needed.
                            (i/handle-scroll-event (self :gb) n)
                            (put self :event/changed true))))
 
-    ['(mouse-events (first ev)) _]
+    ['(i/mouse-events (first ev)) _]
     (i/handle-mouse-event
       (self :gb)
       ev

@@ -75,6 +75,7 @@
 (import ./new_menu :as old-menu)
 (import ./newest-menu :as menu)
 (import ./init-text-areas)
+(import ./default-layout)
 
 (comment
   (top-env 'ta/split-words))
@@ -126,6 +127,8 @@
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
 
+(use profiling/profile)
+
 (varfn internal-frame
   []
   (def dt (get-frame-time))
@@ -140,7 +143,7 @@
   (begin-drawing)
 
   (clear-background :white
-# (theme/colors :background)
+                    # (theme/colors :background)
 )
 
   (frp/trigger dt)
@@ -158,7 +161,8 @@
                            (error "QUIT!"))
 
                          (try
-                           (do (internal-frame)
+                           (do
+                             (p :frame (internal-frame))
                              (ev/sleep 0.01))
                            ([err fib]
                              (let [path "text_experiment_dump"]
@@ -231,7 +235,7 @@
 
         (old-menu/init)
         (update-window-title/init)
-        (init-text-areas/init)
+        (default-layout/init)
         (menu/init)
 
         (set texture (load-render-texture 500 500))
