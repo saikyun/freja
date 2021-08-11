@@ -906,6 +906,7 @@ This function is pretty expensive since it redoes all word wrapping."
         :colors colors
         :scroll scroll
         :changed changed
+        :lowest-changed-at change-pos
         :changed-x-pos changed-x-pos
         :changed-nav changed-nav
         :changed-selection changed-selection
@@ -968,6 +969,8 @@ This function is pretty expensive since it redoes all word wrapping."
     (put gb :line-numbers line-numbers)
 
     (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
+
+    (when change-pos (print "CHANGE POS: " change-pos))
 
     (var lines (if (or changed changed-scroll)
                  (timeit "word wrap" (let [sizes sizes]

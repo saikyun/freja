@@ -741,6 +741,15 @@ Used e.g. when loading a file."
 
 ### insertion
 
+(defn min*
+  "`min` treating `nil` as a high number"
+  [a b]
+  (if a
+    (if b
+      (min a b)
+      a)
+    b))
+
 (varfn insert-char-at-caret
   "Inserts char `c` at the index of the caret."
   [gb c]
@@ -756,15 +765,17 @@ Used e.g. when loading a file."
                            (buffer/push-byte gap c)
                            (buffer/push-string gap to-the-right))))
                (update :caret inc))]
-    (update gb
-            :actions
-            array/push
-            {:kind :insert
-             :caret-before caret-before
-             :content (c->s c)
-             :caret-after (gb :caret)
-             :start caret-before
-             :stop (gb :caret)})))
+    (-> gb
+        (update :lowest-changed-at min* (gb :caret))
+        (update
+          :actions
+          array/push
+          {:kind :insert
+           :caret-before caret-before
+           :content (c->s c)
+           :caret-after (gb :caret)
+           :start caret-before
+           :stop (gb :caret)}))))
 
 (varfn insert-string-at-caret*
   "Inserts string `s` at the position of the caret, without updating the caret or adding to the history.
