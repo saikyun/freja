@@ -11,6 +11,8 @@
 
                  {:repo "https://github.com/saikyun/freja-layout" :tag "main"}
 
+                 {:repo "https://github.com/Saikyun/janet-profiling" :tag "main"}
+
                  ## using my own fork due to additions to jaylib
                  "https://github.com/saikyun/freja-jaylib"
 

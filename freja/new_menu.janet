@@ -174,7 +174,7 @@
 (defn menu-event
   [menu ev]
 
-  (when (frp/mouse-events (first ev))
+  (when (i/mouse-events (first ev))
     (when (b/in-rec? (ev 1) (menu-rec (menu :rec)))
       (frp/push-callback! ev noop))) # done so that nothing below menu reacts
 

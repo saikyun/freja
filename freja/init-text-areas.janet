@@ -113,6 +113,12 @@
                                 (e/put! sh-state :open true)
                                 (e/put! state/focus123 :focus file-open-state))))))
 
+(put text-area-state
+     :search
+     (fn [props]
+       (e/put! sh-state :search true)
+       (e/put! state/focus123 :focus search-state)))
+
 
 (varfn gb-rec
   [{:offset offset
@@ -160,6 +166,7 @@
   (put-in state [:gb :text/line-height] text/line-height)
   (put-in state [:gb :text/spacing] text/spacing)
   (put-in state [:gb :text/color] text/color)
+  (put-in state [:gb :changed] true)
 
   (-> (dyn :element)
       (dt/add-default-props props)
@@ -236,66 +243,3 @@
                                         (self :width)
                                         (self :height))
                         true))})))
-
-(defn text-area-hc
-  [props & _]
-  [:padding {:left 0 :top 30}
-   (when (props :open)
-     [:background {:color :purple}
-      [:padding {:all 4}
-       [:row {}
-        [:text {:size 22
-                :text "Open: "}]
-        [text-area {:weight 1
-                    :text/size 22
-                    :height 14
-                    :state file-open-state}]]]])
-   (when (props :search)
-     [:background {:color :purple}
-      [:padding {:all 4}
-       [:row {}
-        [:text {:size 22
-                :text "Search: "}]
-        [text-area {:weight 1
-                    :text/size 22
-                    :height 14
-                    :state search-state}]]]])
-
-   # changing the divider color
-   [:background {:color 0xaaaaaaff}
-    [:row {}
-     [:block {:weight 1}
-      [:background {:color (t/colors :background)}
-       [:padding {:left 6}
-        [text-area {:text/spacing 0.5
-                    :text/size 20
-                    :text/font "MplusCode"
-                    :text/color (t/colors :text)
-                    :state text-area-state}]]]]
-     [:block {:width 2}]
-     [:block {:weight 1}
-      [:background {:color (t/colors :background)}
-       [:padding {:left 6}
-        [text-area {:text/spacing 0.5
-                    :text/size 20
-                    :text/font "MplusCode"
-                    :text/color (t/colors :text)
-                    :state text-area-state2}]]]]]]
-   #
-])
-
-(defn init
-  []
-  (def c (h/new-layer
-           :text-area
-           text-area-hc
-           sh-state))
-
-  (e/put! state/focus123 :focus text-area-state))
-
-
-#
-# this will only be true when running load-file inside freja
-(when ((curenv) :freja/loading-file)
-  (print "reiniting :)")
-  (init))

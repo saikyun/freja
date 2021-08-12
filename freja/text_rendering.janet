@@ -44,6 +44,13 @@
                    (math/floor (* (tc :mult) (tc :size)))
                    (* (tc :mult) (tc :spacing))))
 
+(defn measure-text*
+  [font text size spacing]
+  (measure-text-ex font
+                   text
+                   (math/floor (* 1 size))
+                   (* 1 spacing)))
+
 (defn draw-text*
   [font text pos size spacing color]
   (draw-text-ex font
