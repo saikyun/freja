@@ -66,26 +66,12 @@
   @{:gb gap-buffer
 
     :draw (fn [self]
-            (p (get self :id :draw-textarea)
-               (do
-                 #            (rl-push-matrix)
-                 (p :pre-render
-                    (rgb/gb-pre-render (self :gb)))
-
-                 #            (rl-push-matrix)
-
-                 #            (rl-load-identity)
-                 (p :render-text
-                    (rgb/gb-render-text (self :gb)))
-                 #            (rl-pop-matrix)
-                 #            (rl-pop-matrix)
-
-                 (p :render-cursor
-                    (rgb/render-cursor (self :gb))))))
+            (rgb/gb-pre-render (self :gb))
+            (rgb/gb-render-text (self :gb))
+            (rgb/render-cursor (self :gb)))
 
     :on-event (fn [self ev]
-                (p :textarea-on-event
-                   (text-area-on-event self ev)))})
+                (text-area-on-event self ev))})
 
 
 (defn textarea

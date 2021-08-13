@@ -162,7 +162,7 @@
 
                          (try
                            (do
-                             (p :frame (internal-frame))
+                             (internal-frame)
                              (ev/sleep 0.01))
                            ([err fib]
                              (let [path "text_experiment_dump"]

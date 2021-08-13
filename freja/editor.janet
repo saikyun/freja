@@ -10,23 +10,21 @@
 
 (varfn search
   [props]
-  (p :search
-     (let [search-term (string (gb/content props))
-           gb (props :search-target)]
-       (gb/put-caret gb (if (gb :selection)
-                          (max (gb :selection)
-                               (gb :caret))
-                          (gb :caret)))
-       (print "searching :O")
-       (when-let [i (gb/gb-find-forward! gb search-term)]
-         (-> gb
-             (gb/put-caret i)
-             (put :selection (gb/gb-find-backward! gb search-term))
-             (put :changed-selection true))))))
+  (let [search-term (string (gb/content props))
+        gb (props :search-target)]
+    (gb/put-caret gb (if (gb :selection)
+                       (max (gb :selection)
+                            (gb :caret))
+                       (gb :caret)))
+    (print "searching :O")
+    (when-let [i (gb/gb-find-forward! gb search-term)]
+      (-> gb
+          (gb/put-caret i)
+          (put :selection (gb/gb-find-backward! gb search-term))
+          (put :changed-selection true)))))
 
 (varfn search-backwards
   [props]
-  (p :search-back
      (let [search-term (string (gb/content props))
            gb (props :search-target)]
        (gb/put-caret gb (if (gb :selection)
@@ -38,7 +36,7 @@
          (-> gb
              (gb/put-caret i)
              (put :selection (gb/gb-find-forward! gb search-term))
-             (put :changed-selection true))))))
+             (put :changed-selection true)))))
 
 
 (def file-open-binds

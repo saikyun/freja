@@ -122,67 +122,65 @@
 
 (def default-hiccup-renderer
   {:draw (fn [self dt]
-           (when (= :text-area (self :name))
-             (p :render
-                (with-dyns [:text/get-font a/font]
-                  ((self :render)
-                    (self :root))))))
-   :on-event (fn [self ev]
-               (p :on-event
-                  (try
-                    (match ev
-                      @{:screen/width w
-                        :screen/height h}
-                      (do
-                        (put self :max-width w)
-                        (put self :max-height h)
+           (with-dyns [:text/get-font a/font]
+             ((self :render)
+               (self :root))))
+   :on-event (defnp hiccup-on-event [self ev]
 
-                        (put self :root
-                             (compile-tree
-                               (self :hiccup)
-                               (self :props)
-                               :tags (self :tags)
-                               :max-width (self :max-width)
-                               :max-height (self :max-height)
-                               :text/font (self :text/font)
-                               :text/size (self :text/size)
-                               :old-root (self :root))))
+               (try
+                 (match ev
+                   @{:screen/width w
+                     :screen/height h}
+                   (do
+                     (put self :max-width w)
+                     (put self :max-height h)
 
-                      [:dt dt]
-                      (:draw self dt)
+                     (put self :root
+                          (compile-tree
+                            (self :hiccup)
+                            (self :props)
+                            :tags (self :tags)
+                            :max-width (self :max-width)
+                            :max-height (self :max-height)
+                            :text/font (self :text/font)
+                            :text/size (self :text/size)
+                            :old-root (self :root))))
 
-                      '(table? ev)
-                      (do # (print "compiling tree!")
-                        (put self :props ev)
-                        (put self :root
-                             (compile-tree
-                               (self :hiccup)
-                               ev
-                               :tags (self :tags)
-                               :max-width (self :max-width)
-                               :max-height (self :max-height)
-                               :text/font (self :text/font)
-                               :text/size (self :text/size)
-                               :old-root (self :root))))
+                   [:dt dt]
+                   (:draw self dt)
 
-                      (p :handle-ev (handle-ev (self :root) ev)))
+                   '(table? ev)
+                   (do # (print "compiling tree!")
+                     (put self :props ev)
+                     (put self :root
+                          (compile-tree
+                            (self :hiccup)
+                            ev
+                            :tags (self :tags)
+                            :max-width (self :max-width)
+                            :max-height (self :max-height)
+                            :text/font (self :text/font)
+                            :text/size (self :text/size)
+                            :old-root (self :root))))
 
-                    ([err fib]
-                      (print "Error during event:")
-                      (pp ev)
-                      #(print "Hiccup: ")
-                      #(pp ((self :hiccup) (self :props)))
-                      #(print "Full tree:")
-                      #(pp (self :root))
-                      #(if (self :root)
-                      #  (do
-                      #    (print "Tree: ")
-                      #    (ch/print-tree (self :root)))
-                      #  (print "(self :root) is nil"))
-                      (debug/stacktrace fib err)
-                      (when (self :remove-layer-on-error)
-                        (print "Removing layer: " (self :name))
-                        (remove-layer (self :name) (self :props)))))))})
+                   (handle-ev (self :root) ev))
+
+                 ([err fib]
+                   (print "Error during event:")
+                   (pp ev)
+                   #(print "Hiccup: ")
+                   #(pp ((self :hiccup) (self :props)))
+                   #(print "Full tree:")
+                   #(pp (self :root))
+                   #(if (self :root)
+                   #  (do
+                   #    (print "Tree: ")
+                   #    (ch/print-tree (self :root)))
+                   #  (print "(self :root) is nil"))
+                   (debug/stacktrace fib err)
+                   (when (self :remove-layer-on-error)
+                     (print "Removing layer: " (self :name))
+                     (remove-layer (self :name) (self :props))))))})
 
 (defn new-layer
   [name
