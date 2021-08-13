@@ -401,8 +401,6 @@ Returns `nil` if the max width is never exceeded."
   #
 )
 
-(import freja/fonts :as f)
-
 (defn gb-draw-text
   [gb text pos color]
   (def font (a/font (gb :text/font) (gb :text/size)))
