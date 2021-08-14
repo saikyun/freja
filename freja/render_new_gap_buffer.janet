@@ -483,6 +483,7 @@ Render lines doesn't modify anything in gb."
                  line-y (y-poses i)
                  target-y (rel-y gb (- line-y line-start-y))]
            :until (> target-y y-limit)]
+
       (++ nof-lines)
       (set x 0)
 

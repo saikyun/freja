@@ -23,16 +23,16 @@
      [:block {:weight 1}
       [e/editor {:state (props :left-state)
                  :id :left
-                 :initial-path "measure-stuff.janet"
+                 #                 :initial-path "measure-stuff.janet"
                  :open (props :left-open)
                  :set-open |(e/put! props :left-open $)}]]
      [:block {:width 2}]
      [:block {:weight 1}
       [e/editor @{:state (props :right-state)
                   :id :right
-                 :initial-path "freja/render_new_gap_buffer.janet"
+                  :initial-path "freja/render_new_gap_buffer.janet"
                   :open (props :right-open)
-                  :set-open |(e/put! props :right-open $)}]]
+                  :set-open |(do (print "opening: " $) (e/put! props :right-open $))}]]
 
      #
 ]]])

@@ -98,8 +98,6 @@
 
     (put props :compilation/changed false)
 
-    (print "hiccup nil?" (nil? root-with-sizes))
-
     root-with-sizes)
 
   #
@@ -151,6 +149,7 @@
 
                    '(table? ev)
                    (do # (print "compiling tree!")
+                     (pp ev)
                      (put self :props ev)
                      (put self :root
                           (compile-tree

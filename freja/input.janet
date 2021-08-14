@@ -342,9 +342,13 @@
 
       (min
         (gb/gb-length props)
-        (cond (and (= flag :regular)
-                   (= row-start-pos char-i)) ## to the left of \n
+        (cond
+          (zero? char-i) char-i
+
+          (and (= flag :regular)
+               (= row-start-pos char-i)) ## to the left of \n
           (inc char-i)
+
           char-i)))))
 
 (varfn handle-shift-mouse-down
@@ -393,17 +397,13 @@
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
 
-  (def y-offset (+ y-pos oy)) # (* (conf :mult) scroll)))
-  (def x-offset (+ x-pos ox))
+  (def y-offset 0) # (+ y-pos oy)) # (* (conf :mult) scroll)))
+  (def x-offset 0) #(+ x-pos ox))
 
   [x-offset
    y-offset
-   (match (size 0)
-     :max (- (get-screen-height) y-offset)
-     w w)
-   (match (size 1)
-     :max (- (get-screen-height) y-offset)
-     h h)])
+   (size 0)
+   (size 1)])
 
 (varfn handle-mouse-event
   [props event cb]
@@ -452,6 +452,7 @@
 
       (= kind :press)
       (cb kind |(let [cur-index (get-mouse-pos props mouse-pos)]
+                  (print "press")
                   (-> props
                       reset-blink
                       (put :down-index cur-index)
@@ -461,7 +462,9 @@
                       (put :stickiness (if (< x x-offset) :down :right))
                       (put :changed-nav true))))
 
-      (= kind :drag)
+      (and (= kind :drag)
+           # if this is nil, the press happened outside the textarea
+           (props :down-index))
       (cb kind |(let [down-pos (props :down-index)
                       curr-pos (get-mouse-pos props mouse-pos)]
 
