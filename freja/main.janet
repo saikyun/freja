@@ -233,7 +233,7 @@
 
         (run-init-file)
 
-        (old-menu/init)
+#        (old-menu/init)
         (update-window-title/init)
         (default-layout/init)
         (menu/init)

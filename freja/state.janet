@@ -26,6 +26,7 @@
     (unless (ref :no-history)
       (put ref :data new-data))))
 
+### TODO: remove these old ones
 
 (var file-open-data nil)
 (var search-data nil)
@@ -33,7 +34,7 @@
 (var gb-data (new-gap-buffer))
 
 (do (merge-into gb-data
-                @{:size [800 :max]
+                @{:size [800 500]
                   :position [5 30]
                   :offset [10 6]
                   :show-line-numbers true
@@ -44,7 +45,7 @@
 (set file-open-data (new-gap-buffer))
 
 (do (merge-into file-open-data
-                @{:size [:max 30]
+                @{:size [400 30]
                   :position [0 30]
                   :offset [88 6]}
                 comp-cols)
@@ -53,7 +54,7 @@
 (set search-data (new-gap-buffer))
 
 (do (merge-into search-data
-                @{:size [:max 30]
+                @{:size [300 30]
                   :position [0 28]
                   :offset [88 6]}
                 comp-cols)

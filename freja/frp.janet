@@ -149,7 +149,6 @@ Emits events when rerendering is needed.
 (var delay-left @{})
 
 
-
 (defn handle-keys
   [dt]
   (var k (get-char-pressed))
@@ -515,17 +514,13 @@ Emits events when rerendering is needed.
 (var deps @{})
 
 (def dependencies
-  @{mouse @[text-area search-area file-open-area]
+  @{mouse @[]
     keyboard @[|(:on-event (state/focus123 :focus) $)]
     chars @[|(:on-event (state/focus123 :focus) $)]
-    state/focus123 @[caret]
+    state/focus123 @[]
     callbacks @[handle-callbacks]})
 
-(def draws @[|(:draw text-area)
-             |(case (state/focus123 :focus)
-                search-area (:draw search-area)
-                file-open-area (:draw file-open-area))
-             |(:draw caret)])
+(def draws @[])
 
 (varfn render-deps
   [dt]
@@ -533,7 +528,7 @@ Emits events when rerendering is needed.
     (d)))
 
 (def finally
-  @{frame-chan [render-deps caret]})
+  @{frame-chan [render-deps]})
 
 (merge-into deps @{:deps dependencies
                    :draws draws
@@ -575,6 +570,7 @@ Emits events when rerendering is needed.
 and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
+  (debug/stacktrace (fiber/current))
   (unless (find |(= $ cb) (get-in deps [:deps emitter] []))
     (update-in deps [:deps emitter] |(array/push (or $ @[]) cb))))
 
