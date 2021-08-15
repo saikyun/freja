@@ -18,21 +18,29 @@
     (put props :right-state @{}))
 
   [:padding {:left 0 :top 30}
-   [:background {:color (t/comp-cols :background)}
+   [:background {:color 0x9D9D9Dff}
     [:row {}
      [:block {:weight 1}
-      [e/editor {:state (props :left-state)
-                 :id :left
-                 :focus-on-init true
-                 :initial-path state/initial-file
-                 :open (props :left-open)
-                 :set-open |(e/put! props :left-open $)}]]
-     [:block {:width 2}]
+      [:background {:color (if (props :left-focus)
+                             (t/comp-cols :background)
+                             :blank)}
+       [:padding {:all 2}
+        [e/editor {:state (props :left-state)
+                   :id :left
+                   :focus-on-init true
+                   :initial-path state/initial-file
+                   :open (props :left-open)
+                   :set-open |(e/put! props :left-open $)}]]]]
+     #[:block {:width 2}]
      [:block {:weight 1}
+      [:background {:color (if (props :right-focus)
+                             (t/comp-cols :background)
+                             :blank)}
+       [:padding {:all 2}
       [e/editor @{:state (props :right-state)
                   :id :right
                   :open (props :right-open)
-                  :set-open |(do (print "opening: " $) (e/put! props :right-open $))}]]
+                  :set-open |(do (print "opening: " $) (e/put! props :right-open $))}]]]]
 
      #
 ]]])
@@ -57,7 +65,20 @@
   (def c (h/new-layer
            :text-area
            text-area-hc
-           editor-state)))
+           editor-state))
+
+  (frp/subscribe!
+    state/focus
+    (fn [{:focus focus}]
+      (if (= focus (get-in editor-state [:left-state :editor]))
+        (e/put! editor-state :left-focus true)
+        (when (editor-state :left-focus)
+          (e/put! editor-state :left-focus false)))
+
+      (if (= focus (get-in editor-state [:right-state :editor]))
+        (e/put! editor-state :right-focus true)
+        (when (editor-state :right-focus)
+          (e/put! editor-state :right-focus false))))))
 
 #
 # this will only be true when running load-file inside freja

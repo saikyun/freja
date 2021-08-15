@@ -12,7 +12,6 @@
 
 (defn text-area-on-event
   [self ev]
-  (var lul false)
   (match ev
     [:key-down k]
     (do
@@ -31,26 +30,17 @@
     [:scroll n mp]
     (when (c/in-rec? mp
                      (i/gb-rec (self :gb)))
-
-      (set lul
-           (fn []
-             (i/handle-scroll-event (self :gb) n)
-             (put self :event/changed true))))
+      (i/handle-scroll-event (self :gb) n)
+      (put self :event/changed true))
 
     ['(i/mouse-events (first ev)) _]
     (i/handle-mouse-event
       (self :gb)
       ev
       (fn [kind f]
-        (print "setting lul!")
-        (set lul (fn []
-                   (f)
-                   (print "lul")
-                   (print "changing focus to: " (self :id))
-                   (e/put! state/focus :focus self)
-                   (put (self :gb) :event/changed true))))))
-
-  lul)
+        (f)
+        (e/put! state/focus :focus self)
+        (put (self :gb) :event/changed true)))))
 
 
 (defn default-textarea-state
@@ -174,11 +164,8 @@
                                      (update-pos (ev 1))]))
 
                       #(text-area-on-event state new-ev)
-                      (when-let [f (:on-event state new-ev)]
-                        (print "textarea callback")
-                        #(frp/push-callback! ev f)
-                        (f))
-
+                      (:on-event state new-ev)
+                      
                       (def pos (new-ev
                                  (if (= :scroll (first new-ev))
                                    2

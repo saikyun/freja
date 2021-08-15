@@ -18,7 +18,6 @@
 
 (put state :on-event (fn [self {:focus f}]
                        (when (get (f :gb) :open-file)
-                         (print "focusing: " (f :id))
                          (put self :focused-text-area (f :gb)))))
 
 (def label-color 0xffffffee)

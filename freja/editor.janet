@@ -48,12 +48,7 @@
 
 (def search-binds
   (-> @{}
-      (table/setproto i/global-keys)
-      (merge-into
-        @{:escape |(:escape $)
-          :enter |(:search $)
-          :control @{:f |(:search $)
-                     :b |(:search-backwards $)}})))
+      (table/setproto i/search-binds)))
 
 (defn editor
   [props & children]
@@ -119,12 +114,13 @@
 
   [:block {}
    (when-let [c (tracev (props :open))]
-     [:background {:color :purple}
+     [:background {:color (t/comp-cols :background)}
       [:padding {:all 4}
        (case c
          :file-open
          [:row {}
           [:text {:size 22
+                  :color (t/comp-cols :text/color)
                   :text "Open: "}]
           [ta/textarea {:weight 1
                         :text/size 22
@@ -134,10 +130,11 @@
          :search
          [:row {}
           [:text {:size 22
+                  :color (t/comp-cols :text/color)
                   :text "Search: "}]
           [ta/textarea {:weight 1
                         :text/size 22
-                        :height 14
+                        :height 28
                         :state search-state}]])]]
      #
 )

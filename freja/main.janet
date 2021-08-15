@@ -53,7 +53,9 @@
 (import ./new_gap_buffer :as new_gap_buffer)
 (put module/cache "freja/new_gap_buffer" new_gap_buffer)
 
-(import ./render_new_gap_buffer :prefix "")
+(def render_new_gap_buffer (require "./render_new_gap_buffer"))
+(import ./render_new_gap_buffer :as render_new_gap_buffer)
+(put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
 
 (def theme (require "./theme"))
 (import ./theme :as theme)
@@ -263,6 +265,7 @@
   (put module/cache "freja/hiccup" hiccup)
   (put module/cache "freja/file-handling" file-handling)
   (put module/cache "freja/new_gap_buffer" new_gap_buffer)
+  (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")

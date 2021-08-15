@@ -182,6 +182,14 @@
 
 (table/setproto file-open-binds global-keys)
 
+(def search-binds
+  @{:escape |(:escape $)
+    :enter |(:search $)
+    :control @{:f |(:search $)
+               :b |(:search-backwards $)}})
+
+(table/setproto search-binds global-keys)
+
 (varfn handle-keyboard-char
   [props k]
 
@@ -452,7 +460,6 @@
 
       (= kind :press)
       (cb kind |(let [cur-index (get-mouse-pos props mouse-pos)]
-                  (print "press")
                   (-> props
                       reset-blink
                       (put :down-index cur-index)

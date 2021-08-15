@@ -62,14 +62,13 @@
 
 (defn handle-ev
   [tree ev name]
+  # only run events if no one else has already taken the event
   (unless (frp/callbacks ev)
     (with-dyns [:offset-x 0
                 :offset-y 0]
       (when (elem-on-event tree ev)
         (frp/push-callback! ev
-                            (fn []
-                              (pp ev)
-                              (print "ev for " name " happened")))))))
+                            (fn []))))))
 
 (defn compile-tree
   [hiccup props &keys {:max-width max-width
@@ -158,7 +157,6 @@
 
                    '(table? ev)
                    (do # (print "compiling tree!")
-                     (pp ev)
                      (put self :props ev)
                      (put self :root
                           (compile-tree
@@ -171,9 +169,7 @@
                             :text/size (self :text/size)
                             :old-root (self :root))))
 
-                   (do
-                     (print "handling events for: " (self :name))
-                     (handle-ev (self :root) ev (self :name))))
+                   (handle-ev (self :root) ev (self :name)))
 
                  ([err fib]
                    (print "Error during event:")
