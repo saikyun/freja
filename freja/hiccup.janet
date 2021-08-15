@@ -44,12 +44,14 @@
   (var y 0)
   (var row-h 0)
 
+  (def max-h (dyn :event-max-h))
+
   (loop [c :in cs
          :let [{:width w
                 :height h
                 :left x
                 :top y} c]
-         :until taken]
+         :until (or taken (> y max-h))]
 
     #(with-dyns [:offset-x (+ (dyn :offset-x))
     #            :offset-y (+ (dyn :offset-y))]
@@ -65,7 +67,8 @@
   # only run events if no one else has already taken the event
   (unless (frp/callbacks ev)
     (with-dyns [:offset-x 0
-                :offset-y 0]
+                :offset-y 0
+                :event-max-h (tree :height)]
       (when (elem-on-event tree ev)
         (frp/push-callback! ev
                             (fn []))))))
