@@ -100,7 +100,7 @@
      :label "Paste"}]
 
    [:padding {:all 8}
-    @{:render (fn [{:width w :height h}]
+    @{:render (fn [{:width w :height h} parent-x parent-y]
                 (draw-rectangle 0 0 w (inc h) 0xffffff22))
       :relative-sizing rs/block-sizing
       :children []

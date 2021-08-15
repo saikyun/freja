@@ -222,7 +222,7 @@
   (put render-tree :render |(do
                               #(when (= name :text-area)
                               #  (print "rendering hiccup"))
-                              (render $)))
+                              (render $ 0 0)))
 
   (default max-width (frp/screen-size :screen/width))
   (put render-tree :max-width max-width)

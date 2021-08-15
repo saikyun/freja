@@ -18,11 +18,6 @@
   [:padding {:left 0 :top 30}
    [:background {:color 0x9D9D9Dff}
     [:row {}
-     [:block {:weight 0.5}
-      ;(seq [v :in ["hello" "world"]]
-         [:clickable {:on-click (fn [self]
-                                  (print v))}
-          [:block {} v]])]
      [:block {:weight 1}
       [:background {:color (if (props :left-focus)
                              (t/comp-cols :background)

@@ -137,7 +137,7 @@
 
             el)
 
-          :render (fn [self]
+          :render (fn [self parent-x parent-y]
                     #                    (print "text area render")
                     (:draw state)
                     #(pp (get-in state [:gb :text]))
