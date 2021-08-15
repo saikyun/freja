@@ -470,7 +470,7 @@ Render lines doesn't modify anything in gb."
                            0
                            (lines i)))
       (set line-i i)
-      (print "skipped " i " lines")
+      # (print "skipped " i " lines")
       (break)))
 
   # just used for debugging
@@ -552,7 +552,8 @@ Render lines doesn't modify anything in gb."
 
       (set last-gb-index l)))
 
-  (print "rendered " nof-lines " lines"))
+  #  (print "rendered " nof-lines " lines")
+)
 
 (varfn line-of-i
   [gb i]
@@ -988,8 +989,6 @@ This function is pretty expensive since it redoes all word wrapping."
   (def start-pos (if-not start-line
                    0
                    (lines start-line)))
-
-  (print "calc word wrap again")
 
   (word-wrap-gap-buffer
     gb

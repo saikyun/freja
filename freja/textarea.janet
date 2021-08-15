@@ -12,7 +12,7 @@
 
 (defn text-area-on-event
   [self ev]
-
+  (var lul false)
   (match ev
     [:key-down k]
     (do
@@ -20,30 +20,37 @@
         (self :gb)
         k)
       (put self :event/changed true))
+
     [:char k]
     (do
       (i/handle-keyboard-char
         (self :gb)
         k)
       (put self :event/changed true))
+
     [:scroll n mp]
     (when (c/in-rec? mp
                      (i/gb-rec (self :gb)))
 
-      (frp/push-callback! ev (fn []
-                               (i/handle-scroll-event (self :gb) n)
-                               (put self :event/changed true))))
+      (set lul
+           (fn []
+             (i/handle-scroll-event (self :gb) n)
+             (put self :event/changed true))))
 
     ['(i/mouse-events (first ev)) _]
     (i/handle-mouse-event
       (self :gb)
       ev
       (fn [kind f]
-        (frp/push-callback! ev (fn []
-                                 (f)
-                                 #(print "changing focus to: " (self :id))
-                                 (e/put! state/focus123 :focus self)
-                                 (put (self :gb) :event/changed true)))))))
+        (print "setting lul!")
+        (set lul (fn []
+                   (f)
+                   (print "lul")
+                   (print "changing focus to: " (self :id))
+                   (e/put! state/focus :focus self)
+                   (put (self :gb) :event/changed true))))))
+
+  lul)
 
 
 (defn default-textarea-state
@@ -63,12 +70,22 @@
          (-> (merge-into @{} extra-binds)
              (table/setproto i/gb-binds))))
 
+  (update gap-buffer :blink |(or $ 0))
+
   @{:gb gap-buffer
 
     :draw (fn [self]
-            (rgb/gb-pre-render (self :gb))
-            (rgb/gb-render-text (self :gb))
-            (rgb/render-cursor (self :gb)))
+            (def {:gb gb} self)
+            (rgb/gb-pre-render gb)
+            (rgb/gb-render-text gb)
+            (when (= self (state/focus :focus))
+              (when (> 30 (gb :blink))
+                (rgb/render-cursor gb))
+
+              (update gb :blink inc) # TODO: should be dt
+
+              (when (< 50 (gb :blink))
+                (put gb :blink 0))))
 
     :on-event (fn [self ev]
                 (text-area-on-event self ev))})
@@ -157,7 +174,10 @@
                                      (update-pos (ev 1))]))
 
                       #(text-area-on-event state new-ev)
-                      (:on-event state new-ev)
+                      (when-let [f (:on-event state new-ev)]
+                        (print "textarea callback")
+                        #(frp/push-callback! ev f)
+                        (f))
 
                       (def pos (new-ev
                                  (if (= :scroll (first new-ev))

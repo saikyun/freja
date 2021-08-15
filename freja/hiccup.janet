@@ -59,12 +59,17 @@
 
   taken)
 
+
 (defn handle-ev
-  [tree ev]
-  (with-dyns [:offset-x 0
-              :offset-y 0]
-    (when (elem-on-event tree ev)
-      (frp/push-callback! ev (fn [])))))
+  [tree ev name]
+  (unless (frp/callbacks ev)
+    (with-dyns [:offset-x 0
+                :offset-y 0]
+      (when (elem-on-event tree ev)
+        (frp/push-callback! ev
+                            (fn []
+                              (pp ev)
+                              (print "ev for " name " happened")))))))
 
 (defn compile-tree
   [hiccup props &keys {:max-width max-width
@@ -74,31 +79,35 @@
                        :text/size text/size
                        :old-root old-root}]
 
-  (put props :compilation/changed true)
+  (let [to-init @[]]
+    (put props :compilation/changed true)
 
-  (with-dyns [:text/font text/font
-              :text/size text/size
-              :text/get-font a/font]
-    (print "compiling tree...")
-    (def root #(test/timeit
-      (ch/compile [hiccup props]
-                  :tags tags
-                  :element old-root)
-      #)
+    (with-dyns [:text/font text/font
+                :text/size text/size
+                :text/get-font a/font]
+      (print "compiling tree...")
+      (def root #(test/timeit
+        (ch/compile [hiccup props]
+                    :tags tags
+                    :element old-root
+                    :to-init to-init)
+        #)
 )
 
-    #(print "sizing tree...")
-    (def root-with-sizes
-      #(test/timeit
-      (-> root
-          (def-siz/set-definite-sizes max-width max-height)
-          (rel-siz/set-relative-size max-width max-height))
-      #)
+      #(print "sizing tree...")
+      (def root-with-sizes
+        #(test/timeit
+        (-> root
+            (def-siz/set-definite-sizes max-width max-height)
+            (rel-siz/set-relative-size max-width max-height))
+        #)
 )
 
-    (put props :compilation/changed false)
+      (put props :compilation/changed false)
 
-    root-with-sizes)
+      (ch/init-all to-init)
+
+      root-with-sizes))
 
   #
 )
@@ -162,7 +171,9 @@
                             :text/size (self :text/size)
                             :old-root (self :root))))
 
-                   (handle-ev (self :root) ev))
+                   (do
+                     (print "handling events for: " (self :name))
+                     (handle-ev (self :root) ev (self :name))))
 
                  ([err fib]
                    (print "Error during event:")
@@ -237,7 +248,7 @@
 
   (frp/subscribe! props render-tree)
   (frp/subscribe-finally! frp/frame-chan render-tree)
-  (frp/subscribe! frp/mouse render-tree)
+  (frp/subscribe-first! frp/mouse render-tree)
   (frp/subscribe! frp/screen-size render-tree)
 
   render-tree)

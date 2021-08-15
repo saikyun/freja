@@ -598,7 +598,7 @@ Does bounds check as well."
     (-> gb
         (put :gap-start start)
         (put :gap-stop stop)
-        (update :lowest-changed-at start)
+        (update :lowest-changed-at min* start)
         commit!)))
 
 (varfn delete-region!

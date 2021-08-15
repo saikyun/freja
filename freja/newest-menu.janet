@@ -4,6 +4,7 @@
 (import freja/hiccup :as h)
 (import freja/events :as e)
 (import freja/frp)
+(import freja/state)
 (import freja/input :as i)
 (import freja/new_gap_buffer :as gb)
 
@@ -13,6 +14,12 @@
 (setdyn :pretty-format "%.40M")
 
 (defonce my-props @{})
+(defonce state @{})
+
+(put state :on-event (fn [self {:focus f}]
+                       (when (get (f :gb) :open-file)
+                         (print "focusing: " (f :id))
+                         (put self :focused-text-area (f :gb)))))
 
 (def label-color 0xffffffee)
 (def hotkey-color 0xffffffbb)
@@ -41,7 +48,7 @@
     :label label
     :hotkey hotkey}]
 
-  (default hotkey (i/get-hotkey ((frp/text-area :gb) :binds) f))
+  (default hotkey (i/get-hotkey ((state :focused-text-area) :binds) f))
   (assert hotkey (string "no hotkey for " f))
 
   [:row {}
@@ -50,7 +57,7 @@
     [:padding {:right 40}
      [:clickable {:on-click (fn [_]
                               (e/put! my-props :open-menu nil)
-                              (f (frp/text-area :gb)))}
+                              (f (state :focused-text-area)))}
       [:text {:color label-color
               :size 22
               :text label}]]]]
@@ -108,8 +115,10 @@
   [props & children]
   [:event-handler {:on-event
                    (fn [self [ev-kind]]
-                     (when (= ev-kind :release)
-                       (e/put! my-props :open-menu nil)))}
+                     (when (my-props :open-menu)
+                       (print "wtf?")
+                       (when (= ev-kind :release)
+                         (e/put! my-props :open-menu nil))))}
 
    [:padding {:left 0 :top 0}
     [:background {:color bar-bg}
@@ -151,8 +160,11 @@
 
 (defn init
   []
-  (h/new-layer :menu hiccup my-props
-               :remove-layer-on-error true))
+  (h/new-layer :menu hiccup
+               my-props
+               :remove-layer-on-error true)
+
+  (frp/subscribe! state/focus state))
 
 #
 # this will only be true when running load-file inside freja

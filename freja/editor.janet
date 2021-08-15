@@ -25,18 +25,18 @@
 
 (varfn search-backwards
   [props]
-     (let [search-term (string (gb/content props))
-           gb (props :search-target)]
-       (gb/put-caret gb (if (gb :selection)
-                          (min (gb :selection)
-                               (gb :caret))
-                          (gb :caret)))
-       (print "searching bbbb :O")
-       (when-let [i (gb/gb-find-backward! gb search-term)]
-         (-> gb
-             (gb/put-caret i)
-             (put :selection (gb/gb-find-forward! gb search-term))
-             (put :changed-selection true)))))
+  (let [search-term (string (gb/content props))
+        gb (props :search-target)]
+    (gb/put-caret gb (if (gb :selection)
+                       (min (gb :selection)
+                            (gb :caret))
+                       (gb :caret)))
+    (print "searching bbbb :O")
+    (when-let [i (gb/gb-find-backward! gb search-term)]
+      (-> gb
+          (gb/put-caret i)
+          (put :selection (gb/gb-find-forward! gb search-term))
+          (put :changed-selection true)))))
 
 
 (def file-open-binds
@@ -61,7 +61,8 @@
         :set-open set-open
         :state state
         :initial-path initial-path
-        :id id} props)
+        :id id
+        :focus-on-init focus-on-init} props)
 
   (assert state "Must define :state")
 
@@ -87,23 +88,23 @@
   (put-in editor-state [:gb :open-file]
           (fn [_]
             (set-open :file-open)
-            (e/put! state/focus123 :focus file-open)))
+            (e/put! state/focus :focus file-open)))
 
   (put-in editor-state [:gb :search]
           (fn [_]
             (set-open :search)
-            (e/put! state/focus123 :focus search-state)))
+            (e/put! state/focus :focus search-state)))
 
   (put-in file-open [:gb :escape]
           (fn [props]
             (set-open false)
-            (e/put! state/focus123 :focus editor-state)))
+            (e/put! state/focus :focus editor-state)))
 
   (put-in file-open [:gb :enter]
           (fn [props]
             (set-open false)
             (fh/load-file editor-state (string ((gb/commit! props) :text)))
-            (e/put! state/focus123 :focus editor-state)))
+            (e/put! state/focus :focus editor-state)))
 
   (put-in search-state [:gb :search-target] (editor-state :gb))
 
@@ -111,7 +112,7 @@
           (fn [props]
             (print "ESCAPE!")
             (set-open false)
-            (e/put! state/focus123 :focus editor-state)))
+            (e/put! state/focus :focus editor-state)))
 
   (put-in search-state [:gb :search] search)
   (put-in search-state [:gb :search-backwards] search-backwards)
@@ -143,7 +144,11 @@
 
    [:background {:color (t/colors :background)}
     [:padding {:left 6 :top 6}
-     [ta/textarea {:text/spacing 0.5
+     [ta/textarea {:init (when focus-on-init
+                           (defn focus-textarea-on-init [self _]
+                             (print "initing!")
+                             (e/put! state/focus :focus editor-state)))
+                   :text/spacing 0.5
                    :text/size 20
                    :text/font "MplusCode"
                    :text/color (t/colors :text)

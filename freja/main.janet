@@ -17,8 +17,6 @@
 (import ./assets :as assets)
 (put module/cache "freja/assets" assets)
 
-(import ./update-window-title)
-
 (def frp (require "./frp"))
 (import ./frp :as frp)
 (put module/cache "freja/frp" frp)
@@ -71,10 +69,7 @@
 (import ./hiccup :as hiccup)
 (put module/cache "freja/hiccup" hiccup)
 
-
-(import ./new_menu :as old-menu)
 (import ./newest-menu :as menu)
-(import ./init-text-areas)
 (import ./default-layout)
 
 (comment
@@ -223,18 +218,12 @@
                  :glyphs fonts/default-glyphs
                  :spacing 0.5}]
 
-        (set conf (fonts/load-font-from-mem state/gb-data tc))
-        (set conf (fonts/load-font-from-mem state/search-data tc))
-        (set conf2 (fonts/load-font-from-mem state/file-open-data tc))
-
         (put data :mouse (input/new-mouse-data))
 
         (set-target-fps 60)
 
         (run-init-file)
 
-#        (old-menu/init)
-        (update-window-title/init)
         (default-layout/init)
         (menu/init)
 
@@ -297,7 +286,7 @@
   (frp/init-chans)
 
   (when-let [file (get args 1)]
-    (file-handling/load-file init-text-areas/text-area-state file))
+    (set state/initial-file file))
 
   (start)
 
