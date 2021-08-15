@@ -7,6 +7,8 @@
 
 (def focus @{})
 
+(def editor-state @{})
+
 (var user-env (make-env))
 
 (defn ev/check

@@ -6,8 +6,6 @@
 (import freja/frp)
 (use freja/defonce)
 
-(defonce editor-state @{})
-
 (defn text-area-hc
   [props & _]
 
@@ -20,6 +18,11 @@
   [:padding {:left 0 :top 30}
    [:background {:color 0x9D9D9Dff}
     [:row {}
+     [:block {:weight 0.5}
+      ;(seq [v :in ["hello" "world"]]
+         [:clickable {:on-click (fn [self]
+                                  (print v))}
+          [:block {} v]])]
      [:block {:weight 1}
       [:background {:color (if (props :left-focus)
                              (t/comp-cols :background)
@@ -65,23 +68,23 @@
   (def c (h/new-layer
            :text-area
            text-area-hc
-           editor-state))
+           state/editor-state))
 
   (frp/subscribe!
     state/focus
     (fn [{:focus focus}]
 
-      (if (= focus (get-in editor-state [:left-state :editor]))
-        (unless (editor-state :left-focus)
-          (e/put! editor-state :left-focus true))
-        (when (editor-state :left-focus)
-          (e/put! editor-state :left-focus false)))
+      (if (= focus (get-in state/editor-state [:left-state :editor]))
+        (unless (state/editor-state :left-focus)
+          (e/put! state/editor-state :left-focus true))
+        (when (state/editor-state :left-focus)
+          (e/put! state/editor-state :left-focus false)))
 
-      (if (= focus (get-in editor-state [:right-state :editor]))
-        (unless (editor-state :right-focus)
-          (e/put! editor-state :right-focus true))
-        (when (editor-state :right-focus)
-          (e/put! editor-state :right-focus false))))))
+      (if (= focus (get-in state/editor-state [:right-state :editor]))
+        (unless (state/editor-state :right-focus)
+          (e/put! state/editor-state :right-focus true))
+        (when (state/editor-state :right-focus)
+          (e/put! state/editor-state :right-focus false))))))
 
 #
 # this will only be true when running load-file inside freja
