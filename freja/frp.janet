@@ -190,10 +190,6 @@ Emits events when rerendering is needed.
 
 (defn push-callback!
   [ev cb]
-  (print "pushing callback to ")
-  (pp ev)
-  (debug/stacktrace (fiber/current))
-  (print)
   (e/update! callbacks ev (fn [chan]
                             (default chan (ev/chan 1))
                             (ec/push! chan cb)

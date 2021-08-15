@@ -37,10 +37,10 @@
                              (t/comp-cols :background)
                              :blank)}
        [:padding {:all 2}
-      [e/editor @{:state (props :right-state)
-                  :id :right
-                  :open (props :right-open)
-                  :set-open |(do (print "opening: " $) (e/put! props :right-open $))}]]]]
+        [e/editor @{:state (props :right-state)
+                    :id :right
+                    :open (props :right-open)
+                    :set-open |(do (print "opening: " $) (e/put! props :right-open $))}]]]]
 
      #
 ]]])
@@ -70,13 +70,16 @@
   (frp/subscribe!
     state/focus
     (fn [{:focus focus}]
+
       (if (= focus (get-in editor-state [:left-state :editor]))
-        (e/put! editor-state :left-focus true)
+        (unless (editor-state :left-focus)
+          (e/put! editor-state :left-focus true))
         (when (editor-state :left-focus)
           (e/put! editor-state :left-focus false)))
 
       (if (= focus (get-in editor-state [:right-state :editor]))
-        (e/put! editor-state :right-focus true)
+        (unless (editor-state :right-focus)
+          (e/put! editor-state :right-focus true))
         (when (editor-state :right-focus)
           (e/put! editor-state :right-focus false))))))
 
