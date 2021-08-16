@@ -1,4 +1,4 @@
-(import ./editor :as e :fresh true)
+(import freja/editor :as e)
 (import freja/theme :as t)
 (import freja/hiccup :as h)
 (import freja/events :as e)

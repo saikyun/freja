@@ -61,6 +61,16 @@
 (import ./theme :as theme)
 (put module/cache "freja/theme" theme)
 
+
+
+(def textarea (require "./textarea"))
+(import ./textarea)
+(put module/cache "freja/textarea" textarea)
+
+(def editor (require "./editor"))
+(import ./editor)
+(put module/cache "freja/editor" editor)
+
 (import spork/netrepl)
 (import spork/path)
 (setdyn :pretty-format "%.40M")
@@ -266,6 +276,8 @@
   (put module/cache "freja/file-handling" file-handling)
   (put module/cache "freja/new_gap_buffer" new_gap_buffer)
   (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
+  (put module/cache "freja/textarea" textarea)
+  (put module/cache "freja/editor" editor)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
