@@ -6,6 +6,32 @@
 (import freja/frp)
 (use freja/defonce)
 
+(defn default-left-editor
+  [props & _]
+  [:background {:color (if (props :left-focus)
+                         (t/comp-cols :background)
+                         :blank)}
+   [:padding {:all 2}
+    [e/editor {:state (props :left-state)
+               :id :left
+               :focus-on-init true
+               :initial-path state/initial-file
+               :open (props :left-open)
+               :set-open |(e/put! props :left-open $)}]]])
+
+(defn default-right-editor
+  [props & _]
+  [:background {:color (if (props :right-focus)
+                         (t/comp-cols :background)
+                         :blank)}
+   [:padding {:all 2}
+    [e/editor @{:state (props :right-state)
+                :id :right
+                :open (props :right-open)
+                :set-open |(do (print "opening: " $)
+                             (e/put! props :right-open $))}]]])
+
+
 (defn text-area-hc
   [props & _]
 
@@ -19,42 +45,22 @@
    [:background {:color 0x9D9D9Dff}
     [:row {}
      [:block {:weight 1}
-      [:background {:color (if (props :left-focus)
-                             (t/comp-cols :background)
-                             :blank)}
-       [:padding {:all 2}
-        [e/editor {:state (props :left-state)
-                   :id :left
-                   :focus-on-init true
-                   :initial-path state/initial-file
-                   :open (props :left-open)
-                   :set-open |(e/put! props :left-open $)}]]]]
+      [(props :left) props]]
      #[:block {:width 2}]
      [:block {:weight 1}
-      [:background {:color (if (props :right-focus)
-                             (t/comp-cols :background)
-                             :blank)}
-       [:padding {:all 2}
-        [e/editor @{:state (props :right-state)
-                    :id :right
-                    :open (props :right-open)
-                    :set-open |(do (print "opening: " $) (e/put! props :right-open $))}]]]]
+      [(props :right) props]]
 
      #
-]]])
+]
+
+    #
+]])
 
 (comment
-  # old way
-  (defn text-area-hc
-    [props & _]
+  (e/put! state/editor-state :right
+          (fn [props & _]
+            "hej"))
 
-    [:background {:color (t/comp-cols :background)}
-     [:padding {:left 0 :top 30}
-      [:row {}
-       [:block {:weight 1}
-        [text-area {:state text-area-state}]]]]
-     #
-])
   #
 )
 
@@ -64,6 +70,14 @@
            :text-area
            text-area-hc
            state/editor-state))
+
+  (e/put! state/editor-state
+          :left
+          default-left-editor)
+
+  (e/put! state/editor-state
+          :right
+          default-right-editor)
 
   (frp/subscribe!
     state/focus
