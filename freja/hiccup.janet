@@ -14,6 +14,8 @@
 
 (var children-on-event nil)
 
+(use profiling/profile)
+
 (defn elem-on-event
   [e ev]
   # traverse children first
@@ -42,12 +44,14 @@
   (var y 0)
   (var row-h 0)
 
+  (def max-h (dyn :event-max-h))
+
   (loop [c :in cs
          :let [{:width w
                 :height h
                 :left x
                 :top y} c]
-         :until taken]
+         :until (or taken (> y max-h))]
 
     #(with-dyns [:offset-x (+ (dyn :offset-x))
     #            :offset-y (+ (dyn :offset-y))]
@@ -57,12 +61,17 @@
 
   taken)
 
+
 (defn handle-ev
-  [tree ev]
-  (with-dyns [:offset-x 0
-              :offset-y 0]
-    (when (elem-on-event tree ev)
-      (frp/push-callback! ev (fn [])))))
+  [tree ev name]
+  # only run events if no one else has already taken the event
+  (unless (frp/callbacks ev)
+    (with-dyns [:offset-x 0
+                :offset-y 0
+                :event-max-h (tree :height)]
+      (when (elem-on-event tree ev)
+        (frp/push-callback! ev
+                            (fn []))))))
 
 (defn compile-tree
   [hiccup props &keys {:max-width max-width
@@ -72,31 +81,35 @@
                        :text/size text/size
                        :old-root old-root}]
 
-  (put props :compilation/changed true)
+  (let [to-init @[]]
+    (put props :compilation/changed true)
 
-  (with-dyns [:text/font text/font
-              :text/size text/size
-              :text/get-font a/font]
-    #(print "compiling tree...")
-    (def root #(test/timeit
-      (ch/compile [hiccup props]
-                  :tags tags
-                  :element old-root)
-      #)
+    (with-dyns [:text/font text/font
+                :text/size text/size
+                :text/get-font a/font]
+      (print "compiling tree...")
+      (def root #(test/timeit
+        (ch/compile [hiccup props]
+                    :tags tags
+                    :element old-root
+                    :to-init to-init)
+        #)
 )
 
-    #(print "sizing tree...")
-    (def root-with-sizes
-      #(test/timeit
-      (-> root
-          (def-siz/set-definite-sizes max-width max-height)
-          (rel-siz/set-relative-size max-width max-height))
-      #)
+      #(print "sizing tree...")
+      (def root-with-sizes
+        #(test/timeit
+        (-> root
+            (def-siz/set-definite-sizes max-width max-height)
+            (rel-siz/set-relative-size max-width max-height))
+        #)
 )
 
-    (put props :compilation/changed false)
+      (put props :compilation/changed false)
 
-    root-with-sizes)
+      (ch/init-all to-init)
+
+      root-with-sizes))
 
   #
 )
@@ -121,7 +134,8 @@
            (with-dyns [:text/get-font a/font]
              ((self :render)
                (self :root))))
-   :on-event (fn [self ev]
+   :on-event (defnp hiccup-on-event [self ev]
+
                (try
                  (match ev
                    @{:screen/width w
@@ -158,13 +172,24 @@
                             :text/size (self :text/size)
                             :old-root (self :root))))
 
-                   (handle-ev (self :root) ev))
+                   (handle-ev (self :root) ev (self :name)))
+
                  ([err fib]
                    (print "Error during event:")
                    (pp ev)
+                   #(print "Hiccup: ")
+                   #(pp ((self :hiccup) (self :props)))
+                   #(print "Full tree:")
+                   #(pp (self :root))
+                   #(if (self :root)
+                   #  (do
+                   #    (print "Tree: ")
+                   #    (ch/print-tree (self :root)))
+                   #  (print "(self :root) is nil"))
                    (debug/stacktrace fib err)
-                   (print "Removing layer: " (self :name))
-                   (remove-layer (self :name) (self :props)))))})
+                   (when (self :remove-layer-on-error)
+                     (print "Removing layer: " (self :name))
+                     (remove-layer (self :name) (self :props))))))})
 
 (defn new-layer
   [name
@@ -175,7 +200,8 @@
           :max-height max-height
           :tags tags
           :text/font text/font
-          :text/size text/size}]
+          :text/size text/size
+          :remove-layer-on-error remove-layer-on-error}]
 
   (print "Adding hiccup layer: " name)
 
@@ -190,11 +216,16 @@
 
   (put render-tree :hiccup hiccup)
 
+  (put render-tree :remove-layer-on-error remove-layer-on-error)
+
   (put render-tree :name name)
   (put render-tree :props props)
 
   (default render jt/render)
-  (put render-tree :render render)
+  (put render-tree :render |(do
+                              #(when (= name :text-area)
+                              #  (print "rendering hiccup"))
+                              (render $ 0 0)))
 
   (default max-width (frp/screen-size :screen/width))
   (put render-tree :max-width max-width)
@@ -214,9 +245,9 @@
 
   (put props :event/changed true)
 
-  (put-in frp/deps [:deps props] [render-tree])
+  (frp/subscribe! props render-tree)
   (frp/subscribe-finally! frp/frame-chan render-tree)
-  (frp/subscribe! frp/mouse render-tree)
+  (frp/subscribe-first! frp/mouse render-tree)
   (frp/subscribe! frp/screen-size render-tree)
 
   render-tree)

@@ -12,6 +12,17 @@ Generally used for internal stuff.
 (import ./new_gap_buffer_util :prefix "")
 (use freja-jaylib)
 
+
+(defn min*
+  "`min` treating `nil` as a high number"
+  [a b]
+  (if a
+    (if b
+      (min a b)
+      a)
+    b))
+
+
 ### iterators
 
 (defmacro gb-iterate
@@ -587,6 +598,7 @@ Does bounds check as well."
     (-> gb
         (put :gap-start start)
         (put :gap-stop stop)
+        (update :lowest-changed-at min* start)
         commit!)))
 
 (varfn delete-region!
@@ -609,15 +621,17 @@ Updates caret etc as expected."
                (put :selection nil)
                (put-caret new-caret-pos)
                (put :changed true))]
-    (update gb :actions array/push
-            {:kind :delete
-             :start start
-             :stop stop
-             :caret-before caret
-             :selection-before selection
-             :content to-delete
-             :caret-after (gb :caret)
-             :selection-after (gb :selection)})))
+    (-> gb
+        (update :lowest-changed-at min* start)
+        (update :actions array/push
+                {:kind :delete
+                 :start start
+                 :stop stop
+                 :caret-before caret
+                 :selection-before selection
+                 :content to-delete
+                 :caret-after (gb :caret)
+                 :selection-after (gb :selection)}))))
 
 (varfn delete-selection!
   "Just runs `delete-region!` with the `selection` / `caret` as arguments."
@@ -661,15 +675,17 @@ Updates caret etc as expected."
                           (buffer/push-string gap to-the-right))))
               (update :caret |(max 0 (dec $)))))
 
-        (update gb :actions array/push
-                {:kind :delete
-                 :start (gb :caret)
-                 :stop caret
-                 :caret-before caret
-                 :selection-before selection
-                 :content to-delete
-                 :caret-after (gb :caret)
-                 :selection-after (gb :selection)})))))
+        (-> gb
+            (update :lowest-changed-at min* (gb :caret))
+            (update :actions array/push
+                    {:kind :delete
+                     :start (gb :caret)
+                     :stop caret
+                     :caret-before caret
+                     :selection-before selection
+                     :content to-delete
+                     :caret-after (gb :caret)
+                     :selection-after (gb :selection)}))))))
 
 (varfn delete-word-forward!
   "Deletes the word after the cursor."
@@ -756,15 +772,17 @@ Used e.g. when loading a file."
                            (buffer/push-byte gap c)
                            (buffer/push-string gap to-the-right))))
                (update :caret inc))]
-    (update gb
-            :actions
-            array/push
-            {:kind :insert
-             :caret-before caret-before
-             :content (c->s c)
-             :caret-after (gb :caret)
-             :start caret-before
-             :stop (gb :caret)})))
+    (-> gb
+        (update :lowest-changed-at min* caret-before)
+        (update
+          :actions
+          array/push
+          {:kind :insert
+           :caret-before caret-before
+           :content (c->s c)
+           :caret-after (gb :caret)
+           :start caret-before
+           :stop (gb :caret)}))))
 
 (varfn insert-string-at-caret*
   "Inserts string `s` at the position of the caret, without updating the caret or adding to the history.
@@ -774,12 +792,14 @@ You should probably use `insert-string-at-caret!` instead."
          :gap-start gap-start
          :gap gap} (move-gap-to-caret! gb)
         gap-i (- caret gap-start)]
-    (update gb :gap
-            (fn [gap]
-              (let [to-the-right (buffer/slice gap gap-i)]
-                (buffer/popn gap (- (length gap) gap-i))
-                (buffer/push-string gap s)
-                (buffer/push-string gap to-the-right))))))
+    (-> gb
+        (update :lowest-changed-to min* caret)
+        (update :gap
+                (fn [gap]
+                  (let [to-the-right (buffer/slice gap gap-i)]
+                    (buffer/popn gap (- (length gap) gap-i))
+                    (buffer/push-string gap s)
+                    (buffer/push-string gap to-the-right)))))))
 
 (varfn insert-string-at-caret!
   "Inserts string `s` at the position of the caret."
@@ -789,15 +809,17 @@ You should probably use `insert-string-at-caret!` instead."
                (insert-string-at-caret* s)
                (update :caret + (length s)))]
 
-    (update gb
-            :actions
-            array/push
-            {:kind :insert
-             :caret-before caret-before
-             :content s
-             :caret-after (gb :caret)
-             :start caret-before
-             :stop (gb :caret)})))
+    (-> gb
+        (update :lowest-changed-at min* caret-before)
+        (update
+          :actions
+          array/push
+          {:kind :insert
+           :caret-before caret-before
+           :content s
+           :caret-after (gb :caret)
+           :start caret-before
+           :stop (gb :caret)}))))
 
 (varfn insert-char!
   "Inserts at caret based on `k`, which generally comes from `jaylib/get-key-pressed`.
@@ -1104,7 +1126,15 @@ Otherwise moves the caret backward one character."
     :scroll 0
     :blink 0
 
-    :not-changed-timer 0})
+    :not-changed-timer 0
+
+    :lines @[]
+
+    :y-poses @[]
+
+    :line-flags @[]
+
+    :line-numbers @[]})
 
 
 ### render

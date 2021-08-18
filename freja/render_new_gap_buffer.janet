@@ -3,12 +3,13 @@
 (import ./dumb :prefix "")
 (import ./new_gap_buffer :prefix "")
 (import ./textfield_api :prefix "")
-(import ./text_rendering :prefix "")
+(import ./text_rendering :as tr)
 (import ./find_row_etc :prefix "")
+(import ./assets :as a)
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
 
-(def font-h 19)
+(use profiling/profile)
 
 (defn reset-blink
   [props]
@@ -62,6 +63,7 @@
     (if-not sz
       (let [sz (first (values sizes))]
         (print "no size for char " c ", using first sizes instead." sz)
+        #(debug/stacktrace (fiber/current))
         sz)
       sz)))
 
@@ -70,7 +72,9 @@
 Returns `nil` if the max width is never exceeded."
   [gb start stop max-width]
 
-  (def {:sizes sizes} gb)
+  # (def {:sizes sizes} gb)
+
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
   (var acc-w 0)
 
@@ -93,7 +97,7 @@ Returns `nil` if the max width is never exceeded."
   (var acc-w 0)
   (var last-w 0)
 
-  (def {:sizes sizes} gb)
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
   (or (gb-iterate
         gb
@@ -109,9 +113,12 @@ Returns `nil` if the max width is never exceeded."
       stop))
 
 (comment
+
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
+
   (with-dyns [:debug true]
     (let [gb {:text @"abc"
-              :sizes (gb-data :sizes)
+              :sizes sizes
               :gap-start 0
               :gap-stop 0
               :gap @"123"}]
@@ -131,16 +138,32 @@ Returns `nil` if the max width is never exceeded."
 
    gb
    start
+   start-line
+
    stop
    width
    h
    y-offset
    y-limit]
 
+  (def old-y-pos (get y-poses start-line 0))
+  (def old-line-number (get line-numbers start-line 1))
+
+  # remove everything after start
+  # since start is where a change (might) have happened
+  (array/remove lines (or start-line 0) (length lines))
+  (array/remove y-poses (or start-line 0) (length y-poses))
+  (array/remove line-flags (or start-line 0) (length line-flags))
+  (array/remove line-numbers (or start-line 0) (length line-numbers))
+  #(array/clear lines)
+  #(array/clear y-poses)
+  #(array/clear line-flags)
+  #(array/clear line-numbers)
+
   (var x 0)
-  (var y 0)
+  (var y old-y-pos)
   (var w 0)
-  (var line-number 1)
+  (var line-number old-line-number)
 
   (var s (buffer/new 1))
   (var beginning-of-word-i 0)
@@ -148,11 +171,6 @@ Returns `nil` if the max width is never exceeded."
   (def {:offset offset
         :width-of-last-line-number width-of-last-line-number} gb)
   (def [x-scale _] screen-scale)
-
-  (array/clear lines)
-  (array/clear y-poses)
-  (array/clear line-flags)
-  (array/clear line-numbers)
 
   (def treshold (- width (offset 0) (or width-of-last-line-number 0)))
 
@@ -164,7 +182,7 @@ Returns `nil` if the max width is never exceeded."
           (array/push lines beginning-of-word-i)
           (array/push line-numbers line-number)
           (array/push y-poses y)
-          (array/push line-flags :wordwrap)
+          (array/push line-flags :word-wrap)
           (+= y h))
         (set x old-w)
 
@@ -180,18 +198,18 @@ Returns `nil` if the max width is never exceeded."
             (array/push lines break-i)
             (array/push line-numbers line-number)
             (array/push y-poses y)
-            (array/push line-flags :wordwrap)
+            (array/push line-flags :word-wrap)
             (+= y h))))
 
       (+= x (+ old-w (first (get-size sizes c))))))
 
   (gb-iterate
     gb
-    start stop
+    start
+    stop
     i c
     (case c newline
       (do (check-if-word-is-too-wide w i c)
-
         (array/push lines i)
         (array/push line-numbers line-number)
         (++ line-number)
@@ -215,6 +233,7 @@ Returns `nil` if the max width is never exceeded."
       (let [new-w (+ w (first (get-size sizes c)))]
         (set w new-w)))
 
+    # TODO: this seem to be called WAY too much!
     (when (> (+ y y-offset) y-limit)
       (return stop-gb-iterate)))
 
@@ -269,7 +288,7 @@ Returns `nil` if the max width is never exceeded."
 
 (varfn width-between
   [gb start stop]
-  (def {:sizes sizes} gb)
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
   (def [x-scale y-scale] screen-scale)
   (var acc-w 0)
 
@@ -294,11 +313,10 @@ Returns `nil` if the max width is never exceeded."
   [gb start stop y]
   (def {:selection selection
         :colors colors
-        :conf conf
         :caret caret
-        :sizes sizes
         :offset offset
         :width-of-last-line-number width-of-last-line-number} gb)
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
   (def [x-scale y-scale] screen-scale)
 
   (when selection
@@ -308,7 +326,7 @@ Returns `nil` if the max width is never exceeded."
       (when (and (< sel-start stop)
                  (>= sel-stop start))
 
-        (var line-h font-h)
+        (var line-h (* (gb :text/size) (gb :text/line-height)))
         (var start-x nil)
         (var stop-x nil)
         (var acc-w 0)
@@ -372,11 +390,40 @@ Returns `nil` if the max width is never exceeded."
   (+ ((gb :offset) 1)
      y))
 
+(comment
+  (defn measure-text
+    [tc text]
+    (measure-text-ex (tc :font)
+                     text
+                     (math/floor (* (tc :mult) (tc :size)))
+                     (* (tc :mult) (tc :spacing))))
+  #
+)
+
+(defn gb-draw-text
+  [gb text pos color]
+  (def font (a/font (gb :text/font) (gb :text/size)))
+  (tr/draw-text* font
+                 text
+                 pos
+                 (gb :text/size)
+                 (gb :text/spacing)
+                 color))
+
+(defn gb-measure-text
+  [gb text]
+  (def font (a/font (gb :text/font) (gb :text/size)))
+  (tr/measure-text* font
+                    text
+                    (gb :text/size)
+                    (gb :text/spacing)))
+
+
 (varfn render-lines
   "Renders the lines in gap buffer.
 Also renders selection boxes.
 Render lines doesn't modify anything in gb."
-  [sizes conf gb lines start-index unused-start-y h y-limit]
+  [sizes gb lines start-index unused-start-y h y-limit]
   (def {:delim-ps delim-ps
         :y-poses y-poses
         :line-numbers line-numbers
@@ -423,38 +470,40 @@ Render lines doesn't modify anything in gb."
                            0
                            (lines i)))
       (set line-i i)
+      # (print "skipped " i " lines")
       (break)))
+
+  # just used for debugging
+  (var nof-lines 0)
 
   (if (= line-i nil)
     :do-nothing
     (loop [i :range [line-i (length lines)]
            :let [l (lines i)
-                 line-y (y-poses i)]]
+                 line-y (y-poses i)
+                 target-y (rel-y gb (- line-y line-start-y))]
+           :until (> target-y y-limit)]
+
+      (++ nof-lines)
       (set x 0)
 
       (render-selection-box gb last-gb-index l (- line-y line-start-y))
 
       ### render line numbers
       (when (gb :show-line-numbers)
-        (let [lns (string/format "%d" (line-numbers i))
-              lns-offset (defn measure-text
-                           [tc text]
-                           (measure-text-ex (tc :font)
-                                            text
-                                            (math/floor (* (tc :mult) (tc :size)))
-                                            (* (tc :mult) (tc :spacing))))]
-          (draw-text*2 conf
-                       lns
-                       [0
-                        (rel-y gb (- line-y line-start-y))]
-                       :gray
-                       x-scale)))
+        (let [lns (string/format "%d" (line-numbers i))]
+          (gb-draw-text gb
+                        lns
+                        [0
+                         (rel-y gb (- line-y line-start-y))]
+                        :gray)))
 
       (gb-iterate
         gb
         last-gb-index l
         i c
         (let [[w h] (get-size sizes c)]
+
           (put s 0 c)
 
           (when debug
@@ -475,34 +524,36 @@ Render lines doesn't modify anything in gb."
                         (< ((highlighting hl-i) 1) i))
               (++ hl-i)))
 
-          (draw-text*2 conf
-                       s
-                       [(math/floor (rel-text-x gb x))
-                        (math/floor (rel-y gb (- line-y line-start-y)))]
-                       (cond (in-selection? gb i)
-                         :white
+          (gb-draw-text gb
+                        s
+                        [(math/floor (rel-text-x gb x))
+                         (math/floor target-y)]
+                        (cond (in-selection? gb i)
+                          :white
 
-                         (and delim-ps
-                              (< delim-i (length delim-ps))
-                              (= ((delim-ps delim-i) 0) i))
-                         (get rb/colors ((delim-ps delim-i) 1) :pink)
+                          (and delim-ps
+                               (< delim-i (length delim-ps))
+                               (= ((delim-ps delim-i) 0) i))
+                          (get rb/colors ((delim-ps delim-i) 1) :pink)
 
-                         (and highlighting
-                              (< hl-i (length highlighting))
-                              (<= ((highlighting hl-i) 0) i))
-                         (get colors ((highlighting hl-i) 2) default-text-color)
+                          (and highlighting
+                               (< hl-i (length highlighting))
+                               (<= ((highlighting hl-i) 0) i))
+                          (get colors ((highlighting hl-i) 2) default-text-color)
 
-                         # else
-                         (get gb :text/color
-                              default-text-color))
-                       x-scale)
+                          # else
+                          (get gb :text/color
+                               default-text-color)))
 
           (+= x (* x-scale w))))
 
       (when debug
         (print))
 
-      (set last-gb-index l))))
+      (set last-gb-index l)))
+
+  #  (print "rendered " nof-lines " lines")
+)
 
 (varfn line-of-i
   [gb i]
@@ -518,7 +569,7 @@ Render lines doesn't modify anything in gb."
         line-flag (line-flags line-index)]
 
     (if (and (= i (lines line-index)) ## end of line
-             (= line-flag :wordwrap)
+             (= line-flag :word-wrap)
              (= stickiness :down))
       (inc line-index)
       line-index)))
@@ -621,11 +672,13 @@ Render lines doesn't modify anything in gb."
                                           ((gb :position) 1)))))
                           (min 0))
 
-                      (get-in gb [:conf :mult])))
+                      1 #mult
+))
       (put :changed-scroll true)))
 
 (varfn focus-caret
   [gb]
+  (print "focus caret")
   (let [[x y] (gb :caret-pos)
         y y # (+ y
         #  (- ((gb :y-poses) (line-of-i (gb :caret)))
@@ -654,7 +707,7 @@ Render lines doesn't modify anything in gb."
   [gb i]
   (let [l (dec (line-of-i gb i))
         lf (get-in gb [:line-flags l])]
-    (= (if (= :wordwrap lf)
+    (= (if (= :word-wrap lf)
          i
          (dec i))
        (get-in gb [:lines l]))))
@@ -709,18 +762,24 @@ This function is pretty expensive since it redoes all word wrapping."
   (def line-flags (gb :line-flags))
   (def line-numbers (gb :line-numbers))
 
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
+
+  (print "index->pos first")
   (word-wrap-gap-buffer
     gb
-    (gb :sizes)
+    #(gb :sizes)
+    sizes
     lines
     y-poses
     line-flags
     line-numbers
 
     gb
-    0 index
+    (or (last lines) 0)
+    (if (empty? lines) nil (dec (length lines)))
+    index
     (inner-width gb)
-    font-h
+    (* (gb :text/size) (gb :text/line-height))
     0
     99999999)
 
@@ -728,21 +787,27 @@ This function is pretty expensive since it redoes all word wrapping."
                gb
                (get lines (dec (line-of-i gb index)) 0)
                index)
-             (last y-poses)]]
+             (last y-poses)]
+        sizes (a/glyph-sizes (gb :text/font) (gb :text/size))]
+
+    (print "index->pos second")
     (word-wrap-gap-buffer
       gb
-      (gb :sizes)
+      #(gb :sizes)
+      sizes
       lines
       y-poses
       line-flags
       line-numbers
 
       gb
-      0 (gb-length gb)
+      (or (last lines) 0)
+      (if (empty? lines) nil (dec (length lines)))
+      (gb-length gb)
       (inner-width gb)
-      font-h
+      (* (gb :text/size) (gb :text/line-height))
       0
-      pos)
+      (pos 1))
 
     [(width-between
        gb
@@ -764,8 +829,7 @@ This function is pretty expensive since it redoes all word wrapping."
 (varfn index->pos
   [gb index]
   (def {:lines lines
-        :y-poses y-poses
-        :conf conf} gb)
+        :y-poses y-poses} gb)
   (let [# line-index (-> (max 0 (binary-search-closest
         #                         lines
         #                         |(compare index $)))
@@ -783,7 +847,6 @@ This function is pretty expensive since it redoes all word wrapping."
     [x y]))
 
 (comment
-  (gb-data :conf)
   (gb-data :y-poses)
 
   (with-dyns [:debug true]
@@ -802,69 +865,66 @@ This function is pretty expensive since it redoes all word wrapping."
                       res)))
      (do ,;body)))
 
-(varfn generate-texture
-  [gb]
-  (def {:position position
-        :offset offset
-        :sizes sizes
-        :size size
-        :conf conf
-        :colors colors
-        :scroll scroll
-        :changed changed
-        :changed-x-pos changed-x-pos
-        :changed-nav changed-nav
-        :changed-selection changed-selection
-        :width-of-last-line-number width-of-last-line-number
-        :lines lines
-        :y-poses y-poses
-        :line-flags line-flags
-        :scroll scroll}
-    gb)
+(varfnp generate-texture
+        [gb]
+        (def {:position position
+              :offset offset
+              #        :sizes sizes
+              :size size
+              :colors colors
+              :scroll scroll
+              :changed changed
+              :changed-x-pos changed-x-pos
+              :changed-nav changed-nav
+              :changed-selection changed-selection
+              :width-of-last-line-number width-of-last-line-number
+              :lines lines
+              :y-poses y-poses
+              :line-flags line-flags}
+          gb)
 
-  (def [x-scale y-scale] screen-scale)
+        (def [x-scale y-scale] screen-scale)
 
-  (def [x y] position)
-  (def [ox oy] offset)
-  (def [w _] size)
+        (def [x y] position)
+        (def [ox oy] offset)
+        (def [w _] size)
 
-  (def screen-w (* x-scale (get-screen-width)))
-  (def screen-h (* y-scale (get-screen-height)))
+        (def screen-w (* x-scale (get-screen-width)))
+        (def screen-h (* y-scale (get-screen-height)))
 
-  (begin-texture-mode (gb :texture))
+        (begin-texture-mode (gb :texture))
 
-  (rl-push-matrix)
+        (rl-push-matrix)
 
-  (rl-load-identity)
+        (rl-load-identity)
 
-  #  (rl-scalef 1 1 1)
+        #  (rl-scalef 1 1 1)
 
-  (clear-background (or (gb :background)
-                        (colors :background)
-                        #:blue
-)
-                    #(colors :background)
-)
+        # you can use blank for slightly thinner text
+        (clear-background (or #:blank
+                              (gb :background)
+                              (colors :background)
+                              :blue))
 
-  (timeit "render lines"
-          (render-lines sizes
-                        conf
-                        gb
-                        (gb :lines)
-                        0
-                        (+ (offset 1) (- (gb :scroll)))
-                        (* y-scale font-h)
-                        (height gb)))
+        (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
-  # not sure why I have to do this 
-  # I thought rl-pop-matrix would be enough
-  #  (rl-load-identity) 
+        (render-lines sizes
+                      gb
+                      (gb :lines)
+                      0
+                      (+ (offset 1) (- (gb :scroll)))
+                      (* y-scale (* (gb :text/size) (gb :text/line-height)))
+                      (height gb))
 
-  #  (rl-scalef 2 2 1)
+        # not sure why I have to do this 
+        # I thought rl-pop-matrix would be enough
+        #  (rl-load-identity) 
 
-  (rl-pop-matrix)
+        #  (rl-scalef 2 2 1)
 
-  (end-texture-mode))
+        (rl-pop-matrix)
+
+        (end-texture-mode))
 
 (defn document-bottom
   [gb y]
@@ -872,16 +932,111 @@ This function is pretty expensive since it redoes all word wrapping."
      (- (gb :scroll))
      (min (get-screen-height) (height gb))))
 
+(defn ensure-render-texture
+  [gb]
+  (when-let [t (and (gb :resized)
+                    (gb :texture))]
+    (unload-render-texture t)
+    (put gb :texture nil))
+
+  (unless (gb :texture)
+    (let [[x-scale y-scale] screen-scale
+          w (* x-scale (width gb))
+          h (* y-scale (height gb))
+          rt (load-render-texture w h)]
+      (put gb :texture rt))))
+
+(defnp word-wrap
+  [gb]
+  (def {:position position
+        :offset offset
+        :size size
+        :colors colors
+        :scroll scroll
+        :changed changed
+        :lowest-changed-at change-pos
+        :changed-x-pos changed-x-pos
+        :changed-nav changed-nav
+        :changed-selection changed-selection
+        :changed-styling changed-styling
+        :resized resized
+        :width-of-last-line-number width-of-last-line-number
+        :lines lines
+        :y-poses y-poses
+        :line-flags line-flags
+        :line-numbers line-numbers}
+    gb)
+
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
+
+  (var start-line (cond (empty? lines)
+                    nil
+
+                    (not changed)
+                    (dec (length lines))
+
+                    (not change-pos)
+                    nil
+
+                    # else
+                    (dec (line-of-i gb change-pos))))
+
+  (while (= :word-wrap (get line-flags start-line))
+    (-- start-line))
+
+  (set start-line (if (neg? start-line) nil start-line))
+
+  (def start-pos (if-not start-line
+                   0
+                   (lines start-line)))
+
+  (word-wrap-gap-buffer
+    gb
+    sizes
+    lines
+    y-poses
+    line-flags
+    line-numbers
+
+    gb
+    start-pos
+    start-line
+
+    (gb-length gb)
+    (inner-width gb)
+    (* (gb :text/size) (gb :text/line-height))
+    0
+    (+ 0 (- (height gb) scroll))))
+
+(defnp refocus-caret
+  [gb]
+
+  (let [caret-y ((gb :caret-pos) 1)
+        scroll (* 1 #mult
+                  (- (gb :scroll)))]
+    (when (< caret-y scroll)
+      (focus-caret gb))
+
+    # caret-y is relative to document
+    (when (and (> caret-y 0)
+               (>= caret-y
+                   (document-bottom gb (- (* (gb :text/size) (gb :text/line-height))))))
+
+      ## index->pos! recalculates lines etc
+      ## in order to find the "real" position of the caret
+      ## this function shouldn't be called needlessly
+      (put gb :caret-pos (index->pos! gb (gb :caret)))
+      (focus-caret gb))))
+
 (varfn gb-pre-render
   [gb]
   (def {:position position
         :offset offset
-        :sizes sizes
         :size size
-        :conf conf
         :colors colors
         :scroll scroll
         :changed changed
+        :lowest-changed-at change-pos
         :changed-x-pos changed-x-pos
         :changed-nav changed-nav
         :changed-selection changed-selection
@@ -892,26 +1047,13 @@ This function is pretty expensive since it redoes all word wrapping."
         :lines lines
         :y-poses y-poses
         :line-flags line-flags
-        :line-numbers line-numbers
-        :scroll scroll}
+        :line-numbers line-numbers}
     gb)
+
+  (def [x y] size)
   (def [x-scale y-scale] screen-scale)
 
-  (def [x y] position)
-  (def [w _] size)
-
-  (def screen-w (* x-scale (get-screen-width)))
-  (def screen-h (* y-scale (get-screen-height)))
-
-  (when-let [t (and (gb :resized)
-                    (gb :texture))]
-    (unload-render-texture t)
-    (put gb :texture nil))
-
-  (when (not (gb :texture))
-    (put gb :texture (load-render-texture (* x-scale (width gb))
-                                          (* y-scale (height gb)) #screen-w screen-h
-)))
+  (ensure-render-texture gb)
 
   (when (or resized
             changed
@@ -921,49 +1063,10 @@ This function is pretty expensive since it redoes all word wrapping."
             changed-styling)
 
     (when changed
-      (set timing-enabled false) # set-timing
+      (put gb :delim-ps (rb/gb->delim-ps gb)))
 
-      (timeit "delim ps"
-              (put gb :delim-ps (rb/gb->delim-ps gb))))
-
-    (when changed
-      #      (timeit "hl" (put gb :highlighting (hl/gb->styling gb)))
-)
-
-    (def lines (or lines @[]))
-    (put gb :lines lines)
-
-    (def y-poses (or y-poses @[]))
-    (put gb :y-poses y-poses)
-
-    (def line-flags (or line-flags @[]))
-    (put gb :line-flags line-flags)
-
-    (def line-numbers (or line-numbers @[]))
-    (put gb :line-numbers line-numbers)
-
-    (var lines (if (or changed changed-scroll)
-                 (timeit "word wrap" (let [sizes sizes]
-                                       (word-wrap-gap-buffer
-                                         gb
-                                         sizes
-                                         lines
-                                         y-poses
-                                         line-flags
-                                         line-numbers
-
-                                         gb
-                                         0
-                                         (gb-length gb)
-                                         (inner-width gb)
-                                         font-h
-                                         y
-                                         (+ y (- (height gb) scroll)))))
-                 lines))
-
-    (put gb :width-of-last-line-number
-         (* x-scale
-            (first (measure-text conf (string/format "%d" (length lines))))))
+    (when (or changed changed-scroll)
+      (word-wrap gb))
 
     (put gb :caret-pos (index->pos gb (gb :caret)))
 
@@ -971,32 +1074,36 @@ This function is pretty expensive since it redoes all word wrapping."
       (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
 
     (when (and (not (gb :dont-refocus)) (or changed changed-nav))
-      (timeit "carety things"
-              (let [caret-y ((gb :caret-pos) 1)
-                    scroll (* (conf :mult) (- (gb :scroll)))]
-                (when (< caret-y scroll)
-                  (focus-caret gb))
+      # can be changed by refocus-caret
+      (put gb :changed-scroll nil)
 
-                # caret-y is relative to document
-                (when (and (> caret-y 0)
-                           (>= caret-y
-                               (document-bottom gb (- font-h))))
+      (refocus-caret gb))
 
-                  ## index->pos! recalculates lines etc
-                  ## in order to find the "real" position of the caret
-                  ## this function shouldn't be called needlessly
-                  (put gb :caret-pos (index->pos! gb (gb :caret)))
-                  (focus-caret gb)))))
+    # refocusing can cause scroll to change
+    # when that happens, we word wrap again,
+    # since letters further down might be in view
+    (when (gb :changed-scroll)
+      (word-wrap gb))
+
+    ### TODO: figure out where to refocus
 
     (when (or resized
               changed
               changed-selection
               changed-styling
-              (gb :changed-scroll))
-      (timeit "generate texture" (generate-texture gb)))
+              (get gb :changed-scroll changed-scroll))
+
+      (put gb :width-of-last-line-number
+           (* x-scale
+              (first (gb-measure-text gb (string/format "%d" (length lines))))
+              #
+))
+
+      (generate-texture gb))
 
     #        (pp (ez-gb gb))
 
+    (put gb :lowest-changed-at nil)
     (put gb :resized nil)
     (put gb :changed false)
     (put gb :changed-x-pos false)
@@ -1008,9 +1115,8 @@ This function is pretty expensive since it redoes all word wrapping."
   [gb]
   (def {:position position
         :offset offset
-        :sizes sizes
+        #        :sizes sizes
         :size size
-        :conf conf
         :colors colors
         :scroll scroll
         :changed changed
@@ -1041,6 +1147,10 @@ This function is pretty expensive since it redoes all word wrapping."
 
   #  (rl-scalef 2 2 1)
 
+  ### CLEAR BACKGROUND
+  #(clear-background (or (gb :background)
+  #                      (colors :background)
+  #                      :blue))
   (draw-texture-pro
     (get-render-texture (gb :texture))
     [0 0 (* x-scale w)
@@ -1053,7 +1163,9 @@ This function is pretty expensive since it redoes all word wrapping."
 ]
     [0 0]
     0
-    :white)
+    :white
+    #(colors :background)
+)
 
   (rl-pop-matrix)
 
@@ -1066,9 +1178,8 @@ This function is pretty expensive since it redoes all word wrapping."
   [gb]
   (def {:position position
         :offset offset
-        :sizes sizes
+        #        :sizes sizes
         :size size
-        :conf conf
         :colors colors
         :scroll scroll
         :changed changed
@@ -1095,35 +1206,20 @@ This function is pretty expensive since it redoes all word wrapping."
 
     (draw-line-ex
       [cx cy]
-      [cx (+ cy (- font-h 1))]
+      [cx (+ cy (- (* (gb :text/size) (gb :text/line-height)) 1))]
       1
       (or (gb :caret/color) (get-in gb [:colors :caret]))))
 
   (rl-pop-matrix))
 
 (comment
-  (do (def gb {:text @"a b c "
-               :gap-start 0
-               :gap-stop 0
-               :gap @"1 2 3 "})
-    (def lines (let [sizes (text-data :sizes)
-                     lines @[]]
-                 (word-wrap-gap-buffer
-                   sizes
-                   lines
-                   gb
-                   0 (gb-length gb)
-                   30
-                   font-h
-                   0
-                   1000)))
 
-    (var last-i 0)
-    (loop [l :in lines]
-      (gb-iterate gb
-                  last-i l
-                  i c
-                  (prin (-> (buffer/new 1)
-                            (buffer/push-byte c))))
-      (print)
-      (set last-i l))))
+  (var last-i 0)
+  (loop [l :in lines]
+    (gb-iterate gb
+                last-i l
+                i c
+                (prin (-> (buffer/new 1)
+                          (buffer/push-byte c))))
+    (print)
+    (set last-i l)))

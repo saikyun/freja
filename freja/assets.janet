@@ -95,6 +95,8 @@ The font must already be registered using `register-font`.
             size))
 
   (put-in fonts [name style size] lf)
+  (put-in fonts [name style :glyph-sizes size]
+          (f/default-glyphs->size-struct lf size))
   (update-in fonts [name style :sizes] |(array/push (or $ @[]) size))
 
   lf)
@@ -140,7 +142,32 @@ Leaving `:style` empty will use the `:default-style` for the font.
   (default style (font :default-style))
 
   (or (get-in font [style size])
-      (load-font-with-size name size :style style))) #))
+      (load-font-with-size name size :style style)))
+
+(defn glyph-sizes
+  ``
+Given a font `name` and `size`, returns a table with each glyph and their size for the given font.
+
+To get information about a font (e.g. loaded styles), use `font-info`.
+
+## Optional keys
+
+`:style` -- choose style such as `:regular` or `:italic`  
+Leaving `:style` empty will use the `:default-style` for the font.
+``
+  [name size &keys {:style style}]
+  #(print "`(font  " name " " size ")`")
+  #(test/timeit (do
+  (def font (fonts name))
+
+  (assert font
+          (string "font with name " name " is not registered, use `register-font` first"))
+
+  (default style (font :default-style))
+
+  (or (get-in font [style :glyph-sizes size])
+      (do (load-font-with-size name size :style style)
+        (get-in font [style :glyph-sizes size]))))
 
 (comment
   (do

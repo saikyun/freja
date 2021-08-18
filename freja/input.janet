@@ -10,6 +10,12 @@
 (import ./find_row_etc :prefix "")
 (import ./collision :prefix "")
 
+(def mouse-events {:press :press
+                   :drag :drag
+                   :release :release
+                   :double-click :double-click
+                   :triple-click :triple-click})
+
 (varfn new-mouse-data
   []
   @{:just-down nil
@@ -176,6 +182,14 @@
 
 (table/setproto file-open-binds global-keys)
 
+(def search-binds
+  @{:escape |(:escape $)
+    :enter |(:search $)
+    :control @{:f |(:search $)
+               :b |(:search-backwards $)}})
+
+(table/setproto search-binds global-keys)
+
 (varfn handle-keyboard-char
   [props k]
 
@@ -305,16 +319,14 @@
         :line-flags line-flags
         :position position
         :offset offset
-        :conf conf
         :width-of-last-line-number width-of-last-line-number
         :scroll scroll} props)
-
-  (def {:mult mult} conf)
 
   (def [x-pos y-pos] position)
   (def [ox oy] offset)
 
-  (def y-offset (+ oy y-pos (* (conf :mult) scroll)))
+  (def y-offset (+ oy y-pos (* # (conf :mult)
+                               scroll)))
 
   (unless (empty? lines)
     (let [line-index (-> (binary-search-closest
@@ -330,17 +342,21 @@
                    props
                    row-start-pos
                    row-end-pos
-                   (- mx (* mult ox)
-                      (* mult x-pos)
-                      (* mult width-of-last-line-number)))
+                   (- mx (* 1 ox) # mult mult mult
+                      (* 1 x-pos)
+                      (* 1 width-of-last-line-number)))
 
           flag (line-flags (max 0 (dec line-index)))]
 
       (min
         (gb/gb-length props)
-        (cond (and (= flag :regular)
-                   (= row-start-pos char-i)) ## to the left of \n
+        (cond
+          (zero? char-i) char-i
+
+          (and (= flag :regular)
+               (= row-start-pos char-i)) ## to the left of \n
           (inc char-i)
+
           char-i)))))
 
 (varfn handle-shift-mouse-down
@@ -350,7 +366,6 @@
         :position position
         :y-poses y-poses
         :sizes sizes
-        :conf conf
         :scroll scroll} props)
 
   (def [ox oy] offset)
@@ -358,7 +373,8 @@
 
   (def [x y] mouse-pos)
 
-  (def y-offset (+ y-pos oy (* (conf :mult) scroll)))
+  (def y-offset (+ y-pos oy (* #(conf :mult)
+                               scroll)))
   (def x-offset (+ x-pos ox))
 
   (if (nil? (props :selection))
@@ -384,23 +400,18 @@
   [{:offset offset
     :position position
     :size size
-    :scroll scroll
-    :conf conf}]
+    :scroll scroll}]
 
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
 
-  (def y-offset (+ y-pos oy)) # (* (conf :mult) scroll)))
-  (def x-offset (+ x-pos ox))
+  (def y-offset 0) # (+ y-pos oy)) # (* (conf :mult) scroll)))
+  (def x-offset 0) #(+ x-pos ox))
 
   [x-offset
    y-offset
-   (match (size 0)
-     :max (- (get-screen-height) y-offset)
-     w w)
-   (match (size 1)
-     :max (- (get-screen-height) y-offset)
-     h h)])
+   (size 0)
+   (size 1)])
 
 (varfn handle-mouse-event
   [props event cb]
@@ -410,7 +421,6 @@
         :y-poses y-poses
         :size size
         :sizes sizes
-        :conf conf
         :scroll scroll} props)
   (def [kind mouse-pos] event)
   (def [x y] mouse-pos)
@@ -418,7 +428,8 @@
   (def [ox oy] offset)
   (def [x-pos y-pos] position)
 
-  (def y-offset (+ y-pos oy (* (conf :mult) scroll)))
+  (def y-offset (+ y-pos oy (* 1 #mult
+                               scroll)))
   (def x-offset (+ x-pos ox))
 
   (when (in-rec? mouse-pos
@@ -458,7 +469,9 @@
                       (put :stickiness (if (< x x-offset) :down :right))
                       (put :changed-nav true))))
 
-      (= kind :drag)
+      (and (= kind :drag)
+           # if this is nil, the press happened outside the textarea
+           (props :down-index))
       (cb kind |(let [down-pos (props :down-index)
                       curr-pos (get-mouse-pos props mouse-pos)]
 

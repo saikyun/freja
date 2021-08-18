@@ -145,16 +145,7 @@ Emits events when rerendering is needed.
 (var rerender nil)
 (var screen-size @{})
 
-
 (var delay-left @{})
-
-
-(def mouse-events {:press :press
-                   :drag :drag
-                   :release :release
-                   :double-click :double-click
-                   :triple-click :triple-click})
-
 
 (defn handle-keys
   [dt]
@@ -190,7 +181,6 @@ Emits events when rerendering is needed.
 #                                           ^ but using struct to visualise
 (def callbacks @{:event/changed false})
 
-
 (varfn handle-resize
   []
   (when (window-resized?)
@@ -213,248 +203,6 @@ Emits events when rerendering is needed.
 
   (loop [k :in (keys callbacks)]
     (put callbacks k nil)))
-
-(def button
-  @{:rec [300 20 100 50]
-    :color :green
-
-    :cb (fn [self]
-          (print "a " (self :color) " button was pressed"))
-
-    :draw (fn draw-button
-            [self]
-            (draw-rectangle-rec (self :rec) (self :color)))
-
-    :on-event (fn update-button
-                [self ev]
-                (def [kind data] ev)
-                (case kind
-                  :press (when (in-rec? data (self :rec))
-                           (push-callback! ev |(:cb self)))))})
-
-
-(defn text-area-on-event
-  [self ev]
-
-  (match ev
-    [:key-down k]
-    (do
-      (i/handle-keyboard2
-        (self :gb)
-        k)
-      (put self :event/changed true))
-    [:char k]
-    (do
-      (i/handle-keyboard-char
-        (self :gb)
-        k)
-      (put self :event/changed true))
-    [:scroll n mp]
-    (when (in-rec? mp
-                   (i/gb-rec (self :gb)))
-
-      (push-callback! ev (fn []
-                           (i/handle-scroll-event (self :gb) n)
-                           (put self :event/changed true))))
-
-    ['(mouse-events (first ev)) _]
-    (i/handle-mouse-event
-      (self :gb)
-      ev
-      (fn [kind f]
-        (push-callback! ev (fn []
-                             (f)
-                             #(print "changing focus to: " (self :id))
-                             (e/put! state/focus123 :focus self)
-                             (put (self :gb) :event/changed true)))))))
-
-(defn default-text-area
-  [&keys {:gap-buffer gap-buffer
-          :binds binds
-          :extra-binds extra-binds}]
-  (default gap-buffer (new-gap-buffer))
-
-  (default binds (table/setproto @{} i/gb-binds))
-
-  (merge-into gap-buffer
-              {:binds binds
-               :colors theme/colors})
-
-  (when extra-binds
-    (put gap-buffer :binds
-         (-> (merge-into @{} extra-binds)
-             (table/setproto i/gb-binds))))
-
-  (unless (gap-buffer :conf)
-    (put gap-buffer
-         :conf
-         fonts/default-font-conf)
-
-    (put gap-buffer :sizes
-         (fonts/default-font-conf :sizes)))
-
-  @{:gb gap-buffer
-
-    :draw (fn [self]
-            #            (rl-push-matrix)
-            (gb-pre-render (self :gb))
-
-            #            (rl-push-matrix)
-
-            #            (rl-load-identity)
-
-            (gb-render-text (self :gb))
-            #            (rl-pop-matrix)
-            #            (rl-pop-matrix)
-
-            (render-cursor (self :gb)))
-
-    :on-event (fn [self ev]
-                (text-area-on-event self ev))})
-
-(def text-area @{})
-
-(varfn search
-  [props]
-  (let [search-term (string (content props))]
-    (put-caret state/gb-data (if (state/gb-data :selection)
-                               (max (state/gb-data :selection)
-                                    (state/gb-data :caret))
-                               (state/gb-data :caret)))
-    (when-let [i (gb-find-forward! state/gb-data search-term)]
-      (-> state/gb-data
-          (reset-blink)
-          (put-caret i)
-          (put :selection (gb-find-backward! state/gb-data search-term))
-          (put :changed-selection true)))))
-
-(varfn search-backward2
-  [props]
-  (let [search-term (string (content props))]
-    (put-caret state/gb-data (if (state/gb-data :selection)
-                               (min (state/gb-data :selection)
-                                    (state/gb-data :caret))
-                               (state/gb-data :caret)))
-    (when-let [i (gb-find-backward! state/gb-data search-term)]
-      (-> state/gb-data
-          (reset-blink)
-          (put-caret i)
-          (put :selection (gb-find-forward! state/gb-data search-term))
-          (put :changed-selection true)))))
-
-
-(def search-area (default-text-area
-                   :gap-buffer state/search-data
-                   :binds
-                   (->
-                     @{:escape
-                       (fn [props]
-                         (e/put! state/focus123 :focus text-area)
-                         state/focus123)
-
-                       :enter search
-
-                       :control @{:f search
-
-                                  :b search-backward2}}
-
-                     (table/setproto i/global-keys))))
-
-(put search-area :id :search)
-
-(merge-into text-area (default-text-area
-                        :gap-buffer state/gb-data))
-(put text-area :id :main)
-
-(def file-open-area @{})
-
-(defn open-file
-  [_]
-  (e/put! state/focus123 :focus file-open-area))
-
-(merge-into state/gb-data
-            @{:search
-              (fn [props]
-                (e/put! state/focus123 :focus search-area))
-
-              :open-file
-              open-file})
-
-(merge-into
-  file-open-area
-  (default-text-area
-    :gap-buffer state/file-open-data
-    :binds
-    (-> i/file-open-binds
-        (merge-into @{:escape
-                      (fn [props]
-                        (e/put! state/focus123 :focus text-area))
-
-                      :enter (fn [props]
-                               (load-file text-area (string ((commit! props) :text)))
-                               (e/put! state/focus123 :focus text-area))}))))
-
-(put file-open-area :id :file-open)
-
-(def caret
-  @{:draw (fn [self]
-            (when-let [gb (and (self :on)
-                               (self :gb))]
-              (render-cursor gb)))
-
-    :on true
-
-    :on-event (fn [self ev]
-                (match ev
-                  {:focus state/focus123}
-                  (when (get-in state/focus123 [:gb :gap])
-                    (put self :gb (state/focus123 :gb))
-                    (set ((self :gb) :blink) 0)
-                    (put self :on true))
-
-                  [:dt dt]
-                  (when (self :gb)
-                    (when (zero? ((self :gb) :blink))
-                      (put self :on true))
-
-                    (update (self :gb) :blink + dt)
-
-                    (cond (and (> ((self :gb) :blink) 0.6)
-                               (self :on))
-                      (put self :on false)
-
-                      (> ((self :gb) :blink) 1.0)
-                      (do (set ((self :gb) :blink) 0)
-                        (put self :on true))
-
-                      #
-))))})
-
-(def button2
-  (table/setproto
-    @{:rec [350 30 100 50]
-      :color :blue}
-    button))
-
-(comment
-  (get-in state/focus123 [:focus :id])
-
-  (loop [[pullable pullers] :pairs dependencies]
-    (when-let [hi-i (find-index |(and (table? $) ($ :history)) pullers)]
-      (def history (pullers hi-i))
-      (array/remove pullers hi-i)
-      (case (type pullable)
-        :core/channel (e/pull-all (history :history) [pullable])
-        :table (do (loop [k :in (keys pullable)]
-                     (put pullable k nil))
-                 (merge-into pullable (history :history)))
-        (error (string "Strange" (type pullable))))
-      (array/push pullers history)))
-  #
-)
-
-# (e/record-all dependencies)
-# need to make gb-data not contain circular references etc
 
 (def mouse-data (i/new-mouse-data))
 
@@ -518,20 +266,7 @@ Emits events when rerendering is needed.
             (put mouse-data :last-pos pos)
             (ec/push! mouse @[:drag (get-mouse-position)])))))))
 
-(var deps @{})
-
-(def dependencies
-  @{mouse @[text-area search-area file-open-area]
-    keyboard @[|(:on-event (state/focus123 :focus) $)]
-    chars @[|(:on-event (state/focus123 :focus) $)]
-    state/focus123 @[caret]
-    callbacks @[handle-callbacks]})
-
-(def draws @[|(:draw text-area)
-             |(case (state/focus123 :focus)
-                search-area (:draw search-area)
-                file-open-area (:draw file-open-area))
-             |(:draw caret)])
+(def deps @{})
 
 (varfn render-deps
   [dt]
@@ -539,11 +274,7 @@ Emits events when rerendering is needed.
     (d)))
 
 (def finally
-  @{frame-chan [render-deps caret]})
-
-(merge-into deps @{:deps dependencies
-                   :draws draws
-                   :finally finally})
+  @{frame-chan [render-deps]})
 
 (varfn init-chans
   []
@@ -553,7 +284,20 @@ Emits events when rerendering is needed.
   (set chars (ev/chan 100))
   (set keyboard (ev/chan 100))
   (set frame-chan (ev/chan 1))
-  (set rerender (ev/chan 1)))
+  (set rerender (ev/chan 1))
+
+  (def dependencies
+    @{mouse @[]
+      keyboard @[|(:on-event (state/focus :focus) $)]
+      chars @[|(:on-event (state/focus :focus) $)]
+      state/focus @[]
+      callbacks @[handle-callbacks]})
+
+  (def draws @[])
+
+  (merge-into deps @{:deps dependencies
+                     :draws draws
+                     :finally finally}))
 
 (varfn trigger
   [dt]
@@ -576,11 +320,22 @@ Emits events when rerendering is needed.
 (comment
   (ec/push! mouse [:down [10 10]]))
 
+(defn subscribe-first!
+  "Take an event emitter (e.g. a ev/channel)
+and a callback (e.g. single arity function).
+Creates a regular subscription."
+  [emitter cb]
+  (debug/stacktrace (fiber/current))
+  (unless (find |(= $ cb) (get-in deps [:deps emitter] []))
+    (update-in deps [:deps emitter] (fn [$] @[cb ;(or $ [])]))))
+
+
 (defn subscribe!
   "Take an event emitter (e.g. a ev/channel)
 and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
+  (debug/stacktrace (fiber/current))
   (unless (find |(= $ cb) (get-in deps [:deps emitter] []))
     (update-in deps [:deps emitter] |(array/push (or $ @[]) cb))))
 
@@ -590,8 +345,9 @@ Creates a regular subscription."
 and a callback (e.g. single arity function).
 Creates a finally subscription."
   [emitter cb]
-  (unless (find |(= $ cb) (get-in deps [:finally emitter]))
-    (update-in deps [:finally emitter] array/push cb)))
+  (unless (find |(= $ cb) (get-in deps [:finally emitter] []))
+    (update-in deps [:finally emitter] |(array/push (or $ @[]) cb))))
+
 
 (defn unsubscribe-finally!
   "Take an event emitter (e.g. a ev/channel)

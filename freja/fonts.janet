@@ -13,6 +13,16 @@
 
 (def default-glyphs (string/bytes " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHI\nJKLMNOPQRSTUVWXYZ[]^_`abcdefghijklmn\nopqrstuvwxyz{|}~\\\r"))
 
+(defn default-glyphs->size-struct
+  [font size]
+  (def [x-scale _] screen-scale)
+  (glyphs->size-struct
+    {:size (* size x-scale)
+     :mult (/ 1 x-scale)
+     :spacing 1
+     :font font}
+    default-glyphs))
+
 (defn default-load-font
   [font-path size]
   (def [x-scale _] screen-scale)

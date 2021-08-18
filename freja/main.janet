@@ -12,13 +12,10 @@
 
 (import spork/test)
 (import ./code_api :prefix "")
-(import ./textfield :as t)
 
 (def assets (require "./assets"))
 (import ./assets :as assets)
 (put module/cache "freja/assets" assets)
-
-(import ./update-window-title)
 
 (def frp (require "./frp"))
 (import ./frp :as frp)
@@ -32,7 +29,11 @@
 (def fonts (require "./fonts"))
 (import ./fonts :as fonts)
 
-(import ./collision :prefix "")
+(def collision (require "./collision"))
+(import ./collision :as collision)
+(put module/cache "freja/collision" collision)
+
+
 (use ./highlighting)
 (import ./text_rendering :prefix "")
 
@@ -52,10 +53,23 @@
 (import ./new_gap_buffer :as new_gap_buffer)
 (put module/cache "freja/new_gap_buffer" new_gap_buffer)
 
-(import ./render_new_gap_buffer :prefix "")
+(def render_new_gap_buffer (require "./render_new_gap_buffer"))
+(import ./render_new_gap_buffer :as render_new_gap_buffer)
+(put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
 
 (def theme (require "./theme"))
 (import ./theme :as theme)
+(put module/cache "freja/theme" theme)
+
+
+
+(def textarea (require "./textarea"))
+(import ./textarea)
+(put module/cache "freja/textarea" textarea)
+
+(def editor (require "./editor"))
+(import ./editor)
+(put module/cache "freja/editor" editor)
 
 (import spork/netrepl)
 (import spork/path)
@@ -67,9 +81,8 @@
 (import ./hiccup :as hiccup)
 (put module/cache "freja/hiccup" hiccup)
 
-
-(import ./new_menu :as old-menu)
 (import ./newest-menu :as menu)
+(import ./default-layout)
 
 (comment
   (top-env 'ta/split-words))
@@ -121,6 +134,8 @@
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
 
+(use profiling/profile)
+
 (varfn internal-frame
   []
   (def dt (get-frame-time))
@@ -134,7 +149,9 @@
 
   (begin-drawing)
 
-  (clear-background (theme/colors :background))
+  (clear-background :white
+                    # (theme/colors :background)
+)
 
   (frp/trigger dt)
 
@@ -151,7 +168,8 @@
                            (error "QUIT!"))
 
                          (try
-                           (do (internal-frame)
+                           (do
+                             (internal-frame)
                              (ev/sleep 0.01))
                            ([err fib]
                              (let [path "text_experiment_dump"]
@@ -212,21 +230,14 @@
                  :glyphs fonts/default-glyphs
                  :spacing 0.5}]
 
-        (set conf (fonts/load-font-from-mem state/gb-data tc))
-
-        (set conf (fonts/load-font-from-mem state/search-data tc))
-
-        (set conf2 (fonts/load-font-from-mem state/file-open-data tc))
-
         (put data :mouse (input/new-mouse-data))
 
         (set-target-fps 60)
 
         (run-init-file)
 
-        (old-menu/init)
+        (default-layout/init)
         (menu/init)
-        (update-window-title/init)
 
         (set texture (load-render-texture 500 500))
 
@@ -256,6 +267,7 @@
 
   (put module/cache "freja/fonts" fonts)
   (put module/cache "freja/events" events)
+  (put module/cache "freja/collision" collision)
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/theme" theme)
   (put module/cache "freja/input" input)
@@ -263,6 +275,9 @@
   (put module/cache "freja/hiccup" hiccup)
   (put module/cache "freja/file-handling" file-handling)
   (put module/cache "freja/new_gap_buffer" new_gap_buffer)
+  (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
+  (put module/cache "freja/textarea" textarea)
+  (put module/cache "freja/editor" editor)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
@@ -286,7 +301,8 @@
   (frp/init-chans)
 
   (when-let [file (get args 1)]
-    (file-handling/load-file frp/text-area file))
+    (set state/initial-file file))
+
   (start)
 
   (print "JANET_PATH is: " (dyn :syspath)))
