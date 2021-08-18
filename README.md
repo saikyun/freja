@@ -25,10 +25,9 @@ If you get an old version, try running `[sudo] jpm clear-cache` before re-runnin
 ```
 git clone https://github.com/Saikyun/freja
 cd freja
-mkdir janet_libs
-JANET_PATH=./janet_libs jpm deps
-JANET_PATH=./janet_libs jpm build
-JANET_PATH=./janet_libs janet freja/main.janet
+sudo jpm deps
+jpm build
+janet freja/main.janet
 ```
 
 NOTE: When running freja from source, you must start it from the project directory.
