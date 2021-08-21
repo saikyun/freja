@@ -125,7 +125,6 @@ Emits events when rerendering is needed.
 
 (use freja-jaylib)
 
-(import ./extra_channel :as ec :fresh true)
 (import ./events :as e :fresh true)
 (import ./state :as state)
 (import ./keyboard :as kb :fresh true)
@@ -143,6 +142,8 @@ Emits events when rerendering is needed.
 (var keyboard nil)
 (var frame-chan nil)
 (var rerender nil)
+(var out nil)
+(var err nil)
 (var screen-size @{})
 
 (var delay-left @{})
@@ -152,13 +153,13 @@ Emits events when rerendering is needed.
   (var k (get-char-pressed))
 
   (while (not= 0 k)
-    (ec/push! chars @[:char k])
+    (e/push! chars @[:char k])
     (set k (get-char-pressed)))
 
   (loop [[k dl] :pairs delay-left
          :let [left ((update delay-left k - dt) k)]]
     (when (<= left 0)
-      (ec/push! keyboard @[:key-down k])
+      (e/push! keyboard @[:key-down k])
       (put delay-left k i/repeat-delay)))
 
   (loop [k :in kb/possible-keys]
@@ -167,13 +168,13 @@ Emits events when rerendering is needed.
 
     (when (key-pressed? k)
       (put delay-left k i/initial-delay)
-      (ec/push! keyboard @[:key-down k]))))
+      (e/push! keyboard @[:key-down k]))))
 
 (varfn handle-scroll
   []
   (let [move (get-mouse-wheel-move)]
     (when (not= move 0)
-      (ec/push! mouse @[:scroll (* move 30) (get-mouse-position)]))))
+      (e/push! mouse @[:scroll (* move 30) (get-mouse-position)]))))
 
 # table of callbacks, eg @{@[:down [10 10]  [|(print "hello") |(print "other")]}
 #                          ^ a mouse event  ^ queued callbacks
@@ -192,7 +193,7 @@ Emits events when rerendering is needed.
   [ev cb]
   (e/update! callbacks ev (fn [chan]
                             (default chan (ev/chan 1))
-                            (ec/push! chan cb)
+                            (e/push! chan cb)
                             chan)))
 
 (defn handle-callbacks
@@ -220,7 +221,7 @@ Emits events when rerendering is needed.
     (put mouse-data :recently-triple-clicked nil)
     (put mouse-data :up-pos [x y])
 
-    (ec/push! mouse @[:release (get-mouse-position)]))
+    (e/push! mouse @[:release (get-mouse-position)]))
 
   (when (mouse-button-pressed? 0)
     (when (and (mouse-data :down-time2)
@@ -241,12 +242,12 @@ Emits events when rerendering is needed.
       (put mouse-data :down-time2 (get-time))))
 
   (cond (mouse-data :just-triple-clicked)
-    (ec/push! mouse @[:triple-click (get-mouse-position)])
+    (e/push! mouse @[:triple-click (get-mouse-position)])
 
     (and (mouse-data :just-double-clicked)
          (not (key-down? :left-shift))
          (not (key-down? :right-shift)))
-    (ec/push! mouse @[:double-click (get-mouse-position)])
+    (e/push! mouse @[:double-click (get-mouse-position)])
 
     (or (mouse-data :recently-double-clicked)
         (mouse-data :recently-triple-clicked))
@@ -260,11 +261,11 @@ Emits events when rerendering is needed.
         (do (put mouse-data :just-down true)
           (put mouse-data :last-pos pos)
           (put mouse-data :down-pos pos)
-          (ec/push! mouse @[:press (get-mouse-position)]))
+          (e/push! mouse @[:press (get-mouse-position)]))
         (do (put mouse-data :just-down false)
           (unless (= pos (mouse-data :last-pos))
             (put mouse-data :last-pos pos)
-            (ec/push! mouse @[:drag (get-mouse-position)])))))))
+            (e/push! mouse @[:drag (get-mouse-position)])))))))
 
 (def deps @{})
 
@@ -285,13 +286,19 @@ Emits events when rerendering is needed.
   (set keyboard (ev/chan 100))
   (set frame-chan (ev/chan 1))
   (set rerender (ev/chan 1))
+  (set out (ev/chan 100))
+  (set err (ev/chan 100))
 
   (def dependencies
     @{mouse @[]
       keyboard @[|(:on-event (state/focus :focus) $)]
       chars @[|(:on-event (state/focus :focus) $)]
       state/focus @[]
-      callbacks @[handle-callbacks]})
+      callbacks @[handle-callbacks]
+      out @[|(with-dyns [:out stdout]
+               (print $))]
+      err @[|(with-dyns [:err stderr]
+               (eprint $))]})
 
   (def draws @[])
 
@@ -305,7 +312,7 @@ Emits events when rerendering is needed.
   (handle-scroll)
   (handle-resize)
 
-  (ec/push! frame-chan @[:dt dt])
+  (e/push! frame-chan @[:dt dt])
 
   (handle-mouse mouse-data)
 
@@ -313,12 +320,12 @@ Emits events when rerendering is needed.
     (when (mouse-button-pressed? 0)
       # uses arrays in order to have reference identity rather than value identity
       # relevant for callback handling
-      (ec/push! mouse @[:press (get-mouse-position)])))
+      (e/push! mouse @[:press (get-mouse-position)])))
 
   (e/pull-deps (deps :deps) (deps :finally)))
 
 (comment
-  (ec/push! mouse [:down [10 10]]))
+  (e/push! mouse [:down [10 10]]))
 
 (defn subscribe-first!
   "Take an event emitter (e.g. a ev/channel)
@@ -352,7 +359,7 @@ Creates a finally subscription."
 (defn unsubscribe-finally!
   "Take an event emitter (e.g. a ev/channel)
 and a callback (e.g. single arity function).
-Removes a finally subscription."
+Removes a finFally subscription."
   [emitter cb]
   (update-in deps [:finally emitter]
              (fn [subs] (filter |(not= $ cb) subs))))

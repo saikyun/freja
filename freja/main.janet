@@ -62,7 +62,6 @@
 (put module/cache "freja/theme" theme)
 
 
-
 (def textarea (require "./textarea"))
 (import ./textarea)
 (put module/cache "freja/textarea" textarea)
@@ -168,8 +167,13 @@
                            (error "QUIT!"))
 
                          (try
-                           (do
+                           (with-dyns [:out (buffer/clear state/out)
+                                       :err (buffer/clear state/err)]
                              (internal-frame)
+                             (unless (empty? state/out)
+                               (events/push! frp/out (string state/out)))
+                             (unless (empty? state/err)
+                               (events/push! frp/err (string state/err)))
                              (ev/sleep 0.01))
                            ([err fib]
                              (let [path "text_experiment_dump"]

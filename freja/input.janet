@@ -32,10 +32,12 @@
 
 (varfn eval-it
   [env code]
-  (print "Evaling! " code)
-  (try (do (fiber/setenv (fiber/current) state/user-env)
-         (def res (eval-string code))
-         (pp res))
+  (print "=> " (string/trim code))
+  (try (do
+         (fiber/setenv (fiber/current) state/user-env)
+         (with-dyns [:out state/out]
+           (def res (eval-string code))
+           (pp res)))
     ([err fib]
       (debug/stacktrace fib err))))
 

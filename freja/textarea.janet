@@ -89,7 +89,11 @@
         :text/font text/font
         :text/line-height text/line-height
         :text/spacing text/spacing
-        :show-line-numbers show-line-numbers} props)
+        :show-line-numbers show-line-numbers
+        #TODO: remove this when :vertical is added
+        :space-in-bottom space-in-bottom} props)
+
+  (default space-in-bottom 0)
 
   (default text/size (dyn :text/size 14))
   (default text/font (dyn :text/font "Poppins"))
@@ -119,7 +123,7 @@
             (-> el
                 (put :width (max 50 (or (el :preset-width) max-width)))
                 (put :height (max (get-in state [:gb :conf :size] 0)
-                                  (or (el :preset-height) max-height)))
+                                  (or (el :preset-height) (- max-height space-in-bottom))))
                 (put :content-width (el :width))
                 (put :layout/lines nil))
 
@@ -165,7 +169,7 @@
 
                       #(text-area-on-event state new-ev)
                       (:on-event state new-ev)
-                      
+
                       (def pos (new-ev
                                  (if (= :scroll (first new-ev))
                                    2

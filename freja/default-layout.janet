@@ -8,6 +8,8 @@
 
 (defn default-left-editor
   [props & _]
+  (def {:bottom bottom
+        :bottom-h bottom-h} props)
   [:background {:color (if (props :left-focus)
                          (t/comp-cols :background)
                          :blank)}
@@ -16,11 +18,16 @@
                :id :left
                :focus-on-init true
                :initial-path state/initial-file
+               # TODO: remove when :vertical is added
+               :space-in-bottom (when bottom
+                                  bottom-h)
                :open (props :left-open)
                :set-open |(e/put! props :left-open $)}]]])
 
 (defn default-right-editor
   [props & _]
+  (def {:bottom bottom
+        :bottom-h bottom-h} props)
   [:background {:color (if (props :right-focus)
                          (t/comp-cols :background)
                          :blank)}
@@ -28,12 +35,18 @@
     [e/editor @{:state (props :right-state)
                 :id :right
                 :open (props :right-open)
+                # TODO: remove when :vertical is added
+                :space-in-bottom (when bottom
+                                   bottom-h)
                 :set-open |(do (print "opening: " $)
                              (e/put! props :right-open $))}]]])
 
 
 (defn text-area-hc
   [props & _]
+
+  (def {:bottom bottom
+        :bottom-h bottom-h} props)
 
   (unless (props :left-state)
     (put props :left-state @{}))
@@ -42,6 +55,7 @@
     (put props :right-state @{}))
 
   [:padding {:left 0 :top 30}
+
    [:background {:color 0x9D9D9Dff}
     [:row {}
      [:block {:weight 1}
@@ -52,6 +66,10 @@
 
      #
 ]
+
+    (when bottom
+      [:block {:height (props :bottom-h)}
+       [bottom props]])
 
     #
 ]])

@@ -7,6 +7,9 @@
 
 (def focus @{})
 
+(def out @"")
+(def err @"")
+
 (def editor-state @{})
 
 (var user-env (make-env))

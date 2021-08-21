@@ -678,7 +678,6 @@ Render lines doesn't modify anything in gb."
 
 (varfn focus-caret
   [gb]
-  (print "focus caret")
   (let [[x y] (gb :caret-pos)
         y y # (+ y
         #  (- ((gb :y-poses) (line-of-i (gb :caret)))
@@ -764,7 +763,6 @@ This function is pretty expensive since it redoes all word wrapping."
 
   (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
-  (print "index->pos first")
   (word-wrap-gap-buffer
     gb
     #(gb :sizes)
@@ -790,7 +788,6 @@ This function is pretty expensive since it redoes all word wrapping."
              (last y-poses)]
         sizes (a/glyph-sizes (gb :text/font) (gb :text/size))]
 
-    (print "index->pos second")
     (word-wrap-gap-buffer
       gb
       #(gb :sizes)

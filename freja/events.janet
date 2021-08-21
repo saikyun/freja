@@ -2,7 +2,37 @@
 # events are pushed to queues
 # then things can pull from the queues
 
-(import ./extra_channel :as ec)
+
+# functions to not block the fiber when interacting with channels
+(defn pop
+  "Like ev/take but non-blocking, instead returns `nil` if the channel is empty."
+  [chan]
+  (when (pos? (ev/count chan))
+    (ev/take chan)))
+
+(defn push!
+  "Like ev/give, but if the channel is full, throw away the oldest value."
+  [chan v]
+  (when (ev/full chan)
+    (ev/take chan)) ## throw away old values
+  (ev/give chan v))
+
+(defn vs
+  "Returns the values in a channel."
+  [chan]
+  (def vs @[])
+  
+  # empty the queue
+  (loop [v :iterate (pop chan)]
+    (array/push vs v))
+  
+  # then put them back again
+  (loop [v :in vs]
+    (push! chan v))
+  
+  vs)
+
+
 
 # we want to be able to pull
 # multiple things should be able to pull from it
@@ -11,7 +41,7 @@
 (defn pull
   [pullable pullers]
   (when-let [v (case (type pullable)
-                 :core/channel (ec/pop pullable)
+                 :core/channel (pop pullable)
                  :table (when (pullable :event/changed)
                           (put pullable :event/changed false))
                  (error (string (type pullable) " is not a pullable.")))]
@@ -19,7 +49,7 @@
       (try
         (case (type puller)
           :function (puller v)
-          :core/channel (ec/push! puller v)
+          :core/channel (push! puller v)
           :table (:on-event puller v)
           (error (string "Pulling not implemented for " (type puller))))
         ([err fib]
@@ -53,7 +83,7 @@
       (array/push pullers
                   @{:history (ev/chan 10000)
                     :on-event (fn [self ev]
-                                (update self :history ec/push! ev))})
+                                (update self :history push! ev))})
 
       :table
       (array/push pullers

@@ -575,18 +575,22 @@ Does bounds check as well."
       (put :gap-start new-pos)
       (put :gap-stop new-pos)))
 
+(varfn move-gap-to-pos!
+  "Moves the gap to envelop the pos, if needed."
+  [gb pos]
+  (def {:gap-start gap-start
+        :gap-stop gap-stop
+        :gap gap} gb)
+
+  (if (or (< pos (+ gap-start (length gap)))
+          (> pos (+ gap-start (length gap))))
+    (put-gap-pos! gb pos)
+    gb))
+
 (varfn move-gap-to-caret!
   "Moves the gap to envelop the caret, if needed."
   [gb]
-  (def {:gap-start gap-start
-        :gap-stop gap-stop
-        :gap gap
-        :caret caret} gb)
-
-  (if (or (< caret (+ gap-start (length gap)))
-          (> caret (+ gap-start (length gap))))
-    (put-gap-pos! gb caret)
-    gb))
+  (move-gap-to-pos! gb (gb :caret)))
 
 ### removal
 
@@ -750,6 +754,10 @@ Used e.g. when loading a file."
       (update :gap buffer/clear)
       (update :text (comp |(buffer/push-string $ text) buffer/clear))
       (put :actions @[])
+      (update :lines array/clear)
+      (update :y-poses array/clear)
+      (update :line-flags array/clear)
+      (update :line-numbers array/clear)
       (put :redo-queue @[])
       (put :changed true)
       (put :gap-start 0)
@@ -784,22 +792,51 @@ Used e.g. when loading a file."
            :start caret-before
            :stop (gb :caret)}))))
 
-(varfn insert-string-at-caret*
-  "Inserts string `s` at the position of the caret, without updating the caret or adding to the history.
-You should probably use `insert-string-at-caret!` instead."
-  [gb s]
-  (let [{:caret caret
-         :gap-start gap-start
-         :gap gap} (move-gap-to-caret! gb)
-        gap-i (- caret gap-start)]
+(varfn insert-string-at-pos*
+  "Inserts string `s` at the `pos`, without updating the caret or adding to the history.
+You should probably use `insert-string-at-pos!` instead."
+  [gb pos s]
+  (let [{:gap-start gap-start
+         :gap gap} (move-gap-to-pos! gb pos)
+        gap-i (- pos gap-start)]
     (-> gb
-        (update :lowest-changed-to min* caret)
+        (update :lowest-changed-to min* pos)
         (update :gap
                 (fn [gap]
                   (let [to-the-right (buffer/slice gap gap-i)]
                     (buffer/popn gap (- (length gap) gap-i))
                     (buffer/push-string gap s)
                     (buffer/push-string gap to-the-right)))))))
+
+(varfn insert-string-at-caret*
+  "Inserts string `s` at the position of the caret, without updating the caret or adding to the history.
+You should probably use `insert-string-at-caret!` instead."
+  [gb s]
+  (insert-string-at-pos* gb (gb :caret) s))
+
+(varfn insert-string-at-pos!
+  "Inserts string `s` at `pos`."
+  [gb pos s]
+  (let [gb (insert-string-at-pos* gb pos s)]
+
+    (-> gb
+        (update :lowest-changed-at min* pos)
+        (put :changed-x-pos true)
+        (put :changed true)
+        (update
+          :actions
+          array/push
+          {:kind :insert
+           :caret-before pos
+           :content s
+           :caret-after pos
+           :start pos
+           :stop (+ pos (length s))}))))
+
+(defn append-string!
+  "Inserts string `s` at the end of `gb`."
+  [gb s]
+  (insert-string-at-pos! gb (gb-length gb) s))
 
 (varfn insert-string-at-caret!
   "Inserts string `s` at the position of the caret."
@@ -811,6 +848,8 @@ You should probably use `insert-string-at-caret!` instead."
 
     (-> gb
         (update :lowest-changed-at min* caret-before)
+        (put :changed-x-pos true)
+        (put :changed true)
         (update
           :actions
           array/push
@@ -889,6 +928,22 @@ Deletes selection."
         (put :changed-x-pos true))
     gb))
 
+(varfn end-of-buffer
+  "Moves the caret to end of the buffer."
+  [gb]
+  (-> gb
+      deselect
+      (put-caret (gb-length gb))
+      (put :changed-x-pos true)))
+
+(varfn beginning-of-buffer
+  "Moves the caret to beginning of the buffer."
+  [gb]
+  (-> gb
+      deselect
+      (put-caret 0)
+      (put :changed-x-pos true)))
+
 (varfn forward-char
   "If selection is made, clears the selection.
 Otherwise moves the caret forward one character."
@@ -945,9 +1000,7 @@ Otherwise moves the caret backward one character."
   [gb]
   (-> gb
       delete-selection!
-      (insert-string-at-caret! (get-clipboard-text))
-      (put :changed-x-pos true)
-      (put :changed true)))
+      (insert-string-at-caret! (get-clipboard-text))))
 
 
 ### undo
@@ -1129,11 +1182,8 @@ Otherwise moves the caret backward one character."
     :not-changed-timer 0
 
     :lines @[]
-
     :y-poses @[]
-
     :line-flags @[]
-
     :line-numbers @[]})
 
 

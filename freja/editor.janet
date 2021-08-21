@@ -57,7 +57,9 @@
         :state state
         :initial-path initial-path
         :id id
-        :focus-on-init focus-on-init} props)
+        :focus-on-init focus-on-init
+        # TODO: remove when :vertical is added
+        :space-in-bottom space-in-bottom} props)
 
   (assert state "Must define :state")
 
@@ -150,7 +152,8 @@
                    :text/font "MplusCode"
                    :text/color (t/colors :text)
                    :state editor-state
-                   :show-line-numbers true}]]]
+                   :show-line-numbers true
+                   :space-in-bottom space-in-bottom}]]]
 
    #
 ])

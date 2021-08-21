@@ -65,7 +65,7 @@
     (do
       (put state/user-env :freja/loading-file true)
       (dofile path
-              #             :env (fiber/getenv (fiber/current))
+              # :env (fiber/getenv (fiber/current))
               :env state/user-env)
       #      (merge-into top-env env)
 )
