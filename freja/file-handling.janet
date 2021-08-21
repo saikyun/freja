@@ -42,7 +42,7 @@
   (put text-data :text (buffer (text-data :after))))
 
 (varfn save-file
-  [props]
+  [props &keys {:no-print no-print}]
   (def path (props :path))
 
   (with [f (file/open path :w)]
@@ -50,11 +50,12 @@
                       commit!
                       (get :text)))
     (file/flush f)
-    (print "Saved file: " path)))
+    (unless no-print
+      (print "Saved file: " path))))
 
 (var last-path nil)
 
-(varfn inner-dofile
+(varfn freja-dofile
   [top-env path]
 
   (unless (= path last-path)
@@ -62,27 +63,32 @@
     (set last-path path))
 
   (try
-    (do
+    (with-dyns [:out state/out
+                :err state/err]
+      (print `=> (freja-dofile "` path `")`)
+
       (put state/user-env :freja/loading-file true)
+      (put state/user-env :out state/out)
+      (put state/user-env :err state/err)
       (dofile path
               # :env (fiber/getenv (fiber/current))
               :env state/user-env)
       #      (merge-into top-env env)
 )
     ([err fib]
-      (print "nope")
-      (print (debug/stacktrace fib err)))))
+      (with-dyns [:out state/out
+                  :err state/err]
+        (debug/stacktrace fib err)))))
 
 (varfn save-and-dofile
   [props]
   (def path (props :path))
-  (save-file props)
-  (print "Doing file: " path)
-  (inner-dofile (get-in props [:context :top-env]) path))
+  (save-file props :no-print true)
+  (freja-dofile (get-in props [:context :top-env]) path))
 
 (varfn df
   [path]
-  (do (inner-dofile (fiber/getenv (fiber/current)) path) :ok))
+  (do (freja-dofile (fiber/getenv (fiber/current)) path) :ok))
 
 
 (comment
