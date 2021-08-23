@@ -57,12 +57,16 @@
        x)
     w))
 
+(def warned-chars @{})
+
 (varfn get-size
   [sizes c]
   (let [sz (get sizes c)]
     (if-not sz
       (let [sz (first (values sizes))]
-        (print "no size for char " c ", using first sizes instead." sz)
+        (unless (warned-chars c)
+          (print "no size for char " c ", using first sizes instead." sz)
+          (put warned-chars c true))
         #(debug/stacktrace (fiber/current))
         sz)
       sz)))
@@ -579,7 +583,16 @@ Render lines doesn't modify anything in gb."
   (line-of-i gb (gb :caret)))
 
 (comment
-  (current-line gb-data))
+  (current-line gb-data)
+
+(keys state/editor-state)
+
+
+)
+
+
+(import freja/state)
+
 
 (varfn index-above-cursor
   [gb]

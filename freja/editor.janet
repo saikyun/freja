@@ -16,7 +16,6 @@
                        (max (gb :selection)
                             (gb :caret))
                        (gb :caret)))
-    (print "searching :O")
     (when-let [i (gb/gb-find-forward! gb search-term)]
       (-> gb
           (gb/put-caret i)
@@ -31,7 +30,6 @@
                        (min (gb :selection)
                             (gb :caret))
                        (gb :caret)))
-    (print "searching bbbb :O")
     (when-let [i (gb/gb-find-backward! gb search-term)]
       (-> gb
           (gb/put-caret i)
@@ -70,6 +68,7 @@
     (put state :search (ta/default-textarea-state :binds search-binds)))
 
   (unless (state :editor)
+    (print "new editor state for " id)
     (put state :editor (ta/default-textarea-state))
 
     (when initial-path
@@ -107,7 +106,6 @@
 
   (put-in search-state [:gb :escape]
           (fn [props]
-            (print "ESCAPE!")
             (set-open false)
             (e/put! state/focus :focus editor-state)))
 
@@ -115,7 +113,7 @@
   (put-in search-state [:gb :search-backwards] search-backwards)
 
   [:block {}
-   (when-let [c (tracev (props :open))]
+   (when-let [c (props :open)]
      [:background {:color (t/comp-cols :background)}
       [:padding {:all 4}
        (case c
@@ -145,7 +143,6 @@
     [:padding {:left 6 :top 6}
      [ta/textarea {:init (when focus-on-init
                            (defn focus-textarea-on-init [self _]
-                             (print "initing!")
                              (e/put! state/focus :focus editor-state)))
                    :text/spacing 0.5
                    :text/size 20

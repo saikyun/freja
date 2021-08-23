@@ -87,7 +87,7 @@
     (with-dyns [:text/font text/font
                 :text/size text/size
                 :text/get-font a/font]
-      (print "compiling tree...")
+      # (print "compiling tree...")
       (def root #(test/timeit
         (ch/compile [hiccup props]
                     :tags tags

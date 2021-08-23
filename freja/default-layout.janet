@@ -16,6 +16,7 @@
    [:padding {:all 2}
     [e/editor {:state (props :left-state)
                :id :left
+               # TODO: need to fix focus-on-init
                :focus-on-init true
                :initial-path state/initial-file
                # TODO: remove when :vertical is added
@@ -100,7 +101,6 @@
   (frp/subscribe!
     state/focus
     (fn [{:focus focus}]
-
       (if (= focus (get-in state/editor-state [:left-state :editor]))
         (unless (state/editor-state :left-focus)
           (e/put! state/editor-state :left-focus true))

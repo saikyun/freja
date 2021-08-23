@@ -69,6 +69,7 @@
 
 (defn file-menu
   [props]
+  (print "file menu")
   [:shrink {}
    [menu-row
     {:f i/open-file
@@ -117,6 +118,7 @@
                      (when (my-props :open-menu)
                        (print "wtf?")
                        (when (= ev-kind :release)
+                         (print "release close menu")
                          (e/put! my-props :open-menu nil))))}
 
    [:padding {:left 0 :top 0}

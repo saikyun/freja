@@ -89,11 +89,20 @@
         :text/font text/font
         :text/line-height text/line-height
         :text/spacing text/spacing
+        :binds binds #replaces binds
+        :extra-binds extra-binds #adds onto default binds
         :show-line-numbers show-line-numbers
         #TODO: remove this when :vertical is added
         :space-in-bottom space-in-bottom} props)
 
   (default space-in-bottom 0)
+
+  (default state (get (dyn :element) :state @{}))
+
+  (unless (get state :gb)
+    (merge-into state (default-textarea-state
+                        :binds binds
+                        :extra-binds extra-binds)))
 
   (default text/size (dyn :text/size 14))
   (default text/font (dyn :text/font "Poppins"))
@@ -113,11 +122,12 @@
 
   (-> (dyn :element)
       (dt/add-default-props props)
+      (put :state state)
       (merge-into
         @{:children []
           :relative-sizing
           (fn [el max-width max-height]
-            (print "resizing text area " max-width " " max-height)
+            # (print "resizing text area " max-width " " max-height)
             # TODO: something strange happens when width / height is too small
             # try removing 50 then resize to see
             (-> el
@@ -137,12 +147,12 @@
               (put-in state [:gb :changed] true)
               (put-in state [:gb :resized] true))
 
-            (print "el: " (el :width) " / " (el :height))
+            # (print "el: " (el :width) " / " (el :height))
 
             el)
 
           :render (fn [self parent-x parent-y]
-                    #                    (print "text area render")
+                    # (print "text area render")
                     (:draw state)
                     #(pp (get-in state [:gb :text]))
 )
