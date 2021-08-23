@@ -2,6 +2,8 @@
 (import ./text_api :as old)
 (import freja/state)
 
+(setdyn :freja/ns "freja/file-handling")
+
 (varfn read-file
   [path]
   (def f (file/open path))
@@ -57,28 +59,89 @@
 
 (varfn freja-dofile
   [top-env path]
-
   (unless (= path last-path)
     (set state/user-env (make-env top-env))
     (set last-path path))
 
   (try
     (with-dyns [:out state/out
-                :err state/err]
+                :err state/out]
+
+      (def env (make-env top-env))
+
       (print `=> (freja-dofile "` path `")`)
 
-      (put state/user-env :freja/loading-file true)
-      (put state/user-env :out state/out)
-      (put state/user-env :err state/err)
+      (put env :freja/loading-file true)
+      (put env :out state/out)
+      (put env :err state/out)
+
+      (def before-keys (keys env))
+
       (dofile path
               # :env (fiber/getenv (fiber/current))
-              :env state/user-env)
-      #      (merge-into top-env env)
-)
+              #:env
+              #(require "freja/render_new_gap_buffer")
+              :env env)
+
+      # here we find all `var` / `varfn` defined during `dofile`
+      (def new-vars (seq [k :keys env
+                          :when (and (not (find |(= $ k) before-keys))
+                                     (get-in env [k :ref]))]
+                      k))
+
+      (def ns-name (get env :freja/ns))
+      (def modpath (first (module/find path)))
+      (cond ns-name
+        (let [ns (require ns-name)]
+          (loop [k :in new-vars]
+            (if (ns k)
+              (put-in ns [k :ref 0] (get-in env [k :ref 0]))
+              (put ns k (in env k))))
+
+          (set state/user-env ns))
+
+        modpath
+        (let [ns (require modpath)]
+          (loop [k :in new-vars]
+            (put-in ns [k :ref 0] (get-in env [k :ref 0])))
+
+          (set state/user-env ns))
+
+        #else
+        (let [ns env]
+          (print "Module " path " did not exist, adding to module/cache...")
+
+          (put module/cache path ns)
+
+          (set state/user-env ns)))
+
+      (print "Loaded module: " (or (get env :freja/ns) modpath path)))
     ([err fib]
       (with-dyns [:out state/out
                   :err state/err]
         (debug/stacktrace fib err)))))
+
+(comment
+  (put-in module/cache ["freja/file-handling" 'fine] @{:ref @[fine]})
+
+  #  (freja-dofile state/user-env "test-env.janet")
+
+  (comment
+    (freja-dofile state/user-env "test-env2.janet")
+    #
+)
+  #  (lul2)
+  #
+
+  (import freja/file-handling)
+  (file-handling/fine)
+  (curenv)
+  (state/user-env))
+
+(varfn fine
+  "HHUUUH"
+  []
+  (print "fine123"))
 
 (varfn save-and-dofile
   [props]

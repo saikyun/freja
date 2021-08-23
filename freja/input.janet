@@ -1,3 +1,5 @@
+(setdyn :freja/ns "freja/input")
+
 (use freja-jaylib)
 (import ./eval :prefix "")
 (import freja/state)
@@ -33,11 +35,15 @@
 (varfn eval-it
   [env code]
   (print "=> " (string/trim code))
-  (try (do
-         (fiber/setenv (fiber/current) state/user-env)
-         (with-dyns [:out state/out]
-           (def res (eval-string code))
-           (pp res)))
+
+  (try
+    (do
+      (fiber/setenv (fiber/current) state/user-env)
+      (fiber/setenv (fiber/current) state/user-env)
+      (put state/user-env :out state/out)
+      (put state/user-env :err state/out)
+      (def res (eval-string code))
+      (pp res))
     ([err fib]
       (debug/stacktrace fib err))))
 
@@ -98,6 +104,8 @@
 (def delete-before-caret! (comp reset-blink gb/delete-before-caret!))
 (def move-up! (comp reset-blink render-gb/move-up!))
 (def move-down! (comp reset-blink render-gb/move-down!))
+(def page-up!  render-gb/page-up!)
+(def page-down! render-gb/page-down!)
 
 (def global-keys
   @{:alt @{:shift @{:left select-backward-word
@@ -134,6 +142,9 @@
     :right forward-char
     :up move-up!
     :down move-down!
+
+    :page-up page-up!
+    :page-down page-down!
 
     :home move-to-start-of-line
     :end move-to-end-of-line

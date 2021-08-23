@@ -5,9 +5,11 @@
 (import ./textfield_api :prefix "")
 (import ./text_rendering :as tr)
 (import ./find_row_etc :prefix "")
-(import ./assets :as a)
+(import freja/assets :as a)
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
+
+(setdyn :freja/ns "freja/render_new_gap_buffer")
 
 (use profiling/profile)
 
@@ -582,17 +584,66 @@ Render lines doesn't modify anything in gb."
   [gb]
   (line-of-i gb (gb :caret)))
 
-(comment
-  (current-line gb-data)
+(varfn index-above-cursor-on-line
+  [gb line]
+  (let [{:lines lines
+         :caret-pos caret-pos
+         :memory-of-caret-x-pos mocxp} gb]
+    (if (<= 0 line)
+      (or (index-passing-max-width
+            gb
+            (get lines (dec line) 0) ## start of prev line
+            (lines line) ## end of prev line
+            mocxp) ## current x position
+          (lines line))
+      0)))
 
-(keys state/editor-state)
+(varfn page-up!
+  [gb]
+  (if (zero? (gb :scroll))
+    (-> gb
+        deselect
+        reset-blink
+        (put-caret 0))
+    (let [target (+ (- (gb :scroll))
+                    (* 2 (gb :text/size)))
+          line (dec (binary-search-closest (gb :y-poses) |(compare target $)))]
+      (-> gb
+          deselect
+          reset-blink
+          (put-caret (max 0 (index-above-cursor-on-line gb line)))
+          (update :scroll + (- (height gb) (* 3 (gb :text/size))))
+          (update :scroll min 0)
+          (put :changed-scroll true)))))
 
+(varfn page-down!
+  [gb]
+  (def lines (gb :lines))
+  (def y-poses (gb :y-poses))
+  (def line-flags (gb :line-flags))
+  (def line-numbers (gb :line-numbers))
 
-)
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
+  (def target-pos (+ (height gb)
+                     (- (gb :scroll))
+                     (- (* 2 (gb :text/size)))))
 
-(import freja/state)
-
+  (let [line (binary-search-closest
+               (gb :y-poses)
+               |(compare target-pos $))]
+    (if (= line (length (gb :lines)))
+      (-> gb
+          deselect
+          reset-blink
+          (put-caret (gb-length gb)))
+      (-> gb
+          deselect
+          reset-blink
+          (put-caret (index-above-cursor-on-line gb line))
+          (update :scroll - (- (height gb) (* 3 (gb :text/size))))
+          (update :scroll min 0)
+          (put :changed-scroll true)))))
 
 (varfn index-above-cursor
   [gb]
@@ -756,17 +807,7 @@ Render lines doesn't modify anything in gb."
   (move-down! gb-data))
 
 (varfn index->pos!
-  "Recalculates position and returns it.
-This function is pretty expensive since it redoes all word wrapping."
-
-  #### tldr this function is ridiculous
-
-  # a possible improvement would be to store the min / max indexes
-  # used during the last word wrap calculation
-  # then if the index is outside that, redo the calculation
-  # another alternative would be to generally to rendering
-  # relative to indexes rather than having a global scroll which
-  # is dependent on all lines before it
+  "Recalculates position and returns it."
   [gb index]
 
   (def lines (gb :lines))
@@ -1018,9 +1059,8 @@ This function is pretty expensive since it redoes all word wrapping."
     0
     (+ 0 (- (height gb) scroll))))
 
-(defnp refocus-caret
+(defn refocus-caret
   [gb]
-
   (let [caret-y ((gb :caret-pos) 1)
         scroll (* 1 #mult
                   (- (gb :scroll)))]
@@ -1233,3 +1273,5 @@ This function is pretty expensive since it redoes all word wrapping."
                           (buffer/push-byte c))))
     (print)
     (set last-i l)))
+
+(pp (get (curenv) 'render-cursor))

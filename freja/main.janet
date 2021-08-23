@@ -168,7 +168,9 @@
 
                          (try
                            (with-dyns [:out (buffer/clear state/out)
-                                       :err (buffer/clear state/err)]
+                                       :err state/out
+                                       # :err (buffer/clear state/err)
+]
                              (internal-frame)
                              (unless (empty? state/out)
                                (events/push! frp/out (string state/out)))

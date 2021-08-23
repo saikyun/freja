@@ -2,7 +2,6 @@
 # events are pushed to queues
 # then things can pull from the queues
 
-
 # functions to not block the fiber when interacting with channels
 (defn pop
   "Like ev/take but non-blocking, instead returns `nil` if the channel is empty."
