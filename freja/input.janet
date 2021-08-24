@@ -104,10 +104,12 @@
 (def delete-before-caret! (comp reset-blink gb/delete-before-caret!))
 (def move-up! (comp reset-blink render-gb/move-up!))
 (def move-down! (comp reset-blink render-gb/move-down!))
-(def page-up!  render-gb/page-up!)
+(def page-up! render-gb/page-up!)
 (def page-down! render-gb/page-down!)
+(def beginning-of-buffer gb/beginning-of-buffer)
+(def end-of-buffer gb/end-of-buffer)
 
-(def global-keys
+(var global-keys
   @{:alt @{:shift @{:left select-backward-word
                     :right select-forward-word
                     #
@@ -126,7 +128,9 @@
                :c gb/copy
                :v paste!
                :z undo!2
-               :y redo!}
+               :y redo!
+               :home beginning-of-buffer
+               :end end-of-buffer}
 
     :shift @{:home render-gb/select-to-start-of-line
              :end render-gb/select-to-end-of-line
