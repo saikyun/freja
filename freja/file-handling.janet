@@ -119,7 +119,7 @@
     ([err fib]
       (with-dyns [:out state/out
                   :err state/err]
-        (debug/stacktrace fib err)))))
+        (propagate err fib)))))
 
 (comment
   (put-in module/cache ["freja/file-handling" 'fine] @{:ref @[fine]})
