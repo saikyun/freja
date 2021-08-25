@@ -123,7 +123,18 @@
            #
 }
 
-    :control @{:a gb/select-all
+    :control @{:shift @{:left select-backward-word
+                        :right select-forward-word
+                        #
+}
+
+               :backspace delete-word-backward!
+               :delete delete-word-forward!
+
+               :left backward-word
+               :right forward-word
+
+               :a gb/select-all
                :x cut!
                :c gb/copy
                :v paste!
