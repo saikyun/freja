@@ -150,7 +150,11 @@ Returns `nil` if the max width is never exceeded."
    width
    h
    y-offset
-   y-limit]
+   y-limit
+
+   &keys {:line-limit line-limit}]
+
+  (default line-limit 999999999999)
 
   (def old-y-pos (get y-poses start-line 0))
   (def old-line-number (get line-numbers start-line 1))
@@ -240,7 +244,8 @@ Returns `nil` if the max width is never exceeded."
         (set w new-w)))
 
     # TODO: this seem to be called WAY too much!
-    (when (> (+ y y-offset) y-limit)
+    (when (or (> (+ y y-offset) y-limit)
+              (>= line-number line-limit))
       (return stop-gb-iterate)))
 
   (when (not (> (+ y y-offset) y-limit))
@@ -756,6 +761,56 @@ Render lines doesn't modify anything in gb."
       deselect
       reset-blink
       (put-caret (index-above-cursor gb))))
+
+
+(varfn line-number->line
+  [gb line-number]
+
+  (def lines (gb :lines))
+  (def y-poses (gb :y-poses))
+  (def line-flags (gb :line-flags))
+  (def line-numbers (gb :line-numbers))
+
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
+
+  (word-wrap-gap-buffer
+    gb
+    sizes
+    lines
+    y-poses
+    line-flags
+    line-numbers
+
+    gb
+    (or (last lines) 0)
+    (if (empty? lines) nil (dec (length lines)))
+    (gb-length gb)
+    (inner-width gb)
+    (* (gb :text/size) (gb :text/line-height))
+    0
+    99999999
+
+    :line-limit line-number)
+
+  (var line (binary-search-closest line-numbers |(compare line-number $)))
+
+  (while (= line-number (get line-numbers (dec line)))
+    (-- line))
+
+  line)
+
+(varfn goto-line-number
+  [gb line-number]
+  (let [line (line-number->line gb line-number)
+        line (min (dec (length (gb :lines))) line)
+        index (if (zero? line)
+                0
+                ((gb :lines) line))]
+    (-> gb
+        deselect
+        reset-blink
+        (put-caret index)
+        move-to-start-of-line)))
 
 (varfn select-move-up!
   [gb]

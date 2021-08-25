@@ -5,6 +5,7 @@
 (import freja/state)
 (import freja/file-handling :as fh)
 (import freja/new_gap_buffer :as gb)
+(import freja/render_new_gap_buffer :as rgb)
 
 (use profiling/profile)
 
@@ -91,6 +92,10 @@
             (set-open :search)
             (e/put! state/focus :focus search-state)))
 
+  (put-in editor-state [:gb :goto-line]
+          (fn [_]
+            (set-open :goto-line)))
+
   (put-in file-open [:gb :escape]
           (fn [props]
             (set-open false)
@@ -117,6 +122,29 @@
      [:background {:color (t/comp-cols :background)}
       [:padding {:all 4}
        (case c
+         :goto-line
+         [:row {}
+          [:text {:size 22
+                  :color (t/comp-cols :text/color)
+                  :text "Go to line: "}]
+          [ta/textarea {:weight 1
+                        :text/size 22
+                        :height 28
+
+                        :init (defn focus-textarea-on-init [self _]
+                                (e/put! state/focus :focus (self :state)))
+
+                        :extra-binds
+
+                        @{:escape (fn [props]
+                                    (set-open false)
+                                    (e/put! state/focus :focus editor-state))
+                          :enter (fn [props]
+                                   (set-open false)
+                                   (e/put! state/focus :focus editor-state)
+                                   (rgb/goto-line-number (editor-state :gb)
+                                                         (scan-number (gb/content props))))}}]]
+
          :file-open
          [:row {}
           [:text {:size 22

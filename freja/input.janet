@@ -178,15 +178,20 @@
   [props]
   (:open-file props))
 
+(defn goto-line
+  [props]
+  (:goto-line props))
+
 (defn save-file
   [& args]
   (fh/save-file ;args))
 
-(def gb-binds @{:control @{:shift @{:f format!
+(var gb-binds @{:control @{:shift @{:f format!
                                     #
 }
 
                            :f search2
+                           :g goto-line
                            :o open-file
                            :l fh/save-and-dofile
                            :s save-file
