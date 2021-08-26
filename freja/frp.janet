@@ -137,6 +137,8 @@ Emits events when rerendering is needed.
 (import ./render_new_gap_buffer :prefix "")
 (import ./new_gap_buffer :prefix "")
 
+(setdyn :freja/ns "freja/frp")
+
 (var mouse nil)
 (var chars nil)
 (var keyboard nil)

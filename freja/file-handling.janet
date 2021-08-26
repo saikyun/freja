@@ -89,21 +89,37 @@
                                      (get-in env [k :ref]))]
                       k))
 
-      (def ns-name (get env :freja/ns))
-      (def modpath (first (module/find path)))
+      (def ns-name (or (get env :freja/ns)
+                       (first (module/find path))))
       (cond ns-name
         (let [ns (require ns-name)]
-          (loop [k :in new-vars]
-            (if (ns k)
-              (put-in ns [k :ref 0] (get-in env [k :ref 0]))
-              (put ns k (in env k))))
+          (loop [k :keys env
+                 :let [existing-sym (ns k)
+                       existing-var (get-in ns [k :ref])
+                       new-var (get-in env [k :ref])]]
+            (cond
+              (or (not existing-sym)
+                  (and (not existing-var)
+                       (not new-var)))
+              (put ns k (in env k))
 
-          (set state/user-env ns))
+              (and existing-var new-var)
+              (do
+                (put ns k (in env k))
+                # we want to keep existing var and update it
+                # since this is what existing functions will have as reference
+                (put-in ns [k :ref] existing-var)
+                (put existing-var 0 (in new-var 0)))
 
-        modpath
-        (let [ns (require modpath)]
-          (loop [k :in new-vars]
-            (put-in ns [k :ref 0] (get-in env [k :ref 0])))
+              new-var
+              (do
+                (put ns k (in env k))
+                (print "new var " k " in ns " ns-name " replaces non-var " existing-sym))
+
+              # else only existing-var
+              (do
+                (put ns k (in env k))
+                (print "new non-var " k " in ns " ns-name " replaces var " existing-sym))))
 
           (set state/user-env ns))
 
@@ -115,7 +131,7 @@
 
           (set state/user-env ns)))
 
-      (print "Loaded module: " (or (get env :freja/ns) modpath path)))
+      (print "Loaded module: " (or ns-name path)))
     ([err fib]
       (with-dyns [:out state/out
                   :err state/err]
