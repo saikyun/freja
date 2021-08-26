@@ -50,22 +50,22 @@
   (default hotkey (i/get-hotkey ((state :focused-text-area) :binds) f))
   (assert hotkey (string "no hotkey for " f))
 
-  [:row {}
-   [:align {:horizontal :left
-            :weight 1}
-    [:padding {:right 40}
-     [:clickable {:on-click (fn [_]
-                              (e/put! my-props :open-menu nil)
-                              (f (state :focused-text-area)))}
+  [:clickable {:on-click (fn [_]
+                           (e/put! my-props :open-menu nil)
+                           (f (state :focused-text-area)))}
+   [:row {}
+    [:align {:horizontal :left
+             :weight 1}
+     [:padding {:right 40}
       [:text {:color label-color
               :size 22
-              :text label}]]]]
+              :text label}]]]
 
-   [:align {:horizontal :right
-            :weight 1}
-    [:text {:color hotkey-color
-            :size 22
-            :text (hotkey->string hotkey)}]]])
+    [:align {:horizontal :right
+             :weight 1}
+     [:text {:color hotkey-color
+             :size 22
+             :text (hotkey->string hotkey)}]]]])
 
 (defn file-menu
   [props]
