@@ -161,7 +161,10 @@
 
   (set loop-fiber
        (ev/call (fn [] (while true
-                         (when (data :quit)
+                         (when
+                           (or
+                             state/quit
+                             (window-should-close))
                            (close-window)
                            (os/exit)
                            (error "QUIT!"))

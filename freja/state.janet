@@ -1,6 +1,10 @@
 (import ./new_gap_buffer :prefix "")
 (import ./theme :prefix "")
 
+(setdyn :freja/ns "freja/state")
+
+(var quit false)
+
 (def freja-dir @"")
 
 (var initial-file nil)

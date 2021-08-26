@@ -172,7 +172,7 @@
 
 (defn quit
   [props]
-  (put (props :context) :quit true))
+  (set state/quit true))
 
 (defn open-file
   [props]
