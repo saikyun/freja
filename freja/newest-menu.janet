@@ -6,6 +6,7 @@
 (import freja/frp)
 (import freja/state)
 (import freja/input :as i)
+(import freja/default-hotkeys :as dh)
 (import freja/new_gap_buffer :as gb)
 
 (use freja/defonce)
@@ -72,32 +73,32 @@
   (print "file menu")
   [:shrink {}
    [menu-row
-    {:f i/open-file
+    {:f dh/open-file
      :label "Open"}]
    [menu-row
-    {:f i/save-file
+    {:f dh/save-file
      :label "Save"}]
    [menu-row
-    {:f i/quit
+    {:f dh/quit
      :label "Quit"}]])
 
 (defn edit-menu
   [props]
   [:shrink {}
    [menu-row
-    {:f i/undo!2
+    {:f dh/undo!2
      :label "Undo"}]
    [menu-row
-    {:f i/redo!
+    {:f dh/redo!
      :label "Redo"}]
    [menu-row
-    {:f i/cut!
+    {:f dh/cut!
      :label "Cut"}]
    [menu-row
     {:f gb/copy
      :label "Copy"}]
    [menu-row
-    {:f i/paste!
+    {:f dh/paste!
      :label "Paste"}]
 
    [:padding {:all 8}
@@ -108,7 +109,7 @@
       :props {}}]
 
    [menu-row
-    {:f i/search2
+    {:f dh/search
      :label "Search"}]])
 
 (defn hiccup

@@ -1,6 +1,7 @@
 (import freja-layout/default-tags :as dt)
 (import ./new_gap_buffer :as gb)
 (import ./input :as i)
+(import ./default-hotkeys :as dh)
 (import ./collision :as c)
 (import freja/theme)
 (import freja/frp)
@@ -49,7 +50,7 @@
           :extra-binds extra-binds}]
   (default gap-buffer (gb/new-gap-buffer))
 
-  (default binds (table/setproto @{} i/gb-binds))
+  (default binds (table/setproto @{} dh/gb-binds))
 
   (merge-into gap-buffer
               {:binds binds
@@ -58,7 +59,7 @@
   (when extra-binds
     (put gap-buffer :binds
          (-> (merge-into @{} extra-binds)
-             (table/setproto i/gb-binds))))
+             (table/setproto dh/gb-binds))))
 
   (update gap-buffer :blink |(or $ 0))
 

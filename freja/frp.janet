@@ -144,8 +144,8 @@ Emits events when rerendering is needed.
 (var keyboard nil)
 (var frame-chan nil)
 (var rerender nil)
+(var eval-results nil)
 (var out nil)
-(var err nil)
 (var screen-size @{})
 
 (var delay-left @{})
@@ -289,7 +289,7 @@ Emits events when rerendering is needed.
   (set frame-chan (ev/chan 1))
   (set rerender (ev/chan 1))
   (set out (ev/chan 100))
-  (set err (ev/chan 100))
+  (set eval-results (ev/chan 100))
 
   (def dependencies
     @{mouse @[]
@@ -298,9 +298,7 @@ Emits events when rerendering is needed.
       state/focus @[]
       callbacks @[handle-callbacks]
       out @[|(with-dyns [:out stdout]
-               (print $))]
-      err @[|(with-dyns [:err stderr]
-               (eprint $))]})
+               (print $))]})
 
   (def draws @[])
 

@@ -1,6 +1,6 @@
 (import ./textarea :as ta :fresh true)
 (import ./theme :as t)
-(import freja/input :as i)
+(import ./default-hotkeys :as dh)
 (import freja/events :as e)
 (import freja/state)
 (import freja/file-handling :as fh)
@@ -40,14 +40,14 @@
 
 (def file-open-binds
   (-> @{}
-      (table/setproto i/file-open-binds)
+      (table/setproto dh/file-open-binds)
       (merge-into
         @{:escape (fn [props] (:escape props))
           :enter (fn [props] (:enter props))})))
 
 (def search-binds
   (-> @{}
-      (table/setproto i/search-binds)))
+      (table/setproto dh/search-binds)))
 
 (defn editor
   [props & children]

@@ -1,5 +1,3 @@
-(setdyn :freja/ns "freja/input")
-
 (use freja-jaylib)
 (import ./eval :prefix "")
 (import freja/state)
@@ -11,6 +9,8 @@
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
 (import ./collision :prefix "")
+
+(setdyn :freja/ns "freja/input")
 
 (def mouse-events {:press :press
                    :drag :drag
@@ -32,25 +32,6 @@
     :selected-pos nil
     :last-text-pos nil})
 
-(varfn eval-it
-  [env code]
-  (print "=> " (string/trim code))
-
-  (try
-    (do
-      (fiber/setenv (fiber/current) state/user-env)
-      (fiber/setenv (fiber/current) state/user-env)
-      (put state/user-env :out state/out)
-      (put state/user-env :err state/out)
-      (def res (eval-string code))
-      (pp res))
-    ([err fib]
-      (debug/stacktrace fib err))))
-
-(varfn search2
-  [props]
-  (:search props))
-
 (varfn meta-down?
   []
   (if (= :macos (os/which))
@@ -59,23 +40,6 @@
     (or (key-down? :left-control)
         (key-down? :right-control))))
 
-## stores held keys and the delay until they should trigger
-(var delay-left @{})
-
-(varfn focus
-  [{:id id :context context}]
-  (set delay-left @{})
-  (put context :focus id))
-
-(varfn focus-other
-  [{:context context} id]
-  (set delay-left @{})
-  (put context :focus id))
-
-(varfn unfocus
-  [{:context context} id]
-  (set delay-left @{})
-  (put context :focus nil))
 
 ## delay before first repetition of held keys
 (var initial-delay 0.2)
@@ -83,145 +47,8 @@
 ## delay of each repetition thereafter
 (var repeat-delay 0.03)
 
-(def undo!2 (comp reset-blink gb/undo!))
-(def paste! (comp reset-blink gb/paste!))
-(def cut! (comp reset-blink gb/cut!))
-(def redo! (comp reset-blink gb/redo!))
-(def format! (comp reset-blink format-code))
-(def select-backward-word (comp reset-blink gb/select-backward-word))
-(def select-forward-word (comp reset-blink gb/select-forward-word))
-(def delete-word-backward! (comp reset-blink gb/delete-word-backward!))
-(def delete-word-forward! (comp reset-blink gb/delete-word-forward!))
-(def backward-word (comp reset-blink gb/backward-word))
-(def forward-word (comp reset-blink gb/forward-word))
-(def select-backward-char (comp reset-blink gb/select-backward-char))
-(def select-forward-char (comp reset-blink gb/select-forward-char))
-(def backward-char (comp reset-blink gb/backward-char))
-(def forward-char (comp reset-blink gb/forward-char))
-(def move-to-start-of-line (comp reset-blink render-gb/move-to-start-of-line))
-(def move-to-end-of-line (comp reset-blink render-gb/move-to-end-of-line))
-(def delete-after-caret! (comp reset-blink gb/delete-after-caret!))
-(def delete-before-caret! (comp reset-blink gb/delete-before-caret!))
-(def move-up! (comp reset-blink render-gb/move-up!))
-(def move-down! (comp reset-blink render-gb/move-down!))
-(def page-up! render-gb/page-up!)
-(def page-down! render-gb/page-down!)
-(def beginning-of-buffer gb/beginning-of-buffer)
-(def end-of-buffer gb/end-of-buffer)
-
-(var global-keys
-  @{:alt @{:shift @{:left select-backward-word
-                    :right select-forward-word
-                    #
-}
-
-           :backspace delete-word-backward!
-           :delete delete-word-forward!
-
-           :left backward-word
-           :right forward-word
-           #
-}
-
-    :control @{:shift @{:left select-backward-word
-                        :right select-forward-word
-                        #
-}
-
-               :backspace delete-word-backward!
-               :delete delete-word-forward!
-
-               :left backward-word
-               :right forward-word
-
-               :a gb/select-all
-               :x cut!
-               :c gb/copy
-               :v paste!
-               :z undo!2
-               :y redo!
-               :home beginning-of-buffer
-               :end end-of-buffer}
-
-    :shift @{:home render-gb/select-to-start-of-line
-             :end render-gb/select-to-end-of-line
-             :left select-backward-char
-             :right select-forward-char
-             :up render-gb/select-move-up!
-             :down render-gb/select-move-down!
-
-             #
-}
-
-    :left backward-char
-    :right forward-char
-    :up move-up!
-    :down move-down!
-
-    :page-up page-up!
-    :page-down page-down!
-
-    :home move-to-start-of-line
-    :end move-to-end-of-line
-
-    :delete delete-after-caret!
-    :backspace delete-before-caret!
-
-    #
-})
-
-(defn quit
-  [props]
-  (set state/quit true))
-
-(defn open-file
-  [props]
-  (:open-file props))
-
-(defn goto-line
-  [props]
-  (:goto-line props))
-
-(defn save-file
-  [& args]
-  (fh/save-file ;args))
-
-(var gb-binds @{:control @{:shift @{:f format!
-                                    #
-}
-
-                           :f search2
-                           :g goto-line
-                           :o open-file
-                           :l fh/save-and-dofile
-                           :s save-file
-                           :q quit
-
-                           :enter |(eval-it (get-in $ [:context :top-env])
-                                            (gb-get-last-sexp $))
-                           #
-}
-                :enter (comp reset-blink |(gb/insert-char! $ (chr "\n")))})
-
-(table/setproto gb-binds global-keys)
-
-(def file-open-binds @{:escape
-                       (fn [props]
-                         (gb/deselect props))
-
-                       :enter (fn [props]
-                                (reset-blink props)
-                                ((props :on-enter) props (string ((gb/commit! props) :text))))})
-
-(table/setproto file-open-binds global-keys)
-
-(def search-binds
-  @{:escape |(:escape $)
-    :enter |(:search $)
-    :control @{:f |(:search $)
-               :b |(:search-backwards $)}})
-
-(table/setproto search-binds global-keys)
+## stores held keys and the delay until they should trigger
+(var delay-left @{})
 
 (varfn handle-keyboard-char
   [props k]
@@ -268,8 +95,6 @@
 
   (array/push mods key)
   (put-in kmap mods f))
-
-(def global-set-key (partial set-key global-keys))
 
 (defn hotkey-triggered
   [kmap k-down]

@@ -57,6 +57,10 @@
 (import ./render_new_gap_buffer :as render_new_gap_buffer)
 (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
 
+(def default-hotkeys (require "./default-hotkeys"))
+(import ./default-hotkeys)
+(put module/cache "freja/default-hotkeys" default-hotkeys)
+
 (def theme (require "./theme"))
 (import ./theme :as theme)
 (put module/cache "freja/theme" theme)
@@ -177,8 +181,6 @@
                              (internal-frame)
                              (unless (empty? state/out)
                                (events/push! frp/out (string state/out)))
-                             (unless (empty? state/err)
-                               (events/push! frp/err (string state/err)))
                              (ev/sleep 0.01))
                            ([err fib]
                              (let [path "text_experiment_dump"]
@@ -287,6 +289,7 @@
   (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
   (put module/cache "freja/textarea" textarea)
   (put module/cache "freja/editor" editor)
+  (put module/cache "freja/default-hotkeys" default-hotkeys)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
