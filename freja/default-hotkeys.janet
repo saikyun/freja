@@ -4,6 +4,7 @@
 (import freja/state)
 (import freja/file-handling :as fh)
 (import freja/input)
+(import ./evaling)
 
 (varfn reset-blink
   [props]
@@ -126,11 +127,8 @@
                            :l fh/save-and-dofile
                            :s save-file
                            :q quit
-
-                           #                           :enter |(eval-it (get-in $ [:context :top-env])
-                           #                                            (gb-get-last-sexp $))
-                           #
-}
+                           :enter |(evaling/eval-it (get-in $ [:context :top-env])
+                                            (evaling/gb-get-last-sexp $))}
                 :enter (comp reset-blink |(gb/insert-char! $ (chr "\n")))})
 
 (table/setproto gb-binds global-keys)
