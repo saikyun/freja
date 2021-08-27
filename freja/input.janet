@@ -3,7 +3,6 @@
 (import ./dumb :prefix "")
 (import ./new_gap_buffer :as gb)
 (import ./render_new_gap_buffer :as render-gb)
-(import ./file-handling :as fh)
 (import ./code_api :prefix "")
 (import ./text_rendering :prefix "")
 (import ./find_row_etc :prefix "")
