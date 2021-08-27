@@ -11,7 +11,9 @@
 
 
 (import spork/test)
+(def code_api (require "./code_api"))
 (import ./code_api :prefix "")
+(put module/cache "freja/code_api" code_api)
 
 (def assets (require "./assets"))
 (import ./assets :as assets)
