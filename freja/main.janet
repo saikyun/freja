@@ -198,10 +198,12 @@
   (def env (data :top-env))
   (try
     (do
-      (dofile (string state/freja-dir "init.janet")
-              #             :env (fiber/getenv (fiber/current))
-              :env env)
-      (merge-into env env))
+      (file-handling/freja-dofile
+        env
+        (string state/freja-dir "init.janet")
+        # :env (fiber/getenv (fiber/current))
+        #:env env
+))
     ([err fib]
       (print "nope")
       (print (debug/stacktrace fib err)))))
@@ -315,7 +317,17 @@
   (frp/init-chans)
 
   (when-let [file (get args 1)]
-    (set state/initial-file file))
+    (def [path line column]
+      (peg/match
+        '(* (<- (some (if-not ":" 1)))
+            (opt (* ":"
+                    (<- (some (if-not ":" 1)))))
+            (opt (* ":"
+                    (<- (some (if-not ":" 1))))))
+        file))
+    (set state/initial-file [path
+                             (-?> line scan-number)
+                             (-?> column scan-number)]))
 
   (start)
 

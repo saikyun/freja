@@ -55,6 +55,7 @@
         :set-open set-open
         :state state
         :initial-path initial-path
+        :initial-file initial-file
         :id id
         :focus-on-init focus-on-init
         # TODO: remove when :vertical is added
@@ -68,12 +69,16 @@
   (unless (state :search)
     (put state :search (ta/default-textarea-state :binds search-binds)))
 
+  (var editor-new? false)
+
   (unless (state :editor)
     (print "new editor state for " id)
     (put state :editor (ta/default-textarea-state))
 
     (when initial-path
-      (fh/load-file (state :editor) initial-path)))
+      (fh/load-file (state :editor) initial-path))
+
+    (set editor-new? true))
 
   (def {:file-open file-open
         :search search-state
@@ -169,9 +174,19 @@
 
    [:background {:color (t/colors :background)}
     [:padding {:left 6 :top 6}
-     [ta/textarea {:init (when focus-on-init
-                           (defn focus-textarea-on-init [self _]
-                             (e/put! state/focus :focus editor-state)))
+     [ta/textarea {:init
+                   (fn [self _]
+                     (when editor-new?
+                       (def gb (get-in state [:editor :gb]))
+                       (when-let [[path line column] initial-file]
+                         (fh/load-file (state :editor) path)
+                         (when line
+                           (rgb/goto-line-number gb line))
+                         (when column
+                           (gb/move-n gb column))))
+
+                     (when focus-on-init
+                       (e/put! state/focus :focus editor-state)))
                    :text/spacing 0.5
                    :text/size 20
                    :text/font "MplusCode"

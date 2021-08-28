@@ -18,7 +18,7 @@
                :id :left
                # TODO: need to fix focus-on-init
                :focus-on-init true
-               :initial-path state/initial-file
+               :initial-file state/initial-file
                # TODO: remove when :vertical is added
                :space-in-bottom (when bottom
                                   bottom-h)

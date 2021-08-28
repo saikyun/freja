@@ -289,8 +289,8 @@ If selection is equal to caret, delete the selection (i.e. nothing is selected).
   ``
 Is to `update` what `put-caret` is to `put`.
 ``
-  [gb f]
-  (put-caret gb (f (gb :caret))))
+  [gb f & args]
+  (put-caret gb (f (gb :caret) ;args)))
 
 ### c->s
 
@@ -967,6 +967,16 @@ Otherwise moves the caret backward one character."
         (put :stickiness :down)
         (put :changed-nav true)
         (put :changed-x-pos true))))
+
+(varfn move-n
+  "Moves the caret `n` characters."
+  [gb n]
+  (-> gb
+      deselect
+      (update-caret + n)
+      (put :stickiness :down)
+      (put :changed-nav true)
+      (put :changed-x-pos true)))
 
 
 ### cut / copy / paste

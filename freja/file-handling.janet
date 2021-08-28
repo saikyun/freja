@@ -3,6 +3,7 @@
 (import ./state)
 (import ./frp)
 (import ./events :as e)
+(import spork/path)
 
 (setdyn :freja/ns "freja/file-handling")
 
@@ -187,6 +188,7 @@
                     k))
 
     (def ns-name (or (get env :freja/ns)
+                     (first (module/find (path/abspath path)))
                      (first (module/find path))))
     (cond ns-name
       (let [ns (require ns-name)]
