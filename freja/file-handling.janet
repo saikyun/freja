@@ -230,7 +230,11 @@
 
         (set state/user-env ns)))
 
-    (print "Loaded module: " (or ns-name path))))
+    (print "Loaded module: " (or ns-name path))
+
+    (e/push! frp/eval-results {:value "nil"
+                               :code "freja-dofile"
+                               :fiber (fiber/current)})))
 
 (comment
   (put-in module/cache ["freja/file-handling" 'fine] @{:ref @[fine]})

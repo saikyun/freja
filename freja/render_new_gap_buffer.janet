@@ -589,6 +589,10 @@ Render lines doesn't modify anything in gb."
   [gb]
   (line-of-i gb (gb :caret)))
 
+(varfn current-line-number
+  [gb]
+  ((gb :line-numbers) (line-of-i gb (gb :caret))))
+
 (varfn index-above-cursor-on-line
   [gb line]
   (let [{:lines lines

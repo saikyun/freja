@@ -5,6 +5,8 @@
 
 (var quit false)
 
+(var quit-hook nil)
+
 (def freja-dir @"")
 
 (var initial-file nil)

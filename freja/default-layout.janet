@@ -62,8 +62,9 @@
      [:block {:weight 1}
       [(props :left) props]]
      #[:block {:width 2}]
-     [:block {:weight 1}
-      [(props :right) props]]
+     (when (props :right)
+       [:block {:weight 1}
+        [(props :right) props]])
 
      #
 ]
@@ -96,7 +97,9 @@
 
   (e/put! state/editor-state
           :right
-          default-right-editor)
+          nil
+          #default-right-editor
+)
 
   (frp/subscribe!
     state/focus

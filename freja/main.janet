@@ -167,19 +167,17 @@
 
   (set loop-fiber
        (ev/call (fn [] (while true
-                         (when
-                           (or
-                             state/quit
-                             (window-should-close))
+                         (when (or state/quit
+                                   (window-should-close))
+                           (when state/quit-hook
+                             (state/quit-hook))
                            (close-window)
                            (os/exit)
                            (error "QUIT!"))
 
                          (try
                            (with-dyns [:out (buffer/clear state/out)
-                                       :err state/out
-                                       # :err (buffer/clear state/err)
-]
+                                       :err state/out]
                              (internal-frame)
                              (unless (empty? state/out)
                                (events/push! frp/out (string state/out)))
@@ -265,6 +263,9 @@
         ## TODO:  Dump-state
         #(dump-state path gb-data)
         (print "Dumped state to " path))
+
+      (when state/quit-hook
+        (state/quit-hook))
 
       (close-window))))
 
