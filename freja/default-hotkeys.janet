@@ -128,12 +128,14 @@
                            :s save-file
                            :q quit
                            :enter |(evaling/eval-it (get-in $ [:context :top-env])
-                                            (evaling/gb-get-last-sexp $))}
+                                                    (evaling/gb-get-last-sexp $))}
                 :enter (comp reset-blink |(gb/insert-char! $ (chr "\n")))})
 
 (table/setproto gb-binds global-keys)
 
-(def file-open-binds @{:escape
+(def file-open-binds @{:load-file fh/load-file
+
+                       :escape
                        (fn [props]
                          (gb/deselect props))
 

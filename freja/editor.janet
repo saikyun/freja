@@ -109,7 +109,7 @@
   (put-in file-open [:gb :enter]
           (fn [props]
             (set-open false)
-            (fh/load-file editor-state (string ((gb/commit! props) :text)))
+            ((file-open-binds :load-file) editor-state (string ((gb/commit! props) :text)))
             (e/put! state/focus :focus editor-state)))
 
   (put-in search-state [:gb :search-target] (editor-state :gb))
