@@ -69,9 +69,9 @@
       (put :event/changed true)))
 
 (defn update!
-  [state f & args]
+  [state k f & args]
   (-> state
-      (update f ;args)
+      (update k f ;args)
       (put :event/changed true)))
 
 (defn record-all
