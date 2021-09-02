@@ -1299,7 +1299,6 @@ Render lines doesn't modify anything in gb."
                h)
             0))
 
-
         (draw-texture-pro
           (get-render-texture (gb :texture))
           [0 0 (* x-scale w)
@@ -1400,21 +1399,62 @@ Render lines doesn't modify anything in gb."
 
   #  (rl-scalef 2 2 1)
 
-  (when-let [[x y] (gb :caret-pos)
-             cx (abs-text-x gb x)
-             cy (abs-text-y gb (+ y scroll))]
+  (when :caret-pos
 
-    (put gb :dbg-y2 scroll)
-    (put gb :dbg-y1 y)
-    (put gb :dbg-y (abs-text-y gb (+ y scroll)))
+    (unless (gb :render-caret-pos)
+      (put gb :render-caret-pos @[;(gb :caret-pos)]))
 
-    (draw-line-ex
-      [cx cy]
-      [cx (+ cy (- (* (gb :text/size) (gb :text/line-height)) 1))]
-      1
-      (or (gb :caret/color) (get-in gb [:colors :caret]))))
+    (let [[x y] (gb :render-caret-pos)
+          [tx ty] (gb :caret-pos)
+          org-diff-x (- tx x)
+          diff-x (* org-diff-x 0.7)
 
-  (rl-pop-matrix))
+          org-diff-y (- ty y)
+          diff-y (* org-diff-y 0.7)
+
+          new-x (+ x diff-x)
+          new-y (+ y diff-y)]
+      (put-in gb [:render-caret-pos 0] new-x)
+      (put-in gb [:render-caret-pos 1] new-y)
+
+      (let [[x y] (gb :render-caret-pos)
+            cx (abs-text-x gb x)
+            cy (abs-text-y gb (+ y scroll))
+            extra-x (min 10 (max -10
+                                 (*
+                                   org-diff-x
+                                   -0.5)))
+            extra-y (* org-diff-y 0.5)]
+
+        (put gb :dbg-y2 scroll)
+        (put gb :dbg-y1 y)
+        (put gb :dbg-y (abs-text-y gb (+ y scroll)))
+
+        (draw-line-ex
+          [(+ cx extra-x) cy]
+          [(+ cx (* 1.5 extra-x))
+           (+ cy
+              (* 1 (math/abs extra-y))
+              (- (* (gb :text/size)
+                    (gb :text/line-height))
+                 1))]
+          (min 3 (inc (if (zero? extra-y)
+                        (math/abs extra-x)
+                        (math/abs extra-y))))
+          (or 0x999999ff (gb :caret/color) (get-in gb [:colors :caret])))
+
+        (draw-line-ex
+          [(+ cx extra-x) cy]
+          [(+ cx (* extra-x 1.5))
+           (+ cy
+              (- (* (gb :text/size)
+                    (gb :text/line-height))
+                 1))]
+
+          1
+          (or (gb :caret/color) (get-in gb [:colors :caret]))))
+
+      (rl-pop-matrix))))
 
 (comment
 

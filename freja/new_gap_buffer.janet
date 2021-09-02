@@ -1157,6 +1157,27 @@ Otherwise moves the caret backward one character."
            first
            last)))
 
+
+(import ./find_row_etc :prefix "")
+
+(varfn gb-find2!
+  [gb peg]
+  (def matches (peg/match (finder peg) (content gb) 0))
+
+  (print "caret: " (gb :caret))
+  (pp matches)
+
+  [(binary-search-closest matches |(compare (gb :caret) (first $))) matches])
+
+(import freja/state)
+
+(comment
+#do
+  (def gbb (get-in state/editor-state [:left-state :editor :gb]))
+  (pp (gb-find2! gbb "finder"))
+  #
+)
+
 (varfn gb-find-backward!
   [gb peg]
   (or (-?> (peg/match (finder peg) (string/slice (content gb) 0 (gb :caret)))

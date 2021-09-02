@@ -17,13 +17,56 @@
                        (max (gb :selection)
                             (gb :caret))
                        (gb :caret)))
-    (when-let [i (gb/gb-find-forward! gb search-term)]
-      (-> gb
-          (gb/put-caret i)
-          (put :selection (gb/gb-find-backward! gb search-term))
-          (put :changed-selection true)))))
+    (comment (when-let [i (gb/gb-find-forward! gb search-term)]
+               (-> gb
+                   (gb/put-caret i)
+                   (put :selection (gb/gb-find-backward! gb search-term))
+                   (put :changed-selection true))))
+
+    (let [[pos matches] (gb/gb-find2! gb search-term)
+          pos
+          (if (= pos (length matches)) # if too far, wrap
+            0
+            pos)]
+      (:put props :nof-matches (length matches))
+      (:put props :match-index -1)
+      (unless (empty? matches)
+
+        (:put props :match-index (tracev pos))
+
+        (-> gb
+            (gb/put-caret (in (in matches pos) 1))
+            (put :selection (gb/gb-find-backward! gb search-term))
+            (put :changed-selection true))))))
+
 
 (varfn search-backwards
+  [props]
+  (let [search-term (string (gb/content props))
+        gb (props :search-target)]
+    (gb/put-caret gb (if (gb :selection)
+                       (min (gb :selection)
+                            (gb :caret))
+                       (gb :caret)))
+    (let [[pos matches] (gb/gb-find2! gb search-term)
+          pos (dec pos)
+          pos
+          (if (neg? pos) # if too far, wrap
+            (dec (length matches))
+            pos)]
+      (:put props :nof-matches (length matches))
+      (:put props :match-index -1)
+      (unless (empty? matches)
+
+        (:put props :match-index (tracev pos))
+
+        (-> gb
+            (gb/put-caret (in (in matches pos) 0))
+            (put :selection (gb/gb-find-forward! gb search-term))
+            (put :changed-selection true))))))
+
+
+(varfn search-backwards123
   [props]
   (let [search-term (string (gb/content props))
         gb (props :search-target)]
@@ -121,6 +164,9 @@
 
   (put-in search-state [:gb :search] search)
   (put-in search-state [:gb :search-backwards] search-backwards)
+  (put-in search-state [:gb :put] (fn [self k v]
+                                    (put self k v)
+                                    (set-open open)))
 
   [:block {}
    (when-let [c (props :open)]
@@ -164,7 +210,12 @@
          [:row {}
           [:text {:size 22
                   :color (t/comp-cols :text/color)
-                  :text "Search: "}]
+                  :text (string "Search "
+                                (when-let [mi (get-in search-state [:gb :match-index])]
+                                  (inc mi)
+                                  "/"
+                                  (get-in search-state [:gb :nof-matches]))
+                                " ")}]
           [ta/textarea {:weight 1
                         :text/size 22
                         :height 28
