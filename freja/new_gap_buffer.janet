@@ -1164,9 +1164,6 @@ Otherwise moves the caret backward one character."
   [gb peg]
   (def matches (peg/match (finder peg) (content gb) 0))
 
-  (print "caret: " (gb :caret))
-  (pp matches)
-
   [(binary-search-closest matches |(compare (gb :caret) (first $))) matches])
 
 (comment

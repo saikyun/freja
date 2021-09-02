@@ -32,7 +32,7 @@
       (:put props :match-index -1)
       (unless (empty? matches)
 
-        (:put props :match-index (tracev pos))
+        (:put props :match-index pos)
 
         (-> gb
             (gb/put-caret (in (in matches pos) 1))
@@ -58,7 +58,7 @@
       (:put props :match-index -1)
       (unless (empty? matches)
 
-        (:put props :match-index (tracev pos))
+        (:put props :match-index pos)
 
         (-> gb
             (gb/put-caret (in (in matches pos) 0))
@@ -212,9 +212,10 @@
                   :color (t/comp-cols :text/color)
                   :text (string "Search "
                                 (when-let [mi (get-in search-state [:gb :match-index])]
-                                  (inc mi)
-                                  "/"
-                                  (get-in search-state [:gb :nof-matches]))
+                                  (string
+                                    (inc mi)
+                                    "/"
+                                    (get-in search-state [:gb :nof-matches])))
                                 " ")}]
           [ta/textarea {:weight 1
                         :text/size 22
