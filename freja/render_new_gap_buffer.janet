@@ -1467,5 +1467,3 @@ Render lines doesn't modify anything in gb."
                           (buffer/push-byte c))))
     (print)
     (set last-i l)))
-
-(pp (get (curenv) 'render-cursor))

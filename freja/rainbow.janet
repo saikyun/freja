@@ -24,8 +24,7 @@
 
 
 (comment
-(((((((((())))))))))
-)
+  (((((((((()))))))))))
 
 
 (var depth 0)
@@ -81,13 +80,16 @@
     :dict (* "@" :struct)
     :main :root})
 
-(pp (peg/match delims-pos-grammar
-               ``
+(comment
+  (pp (peg/match delims-pos-grammar
+                 ``
 (+ 1 (* 3 3))
 # hej )
 (* 5 # 123 )
 )
 ``))
+  #
+)
 
 (varfn gb->delim-ps
   [gb]
