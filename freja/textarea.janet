@@ -8,6 +8,7 @@
 (import ./events :as e)
 (import freja/state)
 (import ./render_new_gap_buffer :as rgb)
+(use freja-jaylib)
 
 (use profiling/profile)
 
@@ -46,12 +47,26 @@
 (varfn draw-textarea
   [self]
   (def {:gb gb} self)
-  (rgb/gb-pre-render gb)
-#  (rgb/inner-render gb)
 
-#(print "huh")
+  (def {:size size} gb)
+
+  (when size
+    (draw-rectangle
+      0
+      0
+      (in size 0)
+      (in size 1)
+      (or (gb :background)
+          (get-in gb [:colors :background])
+          :blank)))
+
+  (rgb/gb-pre-render gb)
+  #  (rgb/inner-render gb)
+
+  #(print "huh")
 
   (rgb/gb-render-text gb)
+
   (when (= self (state/focus :focus))
     (when (> 30 (gb :blink))
       (rgb/render-cursor gb))

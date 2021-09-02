@@ -1169,10 +1169,11 @@ Otherwise moves the caret backward one character."
 
   [(binary-search-closest matches |(compare (gb :caret) (first $))) matches])
 
-(import freja/state)
-
 (comment
-#do
+  #do
+
+  (import freja/state)
+
   (def gbb (get-in state/editor-state [:left-state :editor :gb]))
   (pp (gb-find2! gbb "finder"))
   #
