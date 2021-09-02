@@ -1150,15 +1150,22 @@ Otherwise moves the caret backward one character."
 
 (varfn gb-find-forward!
   [gb peg]
-  (-?> (peg/match (finder peg) (content gb) (gb :caret))
-       first
-       last))
+  (or (-?> (peg/match (finder peg) (content gb) (gb :caret))
+           first
+           last)
+      (-?> (peg/match (finder peg) (content gb) 0)
+           first
+           last)))
 
 (varfn gb-find-backward!
   [gb peg]
-  (-?> (peg/match (finder peg) (string/slice (content gb) 0 (gb :caret)))
-       last
-       first))
+  (or (-?> (peg/match (finder peg) (string/slice (content gb) 0 (gb :caret)))
+           last
+           first)
+
+      (-?> (peg/match (finder peg) (content gb))
+           last
+           first)))
 
 (comment
   (gb-find! (string->gb "abc\n123 hej WAT") "hej")

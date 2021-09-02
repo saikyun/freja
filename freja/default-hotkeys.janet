@@ -117,6 +117,11 @@
   [props]
   (:search props))
 
+(defn eval-it
+  [props]
+  (evaling/eval-it (get-in props [:context :top-env])
+                   (evaling/gb-get-last-sexp props)))
+
 (var gb-binds @{:control @{:shift @{:f format!
                                     #
 }
@@ -127,8 +132,7 @@
                            :l fh/save-and-dofile
                            :s save-file
                            :q quit
-                           :enter |(evaling/eval-it (get-in $ [:context :top-env])
-                                                    (evaling/gb-get-last-sexp $))}
+                           :enter eval-it}
                 :enter (comp reset-blink |(gb/insert-char! $ (chr "\n")))})
 
 (table/setproto gb-binds global-keys)

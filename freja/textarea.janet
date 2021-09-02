@@ -11,7 +11,7 @@
 
 (use profiling/profile)
 
-(defn text-area-on-event
+(varfn text-area-on-event
   [self ev]
   (match ev
     [:key-down k]
@@ -43,6 +43,23 @@
         (e/put! state/focus :focus self)
         (put (self :gb) :event/changed true)))))
 
+(varfn draw-textarea
+  [self]
+  (def {:gb gb} self)
+  (rgb/gb-pre-render gb)
+#  (rgb/inner-render gb)
+
+#(print "huh")
+
+  (rgb/gb-render-text gb)
+  (when (= self (state/focus :focus))
+    (when (> 30 (gb :blink))
+      (rgb/render-cursor gb))
+
+    (update gb :blink inc) # TODO: should be dt
+
+    (when (< 50 (gb :blink))
+      (put gb :blink 0))))
 
 (defn default-textarea-state
   [&keys {:gap-buffer gap-buffer
@@ -65,22 +82,10 @@
 
   @{:gb gap-buffer
 
-    :draw (fn [self]
-            (def {:gb gb} self)
-            (rgb/gb-pre-render gb)
-            (rgb/gb-render-text gb)
-            (when (= self (state/focus :focus))
-              (when (> 30 (gb :blink))
-                (rgb/render-cursor gb))
+    # call like this so varfn works
+    :draw (fn [self] (draw-textarea self))
 
-              (update gb :blink inc) # TODO: should be dt
-
-              (when (< 50 (gb :blink))
-                (put gb :blink 0))))
-
-    :on-event (fn [self ev]
-                (text-area-on-event self ev))})
-
+    :on-event (fn [self ev] (text-area-on-event self ev))})
 
 (defn textarea
   [props & _]

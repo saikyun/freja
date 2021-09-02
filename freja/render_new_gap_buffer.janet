@@ -434,7 +434,7 @@ Returns `nil` if the max width is never exceeded."
   "Renders the lines in gap buffer.
 Also renders selection boxes.
 Render lines doesn't modify anything in gb."
-  [sizes gb lines start-index unused-start-y h y-limit]
+  [sizes gb lines start-index h y-limit]
   (def {:delim-ps delim-ps
         :y-poses y-poses
         :line-numbers line-numbers
@@ -466,7 +466,9 @@ Render lines doesn't modify anything in gb."
   # if we scrolled 30px, and y offset is 5px
   # line-start-y is 35px, which means we skip lines above 35px
   (def line-start-y (+ (+ #(offset 1)
-                          (- (gb :scroll)))))
+                          # we do max here to avoid lines popping in during animation
+                          (- (max (gb :render-scroll) # (gb :scroll)
+)))))
 
   # current line
   (var line-i nil)
@@ -476,7 +478,7 @@ Render lines doesn't modify anything in gb."
 
   (loop [i :range [0 (length lines)]
          :let [line-y (y-poses i)]]
-    (when (>= line-y (- line-start-y h)) # subtract h so partial lines will render
+    (when (>= line-y (- line-start-y (* h 2))) # subtract h so partial lines will render
       (set last-gb-index (if (= i 0)
                            0
                            (lines i)))
@@ -975,32 +977,43 @@ Render lines doesn't modify anything in gb."
                       res)))
      (do ,;body)))
 
+(varfn inner-draw
+  [gb]
+  (def {:position position
+        :offset offset
+        :size size
+        :colors colors
+        :scroll scroll
+        :changed changed
+        :changed-x-pos changed-x-pos
+        :changed-nav changed-nav
+        :changed-selection changed-selection
+        :width-of-last-line-number width-of-last-line-number
+        :lines lines
+        :y-poses y-poses
+        :line-flags line-flags}
+    gb)
+
+  (def [x-scale y-scale] screen-scale)
+
+  (def [x y] position)
+  (def [ox oy] offset)
+  (def [w _] size)
+
+  (def screen-w (* x-scale (get-screen-width)))
+  (def screen-h (* y-scale (get-screen-height)))
+
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
+
+  (render-lines sizes
+                gb
+                (gb :lines)
+                0
+                (* y-scale (* (gb :text/size) (gb :text/line-height)))
+                (height gb)))
+
 (varfnp generate-texture
         [gb]
-        (def {:position position
-              :offset offset
-              #        :sizes sizes
-              :size size
-              :colors colors
-              :scroll scroll
-              :changed changed
-              :changed-x-pos changed-x-pos
-              :changed-nav changed-nav
-              :changed-selection changed-selection
-              :width-of-last-line-number width-of-last-line-number
-              :lines lines
-              :y-poses y-poses
-              :line-flags line-flags}
-          gb)
-
-        (def [x-scale y-scale] screen-scale)
-
-        (def [x y] position)
-        (def [ox oy] offset)
-        (def [w _] size)
-
-        (def screen-w (* x-scale (get-screen-width)))
-        (def screen-h (* y-scale (get-screen-height)))
 
         (begin-texture-mode (gb :texture))
 
@@ -1008,30 +1021,13 @@ Render lines doesn't modify anything in gb."
 
         (rl-load-identity)
 
-        #  (rl-scalef 1 1 1)
-
         # you can use blank for slightly thinner text
-        (clear-background (or #:blank
+        (clear-background (or (when (not= (gb :scroll)
+                                          (gb :render-scroll)) :blank)
                               (gb :background)
-                              (colors :background)
+                              (get-in gb [:colors :background])
                               :blue))
-
-        (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
-
-        (render-lines sizes
-                      gb
-                      (gb :lines)
-                      0
-                      (+ (offset 1) (- (gb :scroll)))
-                      (* y-scale (* (gb :text/size) (gb :text/line-height)))
-                      (height gb))
-
-        # not sure why I have to do this 
-        # I thought rl-pop-matrix would be enough
-        #  (rl-load-identity) 
-
-        #  (rl-scalef 2 2 1)
-
+        (inner-draw gb)
         (rl-pop-matrix)
 
         (end-texture-mode))
@@ -1159,6 +1155,22 @@ Render lines doesn't modify anything in gb."
         :line-numbers line-numbers}
     gb)
 
+  (unless (gb :render-scroll)
+    (put gb :render-scroll (gb :scroll)))
+
+  (def rs-changed (not= (gb :scroll) (gb :render-scroll)))
+
+  (update gb :render-scroll
+          (fn [rs]
+            (let [scroll (gb :scroll)
+                  org-diff (- scroll rs)
+                  snap 1
+                  diff (* org-diff 0.5)]
+              (if (and (> diff (- snap))
+                       (< diff snap))
+                scroll
+                (+ rs diff)))))
+
   (def [x y] size)
   (def [x-scale y-scale] screen-scale)
 
@@ -1169,7 +1181,8 @@ Render lines doesn't modify anything in gb."
             changed-nav
             changed-selection
             changed-scroll
-            changed-styling)
+            changed-styling
+            rs-changed)
 
     (when changed
       (put gb :delim-ps (rb/gb->delim-ps gb)))
@@ -1200,7 +1213,8 @@ Render lines doesn't modify anything in gb."
               changed
               changed-selection
               changed-styling
-              (get gb :changed-scroll changed-scroll))
+              (get gb :changed-scroll changed-scroll)
+              rs-changed)
 
       (put gb :width-of-last-line-number
            (* x-scale
@@ -1254,26 +1268,107 @@ Render lines doesn't modify anything in gb."
 
   #€   (rl-load-identity)
 
-  #  (rl-scalef 2 2 1)
+  (def col (gb :text/color))
+  (def text/size (gb :text/size))
+  (def text/spacing (gb :text/spacing))
 
-  ### CLEAR BACKGROUND
-  #(clear-background (or (gb :background)
-  #                      (colors :background)
-  #                      :blue))
-  (draw-texture-pro
-    (get-render-texture (gb :texture))
-    [0 0 (* x-scale w)
-     (* y-scale (- h)) # (- h) #screen-w (- screen-h)
+  (let [mag (- (gb :scroll) (gb :render-scroll))]
+    (when (> (math/abs mag) 10)
+
+      (put gb :text/color 0x00ff00ff)
+
+      #(rl-translatef (* 0.003 (math/abs mag) (dec (* 2 (math/random))))
+      #               (* 0 mag (math/random)) 0)
+
+      (rl-push-matrix)
+
+      #(rl-scalef 0 #(inc (* -0.0001 (math/abs mag))
+      #           (inc (* -0.0001 (math/abs mag))) 0)
+
+      (def smear-y (- (min 25 (max -25 (* 0.05 mag)))))
+
+      (rl-translatef 0 smear-y 0)
+
+      (do #comment
+
+        (def stretch-y (inc (* 0.002 (math/abs mag))))
+
+        (def y-diff
+          (if (neg? mag)
+            (- (* h stretch-y)
+               h)
+            0))
+
+
+        (draw-texture-pro
+          (get-render-texture (gb :texture))
+          [0 0 (* x-scale w)
+           (* y-scale (- h)) # (- h) #screen-w (- screen-h)
 ]
 
-    [x
-     y
-     w h #(/ screen-w x-scale) (/ screen-h y-scale)
+          [x
+           (- y (* 0.7 y-diff))
+           w (* h stretch-y) #(/ screen-w x-scale) (/ screen-h y-scale)
 ]
-    [0 0]
-    0
-    :white
-    #(colors :background)
+          [0 0]
+          0
+          0x999999955
+          #(colors :background)
+)
+
+        (draw-texture-pro
+          (get-render-texture (gb :texture))
+          [0 0 (* x-scale w)
+           (* y-scale (- h)) # (- h) #screen-w (- screen-h)
+]
+
+          [x
+           (- y (* 1.1 y-diff))
+           w (* h stretch-y) #(/ screen-w x-scale) (/ screen-h y-scale)
+]
+          [0 0]
+          0
+          0x99999922
+          #(colors :background)
+))
+
+      (rl-pop-matrix))
+
+    ### CLEAR BACKGROUND
+    #(clear-background (or (gb :background)
+    #                      (colors :background)
+    #                      :blue))
+
+    (put gb :text/color col)
+    (put gb :text/size text/size)
+    (put gb :text/spacing text/spacing)
+
+    #  (inner-draw gb)
+
+    (do #comment
+      (def ratio (- 1 (math/abs (* mag 0.00005))))
+      (def extra-y (if (pos? mag)
+                     0
+                     (if (not= 0 mag)
+                       (* (- 1 ratio) h)
+                       (* (- 1 ratio) h))))
+
+      (draw-texture-pro
+        (get-render-texture (gb :texture))
+        [0 0 (* x-scale w)
+         (* y-scale (- (* ratio h))) # (- h) #screen-w (- screen-h)
+]
+
+        [x
+         (+ y extra-y)
+         w (* ratio h) #(/ screen-w x-scale) (/ screen-h y-scale)
+]
+        [0 0]
+        0
+        :white
+        #(colors :background)
+))
+    #
 )
 
   (rl-pop-matrix)
