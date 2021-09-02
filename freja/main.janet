@@ -135,7 +135,8 @@
 
 (defn styling-worker
   [parent]
-  (def content (thread/receive))
+# TODO: fix with new thherad stuff
+#  (def content (thread/receive))
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
 
