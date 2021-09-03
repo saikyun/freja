@@ -135,8 +135,8 @@
 
 (defn styling-worker
   [parent]
-# TODO: fix with new thherad stuff
-#  (def content (thread/receive))
+  # TODO: fix with new thherad stuff
+  #  (def content (thread/receive))
   (def res (peg/match styling-grammar content))
   (:send parent [:hl res]))
 
@@ -340,18 +340,30 @@
 
   (frp/init-chans)
 
-  (when-let [file (get args 1)]
-    (def [path line column]
-      (peg/match
-        '(* (<- (some (if-not ":" 1)))
-            (opt (* ":"
-                    (<- (some (if-not ":" 1)))))
-            (opt (* ":"
-                    (<- (some (if-not ":" 1))))))
-        file))
-    (set state/initial-file [path
-                             (-?> line scan-number)
-                             (-?> column scan-number)]))
+  (file-handling/ensure-dir (file-handling/data-path ""))
+
+  (if-let [file (get args 1)]
+    (let [[path line column]
+          (peg/match
+            '(* (<- (some (if-not ":" 1)))
+                (opt (* ":"
+                        (<- (some (if-not ":" 1)))))
+                (opt (* ":"
+                        (<- (some (if-not ":" 1))))))
+            file)]
+      (set state/initial-file [path
+                               (-?> line scan-number)
+                               (-?> column scan-number)]))
+    (do
+      (unless (os/stat file-handling/scratch-path)
+        (spit file-handling/scratch-path ``
+# This is your personal scratch file
+# if you want to try it out, just hit Ctrl/Cmd + L
+
+(print "Welcome to your personal scratch file!")
+``))
+
+      (set state/initial-file [file-handling/scratch-path])))
 
   (start)
 

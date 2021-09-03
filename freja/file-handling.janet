@@ -7,6 +7,27 @@
 
 (setdyn :freja/ns "freja/file-handling")
 
+(defn ensure-dir
+  [path]
+  (reduce (fn [acc cur]
+            (if-not acc
+              cur
+              (let [new (string acc path/sep cur)]
+                (os/mkdir new)
+                new)))
+          nil
+          (string/split path/sep path)))
+
+(defn data-path
+  [path]
+  (string (os/getenv "HOME") "/.local/share/freja" path/sep path))
+
+(def scratch-path (data-path "scratch"))
+
+(defn remove-scratch-file
+  []
+  (os/rm scratch-path))
+
 (varfn read-file
   [path]
   (def f (file/open path))
