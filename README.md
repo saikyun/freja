@@ -8,6 +8,8 @@ Self-modifiable text editor implemented in Janet.
 
 * Janet -- https://janet-lang.org/
   * needs to use this commit or later: `04ca945ecf0598e069caadb35a3c3089187a8186`
+* on newer versions of janet, you need to install jpm separately:
+  * https://github.com/janet-lang/jpm
 * libglfw3-dev
   * (X)ubuntu: `sudo apt-get install libglfw3-dev`
 * Raylib dependencies -- https://github.com/raysan5/raylib#installing-and-building-raylib-on-multiple-platforms
@@ -35,6 +37,8 @@ If you start it from another directory, you will get errors like:
 `could not open file fonts/MplusCodeLatin60-Medium.otf`
 
 If you want to run freja anywhere, it's better to `jpm install` it, or `jpm build` it.
+
+If you want to use PREFIX as to not litter system wide libs, check out [sogaiu's post about it](https://github.com/saikyun/freja/issues/30#issuecomment-907937626).
 
 ### changing the theme
 
