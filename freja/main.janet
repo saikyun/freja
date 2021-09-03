@@ -59,6 +59,10 @@
 (import ./render_new_gap_buffer :as render_new_gap_buffer)
 (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
 
+(def theme (require "./theme"))
+(import ./theme :as theme)
+(put module/cache "freja/theme" theme)
+
 (def checkpoint (require "./checkpoint"))
 (import ./checkpoint)
 (put module/cache "freja/checkpoint" checkpoint)
@@ -66,11 +70,6 @@
 (def default-hotkeys (require "./default-hotkeys"))
 (import ./default-hotkeys)
 (put module/cache "freja/default-hotkeys" default-hotkeys)
-
-(def theme (require "./theme"))
-(import ./theme :as theme)
-(put module/cache "freja/theme" theme)
-
 
 (def textarea (require "./textarea"))
 (import ./textarea)
