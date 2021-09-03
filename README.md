@@ -38,6 +38,8 @@ If you start it from another directory, you will get errors like:
 
 If you want to run freja anywhere, it's better to `jpm install` it, or `jpm build` it.
 
+If you want to use PREFIX as to not litter system wide libs, check out [sogaiu's post about it](https://github.com/saikyun/freja/issues/30#issuecomment-907937626).
+
 ### changing the theme
 
 NOTE: Use `Ctrl` on Windows / Linux and `Cmd` on MacOS.
