@@ -728,8 +728,12 @@ Updates caret etc as expected."
   (def {:selection selection
         :caret caret} gb)
 
-  (if selection
+  (cond selection
     (delete-selection! gb)
+
+    (= caret (gb-length gb))
+    gb
+
     (-> gb
         (delete-region! caret (inc caret))
         (put :changed-x-pos true))))
