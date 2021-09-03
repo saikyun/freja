@@ -118,8 +118,8 @@
     (print "new editor state for " id)
     (put state :editor (ta/default-textarea-state))
 
-    (when initial-path
-      (fh/load-file (state :editor) initial-path))
+#    (when initial-path
+#      ((file-open-binds :load-file) (state :editor) initial-path))
 
     (set editor-new? true))
 
@@ -231,7 +231,7 @@
                      (when editor-new?
                        (def gb (get-in state [:editor :gb]))
                        (when-let [[path line column] initial-file]
-                         (fh/load-file (state :editor) path)
+                         ((file-open-binds :load-file) (state :editor) path)
                          (when line
                            (rgb/goto-line-number gb line))
                          (when column
