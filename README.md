@@ -8,6 +8,8 @@ Self-modifiable text editor implemented in Janet.
 
 * Janet -- https://janet-lang.org/
   * needs to use this commit or later: `04ca945ecf0598e069caadb35a3c3089187a8186`
+* on newer versions of janet, you need to install jpm separately:
+  * https://github.com/janet-lang/jpm
 * libglfw3-dev
   * (X)ubuntu: `sudo apt-get install libglfw3-dev`
 * Raylib dependencies -- https://github.com/raysan5/raylib#installing-and-building-raylib-on-multiple-platforms
