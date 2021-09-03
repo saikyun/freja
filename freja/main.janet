@@ -59,6 +59,10 @@
 (import ./render_new_gap_buffer :as render_new_gap_buffer)
 (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
 
+(def checkpoint (require "./checkpoint"))
+(import ./checkpoint)
+(put module/cache "freja/checkpoint" checkpoint)
+
 (def default-hotkeys (require "./default-hotkeys"))
 (import ./default-hotkeys)
 (put module/cache "freja/default-hotkeys" default-hotkeys)
@@ -172,6 +176,11 @@
                                    (window-should-close))
                            (when state/quit-hook
                              (state/quit-hook))
+
+                           (checkpoint/save-file-with-checkpoint
+                             (get-in state/editor-state [:left-state :editor :gb])
+                             "before quitting")
+
                            (close-window)
                            (os/exit)
                            (error "QUIT!"))
@@ -267,6 +276,10 @@
 
       (when state/quit-hook
         (state/quit-hook))
+
+      (checkpoint/save-file-with-checkpoint
+        (get-in state/editor-state [:left-state :editor :gb])
+        "before crashing")
 
       (close-window))))
 

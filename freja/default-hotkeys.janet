@@ -4,6 +4,7 @@
 (import freja/state)
 (import freja/file-handling :as fh)
 (import freja/input)
+(import freja/checkpoint)
 (import ./evaling)
 
 (varfn reset-blink
@@ -35,6 +36,9 @@
 (def page-down! render-gb/page-down!)
 (def beginning-of-buffer gb/beginning-of-buffer)
 (def end-of-buffer gb/end-of-buffer)
+(defn show-checkpoints
+  [_]
+  (checkpoint/show-checkpoints))
 
 (var global-keys
   @{:alt @{:shift @{:left select-backward-word
@@ -52,6 +56,7 @@
 
     :control @{:shift @{:left select-backward-word
                         :right select-forward-word
+                        :c show-checkpoints
                         #
 }
 
@@ -110,8 +115,8 @@
   (:goto-line props))
 
 (defn save-file
-  [& args]
-  (fh/save-file ;args))
+  [props &opt note]
+  (checkpoint/save-file-with-checkpoint props note))
 
 (defn search
   [props]
@@ -137,7 +142,7 @@
 
 (table/setproto gb-binds global-keys)
 
-(def file-open-binds @{:load-file fh/load-file
+(def file-open-binds @{:load-file checkpoint/load-file-with-checkpoints
 
                        :escape
                        (fn [props]

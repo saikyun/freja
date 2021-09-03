@@ -186,7 +186,8 @@
                    #    (print "Tree: ")
                    #    (ch/print-tree (self :root)))
                    #  (print "(self :root) is nil"))
-                   (debug/stacktrace fib err)
+
+
                    (when (self :remove-layer-on-error)
                      (print "Removing layer: " (self :name))
                      (remove-layer (self :name) (self :props))))))})

@@ -50,6 +50,18 @@
 
   (put props :event/changed true))
 
+(varfn save-file
+  [props &keys {:no-print no-print}]
+  (def path (props :path))
+
+  (with [f (file/open path :w)]
+    (file/write f (-> props
+                      commit!
+                      (get :text)))
+    (file/flush f)
+    (unless no-print
+      (print "Saved file: " path))))
+
 (varfn load-file2
   [props path]
   (old/replace-content props (read-file path)))
@@ -67,17 +79,6 @@
 
   (put text-data :text (buffer (text-data :after))))
 
-(varfn save-file
-  [props &keys {:no-print no-print}]
-  (def path (props :path))
-
-  (with [f (file/open path :w)]
-    (file/write f (-> props
-                      commit!
-                      (get :text)))
-    (file/flush f)
-    (unless no-print
-      (print "Saved file: " path))))
 
 (var last-path nil)
 
