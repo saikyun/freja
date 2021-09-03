@@ -295,7 +295,7 @@
 (defn main [& args]
   (when (= "--version" (get args 1))
     (print (string "freja " ver-str))
-    (os/exit 1))
+    (os/exit 0))
 
   (when-let [syspath (os/getenv "JANET_PATH")]
     (setdyn :syspath syspath))
