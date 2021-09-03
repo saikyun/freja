@@ -331,7 +331,6 @@ Emits events when rerendering is needed.
 and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
-  (debug/stacktrace (fiber/current))
   (unless (find |(= $ cb) (get-in deps [:deps emitter] []))
     (update-in deps [:deps emitter] (fn [$] @[cb ;(or $ [])]))))
 
@@ -341,7 +340,6 @@ Creates a regular subscription."
 and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
-  (debug/stacktrace (fiber/current))
   (unless (find |(= $ cb) (get-in deps [:deps emitter] []))
     (update-in deps [:deps emitter] |(array/push (or $ @[]) cb))))
 
