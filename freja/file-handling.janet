@@ -172,8 +172,6 @@
 
     (def env (make-env top-env))
 
-    (print `=> (freja-dofile "` path `")`)
-
     (put env :freja/loading-file true)
     (put env :out state/out)
     (put env :err state/out)
@@ -195,10 +193,12 @@
                                        :source source
                                        :source-line source-line
                                        :fiber fib
+                                       :code (string `(freja-dofile "` path `")`)
                                        :cause "freja-dofile"})
             (propagate msg fib))
           (do
             (e/push! frp/eval-results {:error err
+                                       :code (string `(freja-dofile "` path `")`)
                                        :fiber fib
                                        :cause "freja-dofile"})
             (propagate err fib)))))
@@ -252,10 +252,8 @@
 
         (set state/user-env ns)))
 
-    (print "Loaded module: " (or ns-name path))
-
-    (e/push! frp/eval-results {:value "nil"
-                               :code "freja-dofile"
+    (e/push! frp/eval-results {:value (string "Loaded module: " (or ns-name path))
+                               :code (string `(freja-dofile "` path `")`)
                                :fiber (fiber/current)})))
 
 (comment

@@ -4,6 +4,8 @@
 
 (use ./new_gap_buffer)
 
+(setdyn :freja/ns "freja/evaling")
+
 (def grammar
   ~{:ws (set " \t\r\f\n\0\v")
     :readermac (set "';~,|")
@@ -95,7 +97,7 @@ ouae
 
 (varfn eval-it
   [env code]
-  (print "=> " (string/trim code))
+  # (print "=> " (string/trim code))
 
   (try
     (do
@@ -107,7 +109,8 @@ ouae
       (e/push! frp/eval-results {:value res
                                  :code code
                                  :fiber (fiber/current)})
-      (pp res))
+#      (pp res)
+)
     ([err fib]
       (debug/stacktrace fib err)
 

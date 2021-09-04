@@ -1,1 +1,1 @@
-(def ver-str "0360ed6")
+(def ver-str "7d27da3")

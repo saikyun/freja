@@ -67,6 +67,22 @@
 (import ./checkpoint)
 (put module/cache "freja/checkpoint" checkpoint)
 
+(import spork/netrepl)
+(import spork/path)
+(setdyn :pretty-format "%.40M")
+(import whereami :as wai)
+
+
+(def hiccup (require "./hiccup"))
+(import ./hiccup :as hiccup)
+(put module/cache "freja/hiccup" hiccup)
+
+(def echoer (require "./echoer"))
+(import ./echoer :as echoer)
+(put module/cache "freja/echoer" echoer)
+
+
+
 (def default-hotkeys (require "./default-hotkeys"))
 (import ./default-hotkeys)
 (put module/cache "freja/default-hotkeys" default-hotkeys)
@@ -79,15 +95,7 @@
 (import ./editor)
 (put module/cache "freja/editor" editor)
 
-(import spork/netrepl)
-(import spork/path)
-(setdyn :pretty-format "%.40M")
-(import whereami :as wai)
 
-
-(def hiccup (require "./hiccup"))
-(import ./hiccup :as hiccup)
-(put module/cache "freja/hiccup" hiccup)
 
 (import ./newest-menu :as menu)
 (import ./default-layout)
@@ -260,6 +268,7 @@
 
         (default-layout/init)
         (menu/init)
+        (echoer/init)
 
         (set texture (load-render-texture 500 500))
 
