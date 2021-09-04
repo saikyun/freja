@@ -5,7 +5,6 @@
 (import freja/file-handling :as fh)
 (import freja/input)
 (import freja/checkpoint)
-(import freja/echoer)
 (import ./evaling)
 
 (varfn reset-blink
@@ -37,15 +36,10 @@
 (def page-down! render-gb/page-down!)
 (def beginning-of-buffer gb/beginning-of-buffer)
 (def end-of-buffer gb/end-of-buffer)
+
 (defn show-checkpoints
   [_]
   (checkpoint/show-checkpoints))
-(defn toggle-console
-  [_]
-  (:toggle-console state/editor-state))
-(defn clear-console
-  [_]
-  (gb/replace-content (echoer/state-big :gb) @""))
 
 (var global-keys
   @{:alt @{:shift @{:left select-backward-word
@@ -66,9 +60,6 @@
                         :c show-checkpoints
                         #
 }
-
-               :alt @{:l toggle-console
-                      :c clear-console}
 
                :backspace delete-word-backward!
                :delete delete-word-forward!

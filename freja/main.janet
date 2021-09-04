@@ -77,12 +77,6 @@
 (import ./hiccup :as hiccup)
 (put module/cache "freja/hiccup" hiccup)
 
-(def echoer (require "./echoer"))
-(import ./echoer :as echoer)
-(put module/cache "freja/echoer" echoer)
-
-
-
 (def default-hotkeys (require "./default-hotkeys"))
 (import ./default-hotkeys)
 (put module/cache "freja/default-hotkeys" default-hotkeys)
@@ -95,7 +89,9 @@
 (import ./editor)
 (put module/cache "freja/editor" editor)
 
-
+(def echoer (require "./echoer"))
+(import ./echoer :as echoer)
+(put module/cache "freja/echoer" echoer)
 
 (import ./newest-menu :as menu)
 (import ./default-layout)
@@ -317,6 +313,8 @@
   (when (= "--version" (get args 1))
     (print (string "freja " ver-str))
     (os/exit 0))
+
+  (set file-handling/scratch-path (file-handling/data-path "scratch"))
 
   (when-let [syspath (os/getenv "JANET_PATH")]
     (setdyn :syspath syspath))

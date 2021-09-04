@@ -22,7 +22,7 @@
   [path]
   (string (os/getenv "HOME") "/.local/share/freja" path/sep path))
 
-(def scratch-path (data-path "scratch"))
+(var scratch-path nil)
 
 (defn remove-scratch-file
   []

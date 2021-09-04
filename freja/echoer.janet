@@ -87,3 +87,16 @@
   (frp/subscribe! frp/out (partial replace state))
 
   (frp/subscribe! frp/out (partial append state-big)))
+
+(import freja/default-hotkeys :as dh)
+
+(defn toggle-console
+  [_]
+  (:toggle-console state/editor-state))
+
+(defn clear-console
+  [_]
+  (gb/replace-content (state-big :gb) @""))
+
+(dh/global-set-key [:control :alt :l] toggle-console)
+(dh/global-set-key [:control :alt :c] clear-console)
