@@ -184,6 +184,8 @@
   (def y-offset (+ oy y-pos (* # (conf :mult)
                                scroll)))
 
+  (def [x-scale _] screen-scale)
+
   (unless (empty? lines)
     (let [line-index (-> (binary-search-closest
                            y-poses
@@ -198,9 +200,11 @@
                    props
                    row-start-pos
                    row-end-pos
-                   (- mx (* 1 ox) # mult mult mult
-                      (* 1 x-pos)
-                      (* 1 width-of-last-line-number)))
+                   # take mouse x in absolute space
+                   # and remove the stuff left of
+                   # the beginning of the row (e.g. line number width)
+                   (- mx
+                      (render-gb/abs-text-x props 0)))
 
           flag (line-flags (max 0 (dec line-index)))]
 

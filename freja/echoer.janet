@@ -39,6 +39,7 @@
   [:background {:color 0x444444ff}
    [:padding {:all 2}
     [ta/textarea {:state state-big
+
                   :text/spacing 0.5
                   :text/size text-size
                   :text/font "MplusCode"
