@@ -46,21 +46,6 @@
                   :text/color (t/colors :text)
                   :space-in-bottom (state/editor-state :bottom-h)}]]])
 
-(e/put! state/editor-state
-        :bottom bottom)
-
-(put state/editor-state
-     :toggle-console
-     (fn [self]
-       (def curr (self :right))
-       (if (= curr big)
-         (e/put! self :right (self :last-right))
-         (-> self
-             (e/put! :last-right curr)
-             (e/put! :right big)))))
-
-(e/put! state/editor-state :bottom-h 55)
-
 (defn append
   [state s]
   (-> (state :gb)
@@ -80,13 +65,25 @@
     (pp (res :error))
     (pp (res :value))))
 
-
 (defn init
   []
+  (e/put! state/editor-state
+          :bottom bottom)
+
+  (put state/editor-state
+       :toggle-console
+       (fn [self]
+         (def curr (self :right))
+         (if (= curr big)
+           (e/put! self :right (self :last-right))
+           (-> self
+               (e/put! :last-right curr)
+               (e/put! :right big)))))
+
+  (e/put! state/editor-state :bottom-h 55)
+
   (frp/subscribe! frp/eval-results (fn [res] (handle-eval-results res)))
-
   (frp/subscribe! frp/out (partial replace state))
-
   (frp/subscribe! frp/out (partial append state-big)))
 
 (import freja/default-hotkeys :as dh)

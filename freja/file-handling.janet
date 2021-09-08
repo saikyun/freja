@@ -212,13 +212,21 @@
     (def ns-name (or (get env :freja/ns)
                      (first (module/find (path/abspath path)))
                      (first (module/find path))))
+
     (cond ns-name
       (let [ns (require ns-name)]
         (loop [k :keys env
                :let [existing-sym (ns k)
                      existing-var (get-in ns [k :ref])
-                     new-var (get-in env [k :ref])]]
+                     new-var (get-in env [k :ref])
+                     defonce? (get-in ns [k :defonce])]]
           (cond
+            # don't do anything if it is declared defonce
+            # in new
+            (and defonce?
+                 existing-sym)
+            nil
+
             (or (not existing-sym)
                 (and (not existing-var)
                      (not new-var)))
