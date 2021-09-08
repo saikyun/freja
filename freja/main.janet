@@ -291,27 +291,26 @@
 
 (var server nil)
 
-(try
-  (let [proc (os/spawn ["git"
-                        "rev-parse" "--short" "HEAD"]
-                       :px
-                       {:out :pipe})]
-    (os/proc-wait proc)
-    (def v-str (string/trimr (ev/read (proc :out) :all)))
-    # XXX: file path yuckiness?
-    (spit (string "freja/version.janet")
-          (string `(def ver-str "` v-str `")`)))
-  ([err]
-    (eprintf "failed to determine commit: %p" err)
-    (os/exit 1)))
-
 (def version (require "./version"))
-(import ./version :prefix "")
+(import ./version)
 (put module/cache "freja/version" version)
+
+(set version/ver-str
+     (try
+       (let [proc (os/spawn ["git"
+                             "rev-parse" "--short" "HEAD"]
+                            :px
+                            {:out :pipe})]
+         (os/proc-wait proc)
+         (string/trimr (ev/read (proc :out) :all)))
+       ([err]
+         (eprintf "failed to determine commit: %p" err)
+         (os/exit 1))))
+
 
 (defn main [& args]
   (when (= "--version" (get args 1))
-    (print (string "freja " ver-str))
+    (print (string "freja " version/ver-str))
     (os/exit 0))
 
   (set file-handling/scratch-path (file-handling/data-path "scratch"))

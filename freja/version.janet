@@ -1,1 +1,1 @@
-(def ver-str "fe16afc")
+(var ver-str nil)
