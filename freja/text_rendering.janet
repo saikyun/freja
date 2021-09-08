@@ -51,6 +51,13 @@
                    (math/floor (* 1 size))
                    (* 1 spacing)))
 
+(defn measure-text*2
+  [font text size spacing scale]
+  (measure-text-ex font
+                   text
+                   (math/floor (* scale size))
+                   (* scale spacing)))
+
 (defn draw-text*
   [font text pos size spacing color]
   (draw-text-ex font
@@ -235,7 +242,7 @@
 
         :ok
         #(handle-wide-word state word size)
-)
+        )
 
       (not (empty? (row :words)))
       (do (put row :word-wrapped true)
@@ -366,7 +373,7 @@
   state
 
   #(pp state)
-)
+  )
 
 (varfn words-before-cursor-until-invisiblev1.5
   "Find all words, and start wrapping them, assuming that the current position is at the end of the current line."
@@ -429,7 +436,7 @@
   lines
 
   #(pp state)
-)
+  )
 
 (var lines @[])
 (var need-wordwrap @[])
@@ -813,7 +820,7 @@ e.g. when at the end / right after a word wrapped line."
                (= (first "\n")
                   (get all-text (dec cp))
                   #(last text)
-))
+                  ))
       (+= current-row 1))
 
     (when (and (get-in rows [current-row :word-wrapped])

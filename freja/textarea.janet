@@ -105,6 +105,7 @@
 (defn textarea
   [props & _]
   (def {:state state
+        :offset offset
         :text/color text/color
         :text/size text/size
         :text/font text/font
@@ -125,6 +126,9 @@
                         :binds binds
                         :extra-binds extra-binds)))
 
+  (default offset (if show-line-numbers
+                    [12 0]
+                    [12 0]))
   (default text/size (dyn :text/size 14))
   (default text/font (dyn :text/font "Poppins"))
   (default text/line-height (dyn :text/line-height 1))
@@ -138,8 +142,7 @@
   (put-in state [:gb :text/color] text/color)
   (put-in state [:gb :changed] true)
   (put-in state [:gb :show-line-numbers] show-line-numbers)
-  (when show-line-numbers
-    (put-in state [:gb :offset] [12 0]))
+  (put-in state [:gb :offset] offset)
 
   (-> (dyn :element)
       (dt/add-default-props props)

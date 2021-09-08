@@ -365,7 +365,7 @@ Returns `nil` if the max width is never exceeded."
             [(+ (offset 0)
                 width-of-last-line-number
                 start-x)
-             (+ (- y (* y-scale 0)) (offset 1))
+             (+ (* y y-scale) (offset 1))
              (- stop-x start-x)
              (* y-scale line-h)]
             (colors :selected-text-background)
@@ -385,9 +385,11 @@ Returns `nil` if the max width is never exceeded."
 
 (varfn abs-text-x
   [gb x]
+  (def [x-scale _] screen-scale)
   (+ ((gb :position) 0)
-     ((gb :offset) 0)
-     (gb :width-of-last-line-number)
+     (/ ((gb :offset) 0) x-scale)
+     (/ (gb :width-of-last-line-number)
+        x-scale)
      x))
 
 (varfn abs-text-y
@@ -414,20 +416,22 @@ Returns `nil` if the max width is never exceeded."
 (defn gb-draw-text
   [gb text pos color]
   (def font (a/font (gb :text/font) (gb :text/size)))
-  (tr/draw-text* font
-                 text
-                 pos
-                 (gb :text/size)
-                 (gb :text/spacing)
-                 color))
+  (tr/draw-text*2 font
+                  text
+                  pos
+                  (gb :text/size)
+                  (gb :text/spacing)
+                  color
+                  (screen-scale 0)))
 
 (defn gb-measure-text
   [gb text]
   (def font (a/font (gb :text/font) (gb :text/size)))
-  (tr/measure-text* font
-                    text
-                    (gb :text/size)
-                    (gb :text/spacing)))
+  (tr/measure-text*2 font
+                     text
+                     (gb :text/size)
+                     (gb :text/spacing)
+                     (screen-scale 0)))
 
 
 (varfn render-lines
@@ -508,7 +512,7 @@ Render lines doesn't modify anything in gb."
           (gb-draw-text gb
                         lns
                         [0
-                         (rel-y gb (- line-y line-start-y))]
+                         (rel-y gb (* y-scale (- line-y line-start-y)))]
                         :gray)))
 
       (gb-iterate
@@ -540,7 +544,7 @@ Render lines doesn't modify anything in gb."
           (gb-draw-text gb
                         s
                         [(math/floor (rel-text-x gb x))
-                         (math/floor target-y)]
+                         (math/floor (* y-scale target-y))]
                         (cond (in-selection? gb i)
                           :white
 
@@ -1217,10 +1221,9 @@ Render lines doesn't modify anything in gb."
               rs-changed)
 
       (put gb :width-of-last-line-number
-           (* x-scale
-              (first (gb-measure-text gb (string/format "%d" (length lines))))
-              #
-))
+           (if (gb :show-line-numbers)
+             (first (gb-measure-text gb (string/format "%d" (length lines))))
+             0))
 
       (generate-texture gb))
 
