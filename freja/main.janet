@@ -93,6 +93,10 @@
 (import ./echoer :as echoer)
 (put module/cache "freja/echoer" echoer)
 
+(def flow (require "./flow"))
+(import ./flow :as flow)
+(put module/cache "freja/flow" flow)
+
 (import ./newest-menu :as menu)
 (import ./default-layout)
 
