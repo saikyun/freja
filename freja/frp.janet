@@ -160,12 +160,13 @@ Emits events when rerendering is needed.
   (loop [[k dl] :pairs delay-left
          :let [left ((update delay-left k - dt) k)]]
     (when (<= left 0)
-      (e/push! keyboard @[:key-down k])
+      (e/push! keyboard @[:key-repeat k])
       (put delay-left k i/repeat-delay)))
 
   (loop [k :in kb/possible-keys]
     (when (key-released? k)
-      (put delay-left k nil))
+      (put delay-left k nil)
+      (e/push! keyboard @[:key-release k]))
 
     (when (key-pressed? k)
       (put delay-left k i/initial-delay)
@@ -266,7 +267,12 @@ Emits events when rerendering is needed.
         (do (put mouse-data :just-down false)
           (unless (= pos (mouse-data :last-pos))
             (put mouse-data :last-pos pos)
-            (e/push! mouse @[:drag (get-mouse-position)])))))))
+            (e/push! mouse @[:drag (get-mouse-position)])))))
+
+    # no mouse button down
+    (not= pos (mouse-data :last-pos))
+    (do (put mouse-data :last-pos pos)
+      (e/push! mouse @[:mouse-move (get-mouse-position)]))))
 
 (def deps @{})
 

@@ -177,6 +177,9 @@
                  ([err fib]
                    (print "Error during event:")
                    (pp ev)
+
+                   (propagate err fib)
+
                    #(print "Hiccup: ")
                    #(pp ((self :hiccup) (self :props)))
                    #(print "Full tree:")

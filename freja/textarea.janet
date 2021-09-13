@@ -12,15 +12,22 @@
 
 (use profiling/profile)
 
+# just doing this as inlining
+(defmacro press
+  []
+  ~(do (i/handle-keyboard2
+         (self :gb)
+         k)
+     (put self :event/changed true)))
+
 (varfn text-area-on-event
   [self ev]
   (match ev
     [:key-down k]
-    (do
-      (i/handle-keyboard2
-        (self :gb)
-        k)
-      (put self :event/changed true))
+    (press)
+
+    [:key-repeat k]
+    (press)
 
     [:char k]
     (do
