@@ -204,7 +204,8 @@
                                (debug/stacktrace fib err)
                                ## TODO:  Dump-state
                                #(dump-state path gb-data)
-                               (print "Dumped state to " path))
+                               #(print "Dumped state to " path)
+)
                              (print (debug/stacktrace fib err))
                              (ev/sleep 1))))))))
 

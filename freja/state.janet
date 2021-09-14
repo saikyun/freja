@@ -11,6 +11,8 @@
 
 (var initial-file nil)
 
+(var eval-results nil)
+
 (def focus @{})
 
 (def out @"")

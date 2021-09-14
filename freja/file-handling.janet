@@ -5,7 +5,7 @@
 (import ./events :as e)
 (import spork/path)
 
-(setdyn :freja/ns "freja/file-handling")
+#(setdyn :freja/ns "freja/file-handling")
 
 (defn ensure-dir
   [path]
@@ -66,7 +66,14 @@
   [props path]
   (old/replace-content props (read-file path)))
 
+(varfn lul
+  [x]
+  (print "hej KAKA " x))
+
 (comment
+  (import freja/frp)
+  (frp/subscribe! frp/mouse |(lul $))
+
   (replace-content gb-data "")
   (let [_ (load-file gb-data "freja/test_main.janet")]
     :ok)
@@ -78,7 +85,6 @@
     :ok)
 
   (put text-data :text (buffer (text-data :after))))
-
 
 (var last-path nil)
 
@@ -149,6 +155,7 @@
                   :read read
                   :parser parser
                   :source (or src (if path-is-file "<anonymous>" spath))}))
+  (env :exit)
   (if-not path-is-file (file/close f))
   (when exit-error
     (if exit-fiber
@@ -161,6 +168,56 @@
   #
 )
 
+(defn- no-side-effects
+  `Check if form may have side effects. If returns true, then the src
+  must not have side effects, such as calling a C function.`
+  [src]
+  (cond
+    (tuple? src)
+    (if (= (tuple/type src) :brackets)
+      (all no-side-effects src))
+    (array? src)
+    (all no-side-effects src)
+    (dictionary? src)
+    (and (all no-side-effects (keys src))
+         (all no-side-effects (values src)))
+    true))
+(defn- is-safe-def [x] (no-side-effects (last x)))
+(def- safe-forms {'defn true 'varfn true 'defn- true 'defmacro true 'defmacro- true
+                  'def is-safe-def 'var is-safe-def 'def- is-safe-def 'var- is-safe-def
+                  'defglobal is-safe-def 'varglobal is-safe-def})
+(def- importers {'import true 'import* true 'dofile true 'require true})
+(defn- use-2 [evaluator args]
+  (each a args (import* (string a) :prefix "" :evaluator evaluator)))
+
+(defn- flycheck-evaluator
+  ``An evaluator function that is passed to `run-context` that lints (flychecks) code.
+  This means code will parsed and compiled, macros executed, but the code will not be run.
+  Used by `flycheck`.``
+  [thunk source env where]
+  (when (tuple? source)
+    (def head (source 0))
+    (def safe-check
+      (or
+        (safe-forms head)
+        (if (symbol? head)
+          (if (string/has-prefix? "define-" head) is-safe-def))))
+    (cond
+      # Sometimes safe form
+      (function? safe-check)
+      (if (safe-check source) (thunk))
+      # Always safe form
+      safe-check
+      (thunk)
+      # Use
+      (= 'use head)
+      (use-2 flycheck-evaluator (tuple/slice source 1))
+      # Import-like form
+      (importers head)
+      (let [[l c] (tuple/sourcemap source)
+            newtup (tuple/setmap (tuple ;source :evaluator flycheck-evaluator) l c)]
+        ((compile newtup env where))))))
+
 (varfn freja-dofile
   [top-env path]
   (unless (= path last-path)
@@ -169,8 +226,25 @@
 
   (with-dyns [:out state/out
               :err state/out]
+    (print (string `=> (freja-dofile "` path `")`))
 
-    (def env (make-env top-env))
+    (def module-path
+      (string/slice path 0 (dec (- (length (path/ext path))))))
+
+    (def ns-path (or (first (module/find (path/abspath module-path)))
+                     (first (module/find module-path))))
+
+    (def existing-env (when ns-path (module/cache path)))
+
+    (def defonced-symbols
+      (if-not existing-env
+        []
+        (seq [[k v] :pairs existing-env
+              :when (and (table? v)
+                         (v :defonce))]
+          [k v])))
+
+    (def env (or existing-env (make-env top-env)))
 
     (put env :freja/loading-file true)
     (put env :out state/out)
@@ -178,29 +252,57 @@
 
     (def before-keys (keys env))
 
+    (comment
+      (loop [[k v] :in defonced-symbols]
+        (put env k v)))
+
     (try
-      (freja-dofile* path
-                     # :env (fiber/getenv (fiber/current))
-                     #:env
-                     #(require "freja/render_new_gap_buffer")
-                     :env env)
+      (let [buff @""]
+        (freja-dofile* path :evaluator flycheck-evaluator)
+
+        (comment
+          (unless (empty? buff)
+            (e/push! state/eval-results {:error buff
+                                         :fiber (fiber/current)
+                                         :code (string `(flycheck "` path `")`)
+                                         :cause "freja-dofile"})
+            (error {:error-msg buff
+                    :code (string `(flycheck "` path `")`)}))
+          #
+)
+        (print "second step")
+
+        (freja-dofile* path
+                       :env env))
       ([err fib]
         (if (dictionary? err)
           (let [{:error-msg msg
                  :source source
-                 :source-line source-line} err]
-            (e/push! frp/eval-results {:error msg
-                                       :source source
-                                       :source-line source-line
-                                       :fiber fib
-                                       :code (string `(freja-dofile "` path `")`)
-                                       :cause "freja-dofile"})
-            (propagate msg fib))
+                 :source-line source-line
+                 :code code} err]
+            (comment
+              (e/push! state/eval-results {:error msg
+                                           :source source
+                                           :source-line source-line
+                                           :fiber fib
+
+                                           :code (or code (string `(freja-dofile "` path `")`))
+                                           :cause "freja-dofile"}))
+            (propagate {:error msg
+                        :source source
+                        :source-line source-line
+                        :fiber fib
+
+                        #:code (or code (string `(freja-dofile "` path `")`))
+                        :cause "freja-dofile"}
+                       fib)
+            #            (propagate err fib)
+)
           (do
-            (e/push! frp/eval-results {:error err
-                                       :code (string `(freja-dofile "` path `")`)
-                                       :fiber fib
-                                       :cause "freja-dofile"})
+            #            (e/push! state/eval-results {:error err
+            #                                       :code (string `(freja-dofile "` path `")`)
+            #                                       :fiber fib
+            #                                       :cause "freja-dofile"})
             (propagate err fib)))))
 
     # here we find all `var` / `varfn` defined during `dofile`
@@ -210,23 +312,18 @@
                     k))
 
     (def ns-name (or (get env :freja/ns)
-                     (first (module/find (path/abspath path)))
-                     (first (module/find path))))
+                     (first (module/find (path/abspath module-path)))
+                     (first (module/find module-path))))
 
-    (cond ns-name
+    (set state/user-env env)
+
+    (cond (and false ns-name)
       (let [ns (require ns-name)]
         (loop [k :keys env
                :let [existing-sym (ns k)
                      existing-var (get-in ns [k :ref])
-                     new-var (get-in env [k :ref])
-                     defonce? (get-in ns [k :defonce])]]
+                     new-var (get-in env [k :ref])]]
           (cond
-            # don't do anything if it is declared defonce
-            # in new
-            (and defonce?
-                 existing-sym)
-            nil
-
             (or (not existing-sym)
                 (and (not existing-var)
                      (not new-var)))
@@ -252,17 +349,20 @@
 
         (set state/user-env ns))
 
+      ns-name
+      (do
+        (put module/cache path env)
+        (set state/user-env env))
+
       #else
-      (let [ns env]
+      (do
         (print "Module " path " did not exist, adding to module/cache...")
+        (put module/cache path env)
+        (set state/user-env env)))
 
-        (put module/cache path ns)
-
-        (set state/user-env ns)))
-
-    (e/push! frp/eval-results {:value (string "Loaded module: " (or ns-name path))
-                               :code (string `(freja-dofile "` path `")`)
-                               :fiber (fiber/current)})))
+    (e/push! state/eval-results {:value (string "Loaded module: " (or ns-name path))
+                                 #:code (string `(freja-dofile "` path `")`)
+                                 :fiber (fiber/current)})))
 
 (comment
   (put-in module/cache ["freja/file-handling" 'fine] @{:ref @[fine]})

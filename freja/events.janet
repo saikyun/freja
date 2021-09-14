@@ -2,6 +2,8 @@
 # events are pushed to queues
 # then things can pull from the queues
 
+(import ./state)
+
 # functions to not block the fiber when interacting with channels
 (defn pop
   "Like ev/take but non-blocking, instead returns `nil` if the channel is empty."
@@ -20,17 +22,16 @@
   "Returns the values in a channel."
   [chan]
   (def vs @[])
-  
+
   # empty the queue
   (loop [v :iterate (pop chan)]
     (array/push vs v))
-  
+
   # then put them back again
   (loop [v :in vs]
     (push! chan v))
-  
-  vs)
 
+  vs)
 
 
 # we want to be able to pull
@@ -52,7 +53,11 @@
           :table (:on-event puller v)
           (error (string "Pulling not implemented for " (type puller))))
         ([err fib]
-          (debug/stacktrace fib err))))
+          (push! state/eval-results (if (and (dictionary? err) (err :error))
+                                      err
+                                      {:error err
+                                       :msg (string/format "%p event into %p" v puller)
+                                       :cause [v puller]})))))
     v) # if there was a value, we return it
 )
 

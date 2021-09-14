@@ -1,4 +1,4 @@
-(import freja/state)
+(import ./state)
 (import freja/events :as e)
 (import freja/textarea :as ta)
 (use freja/defonce)
@@ -49,6 +49,7 @@
 (defn append
   [state s]
   (-> (state :gb)
+      (gb/append-string! "\n")
       (gb/append-string! s)
       (gb/end-of-buffer)))
 
@@ -60,9 +61,13 @@
 
 (varfn handle-eval-results
   [res]
-  (print "=> " (string/trim (res :code)))
+  (when-let [code (res :code)]
+    (print "=> " (string/trim code)))
   (if (res :error)
-    (pp (res :error))
+    (if-let [fib (res :fiber)]
+      (debug/stacktrace fib
+                        (or (res :msg) (res :error)))
+      (pp (res :error)))
     (pp (res :value))))
 
 (defn init
@@ -82,7 +87,7 @@
 
   (e/put! state/editor-state :bottom-h 55)
 
-  (frp/subscribe! frp/eval-results (fn [res] (handle-eval-results res)))
+  (frp/subscribe! state/eval-results (fn [res] (handle-eval-results res)))
   (frp/subscribe! frp/out (partial replace state))
   (frp/subscribe! frp/out (partial append state-big)))
 

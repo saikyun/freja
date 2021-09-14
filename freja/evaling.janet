@@ -1,5 +1,4 @@
-(import freja/state)
-(import freja/frp)
+(import ./state)
 (import freja/events :as e)
 
 (use ./new_gap_buffer)
@@ -97,7 +96,7 @@ ouae
 
 (varfn eval-it
   [env code]
-  # (print "=> " (string/trim code))
+  (print "=> " (string/trim code))
 
   (try
     (do
@@ -106,14 +105,14 @@ ouae
       (put state/user-env :out state/out)
       (put state/user-env :err state/out)
       (def res (eval-string code))
-      (e/push! frp/eval-results {:value res
-                                 :code code
+      (e/push! state/eval-results {:value res
+                                 #:code code
                                  :fiber (fiber/current)})
-#      (pp res)
+      #      (pp res)
 )
     ([err fib]
       (debug/stacktrace fib err)
 
-      (e/push! frp/eval-results {:error err
-                                 :code code
+      (e/push! state/eval-results {:error err
+                                 #:code code
                                  :fiber fib}))))

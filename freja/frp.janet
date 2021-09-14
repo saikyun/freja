@@ -143,7 +143,6 @@ Emits events when rerendering is needed.
 (var keyboard nil)
 (var frame-chan nil)
 (var rerender nil)
-(var eval-results nil)
 (var out nil)
 (var screen-size @{})
 
@@ -294,7 +293,7 @@ Emits events when rerendering is needed.
   (set frame-chan (ev/chan 1))
   (set rerender (ev/chan 1))
   (set out (ev/chan 100))
-  (set eval-results (ev/chan 100))
+  (set state/eval-results (ev/chan 100))
 
   (def dependencies
     @{mouse @[]
@@ -347,7 +346,8 @@ and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
   (unless (find |(= $ cb) (get-in deps [:deps emitter] []))
-    (update-in deps [:deps emitter] |(array/push (or $ @[]) cb))))
+    (update-in deps [:deps emitter] |(array/push (or $ @[]) cb))
+    :ok))
 
 
 (defn subscribe-finally!
@@ -356,7 +356,8 @@ and a callback (e.g. single arity function).
 Creates a finally subscription."
   [emitter cb]
   (unless (find |(= $ cb) (get-in deps [:finally emitter] []))
-    (update-in deps [:finally emitter] |(array/push (or $ @[]) cb))))
+    (update-in deps [:finally emitter] |(array/push (or $ @[]) cb))
+    :ok))
 
 
 (defn unsubscribe-finally!
@@ -365,4 +366,5 @@ and a callback (e.g. single arity function).
 Removes a finFally subscription."
   [emitter cb]
   (update-in deps [:finally emitter]
-             (fn [subs] (filter |(not= $ cb) subs))))
+             (fn [subs] (filter |(not= $ cb) subs)))
+  :ok)

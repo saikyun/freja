@@ -59,7 +59,7 @@ font must either be:
               (put state :element self))
 
             (global-set-key
-              [:alt :g]
+              [:alt :u]
               (fn [_]
                 (e/put! state/focus :focus self)
                 (e/put! state/editor-state :right-focus true))))
@@ -85,7 +85,7 @@ font must either be:
           :on-event (fn [self ev]
 
                       (match ev
-                        [:key-down :e]
+                        [:key-down :d]
                         (when (key-down? :left-alt)
                           (put-in state/editor-state
                                   [:left-state :editor :gb :blink] 0)
