@@ -6,7 +6,7 @@
 (import freja/default-hotkeys :prefix "" :export true)
 (import freja-jaylib :prefix "" :export true)
 (import freja/defonce :prefix "" :export true)
-(import freja/vector-math :as v :export true)
+(import ./vector-math :as v :export true)
 (import freja/text_rendering :as tr)
 (import freja/assets :as a)
 

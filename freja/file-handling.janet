@@ -187,6 +187,7 @@
                   'def is-safe-def 'var is-safe-def 'def- is-safe-def 'var- is-safe-def
                   'defglobal is-safe-def 'varglobal is-safe-def})
 (def- importers {'import true 'import* true 'dofile true 'require true})
+
 (defn- use-2 [evaluator args]
   (each a args (import* (string a) :prefix "" :evaluator evaluator)))
 
@@ -209,17 +210,32 @@
       # Always safe form
       safe-check
       (thunk)
+
       # Use
       (= 'use head)
-      (use-2 flycheck-evaluator (tuple/slice source 1))
+      (thunk)
+      # for some reason, doing this can break :export inside modules
+      # so I disabled it
+      #(use-2 flycheck-evaluator (tuple/slice source 1))
+
+
       # Import-like form
       (importers head)
-      (let [[l c] (tuple/sourcemap source)
-            newtup (tuple/setmap (tuple ;source :evaluator flycheck-evaluator) l c)]
-        ((compile newtup env where))))))
+      (thunk)
+      # for some reason, doing this can break :export inside modules
+      # so I disabled it
+      #(let [[l c] (tuple/sourcemap source)
+      #      newtup (tuple/setmap (tuple ;source :evaluator flycheck-evaluator) l c)]
+      #  ((compile newtup env where)))
+)))
 
+#GOHERE
 (varfn freja-dofile
   [top-env path]
+  (def path (if (path/abspath? path)
+              path
+              (string "./" path)))
+
   (unless (= path last-path)
     (set state/user-env (make-env top-env))
     (set last-path path))
@@ -257,20 +273,11 @@
         (put env k v)))
 
     (try
-      (let [buff @""]
+      (do
+        # disabled for now, for some reason imports seem to stop working when doing this first
         (freja-dofile* path :evaluator flycheck-evaluator)
 
-        (comment
-          (unless (empty? buff)
-            (e/push! state/eval-results {:error buff
-                                         :fiber (fiber/current)
-                                         :code (string `(flycheck "` path `")`)
-                                         :cause "freja-dofile"})
-            (error {:error-msg buff
-                    :code (string `(flycheck "` path `")`)}))
-          #
-)
-        (print "second step")
+        #        (print "second step")
 
         (freja-dofile* path
                        :env env))
