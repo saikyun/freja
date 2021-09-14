@@ -67,7 +67,8 @@
     (if-let [fib (res :fiber)]
       (debug/stacktrace fib
                         (or (res :msg) (res :error)))
-      (pp (res :error)))
+      (do (print "no fiber")
+        (pp (res :error))))
     (pp (res :value))))
 
 (defn init

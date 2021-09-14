@@ -190,7 +190,6 @@
                    #    (ch/print-tree (self :root)))
                    #  (print "(self :root) is nil"))
 
-
                    (when (self :remove-layer-on-error)
                      (print "Removing layer: " (self :name))
                      (remove-layer (self :name) (self :props))))))})

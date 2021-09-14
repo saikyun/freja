@@ -93,6 +93,10 @@
 (import ./echoer :as echoer)
 (put module/cache "freja/echoer" echoer)
 
+(def vector-math (require "./vector-math"))
+(import ./vector-math :as vector-math)
+(put module/cache "freja/vector-math" vector-math)
+
 (def flow (require "./flow"))
 (import ./flow :as flow)
 (put module/cache "freja/flow" flow)

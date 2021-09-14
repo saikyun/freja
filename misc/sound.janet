@@ -1,6 +1,22 @@
 (use freja-jaylib)
 
-(init-audio-device)
+(import freja/frp)
+(import freja/state)
+
+(comment
+  (do
+    (var cp 0)
+    (frp/subscribe! (get-in state/editor-state [:left-state :editor])
+                    (fn [state]
+                      (unless (= cp (get-in state [:gb :caret-pos]))
+                        (play-sound (weak (rand-pos weak)))
+                        (set cp (get-in state [:gb :caret-pos])))))
+    :ok)
+  #
+)
+
+
+# (init-audio-device)
 
 (def weak (->> [(load-wave "misc/sound/svag1.wav")
                 (load-wave "misc/sound/svag2.wav")

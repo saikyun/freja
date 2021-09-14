@@ -56,7 +56,21 @@
           (push! state/eval-results (if (and (dictionary? err) (err :error))
                                       err
                                       {:error err
-                                       :msg (string/format "%p event into %p" v puller)
+                                       :fiber fib
+                                       :msg (string/format ``
+%s
+event:
+%p 
+subscriber:
+%p
+``
+                                                           err
+                                                           (if (dictionary? v)
+                                                             (string/format "dictionary with keys: %p" (keys v))
+                                                             v)
+                                                           (if (dictionary? puller)
+                                                             (string/format "dictionary with keys: %p" (keys puller))
+                                                             puller))
                                        :cause [v puller]})))))
     v) # if there was a value, we return it
 )
