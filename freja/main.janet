@@ -144,7 +144,7 @@
   [dt]
   (clear-background :blank)
   #  (draw-text* (conf :text) (string (data :latest-res)) [605 660] :blue)
-  )
+)
 
 (var texture nil)
 
@@ -172,7 +172,7 @@
 
   (clear-background :white
                     # (theme/colors :background)
-                    )
+)
 
   (frp/trigger dt)
 
@@ -197,12 +197,19 @@
                            (error "QUIT!"))
 
                          (try
-                           (with-dyns [:out (buffer/clear state/out)
-                                       :err state/out]
-                             (internal-frame)
+                           (do
+                             # prints might have happened between renders
                              (unless (empty? state/out)
-                               (events/push! frp/out (string state/out)))
-                             (ev/sleep 0.01))
+                               (events/push! frp/out (string state/out))
+                               (buffer/clear state/out))
+
+                             (with-dyns [:out state/out
+                                         :err state/out]
+                               (internal-frame)
+                               (unless (empty? state/out)
+                                 (events/push! frp/out (string state/out))
+                                 (buffer/clear state/out))
+                               (ev/sleep 0.01)))
                            ([err fib]
                              (let [path "text_experiment_dump"]
                                (debug/stacktrace fib err)
@@ -223,7 +230,7 @@
         (string state/freja-dir "init.janet")
         # :env (fiber/getenv (fiber/current))
         #:env env
-        ))
+))
     ([err fib]
       (print "nope")
       (print (debug/stacktrace fib err)))))
@@ -255,7 +262,6 @@
       (let [[xs ys] (get-window-scale-dpi)]
         (put screen-scale 0 xs)
         (put screen-scale 1 ys))
-      
 
       (let [[x-scale y-scale] screen-scale
             tc @{:font-data fonts/mplus
