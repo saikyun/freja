@@ -120,11 +120,7 @@
         :text/spacing text/spacing
         :binds binds #replaces binds
         :extra-binds extra-binds #adds onto default binds
-        :show-line-numbers show-line-numbers
-        #TODO: remove this when :vertical is added
-        :space-in-bottom space-in-bottom} props)
-
-  (default space-in-bottom 0)
+        :show-line-numbers show-line-numbers} props)
 
   (default state (get (dyn :element) :state @{}))
 
@@ -164,7 +160,7 @@
             (-> el
                 (put :width (max 50 (or (el :preset-width) max-width)))
                 (put :height (max (get-in state [:gb :conf :size] 0)
-                                  (or (el :preset-height) (- max-height space-in-bottom))))
+                                  (or (el :preset-height) max-height)))
                 (put :content-width (el :width))
                 (put :layout/lines nil))
 
@@ -183,10 +179,7 @@
             el)
 
           :render (fn [self parent-x parent-y]
-                    # (print "text area render")
-                    (:draw state)
-                    #(pp (get-in state [:gb :text]))
-)
+                    (:draw state))
 
           :on-event (fn [self ev]
                       #(pp self)

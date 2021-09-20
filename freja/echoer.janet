@@ -28,7 +28,8 @@
   [_ & _]
   [:background {:color 0x444444ff}
    [:padding {:all 2}
-    [ta/textarea {:state state
+    [ta/textarea {:min-height 55
+                  :state state
                   :text/spacing 0.5
                   :text/size text-size
                   :text/font "MplusCode"
@@ -43,8 +44,7 @@
                   :text/spacing 0.5
                   :text/size text-size
                   :text/font "MplusCode"
-                  :text/color (t/colors :text)
-                  :space-in-bottom (state/editor-state :bottom-h)}]]])
+                  :text/color (t/colors :text)}]]])
 
 (defn append
   [state s]
@@ -85,8 +85,6 @@
            (-> self
                (e/put! :last-right curr)
                (e/put! :right big)))))
-
-  (e/put! state/editor-state :bottom-h 55)
 
   (frp/subscribe! state/eval-results (fn [res] (handle-eval-results res)))
   (frp/subscribe! frp/out (partial replace state))

@@ -16,12 +16,8 @@
    [:padding {:all 2}
     [e/editor {:state (props :left-state)
                :id :left
-               # TODO: need to fix focus-on-init
                :focus-on-init true
                :initial-file state/initial-file
-               # TODO: remove when :vertical is added
-               :space-in-bottom (when bottom
-                                  bottom-h)
                :open (props :left-open)
                :set-open |(e/put! props :left-open $)}]]])
 
@@ -36,9 +32,6 @@
     [e/editor @{:state (props :right-state)
                 :id :right
                 :open (props :right-open)
-                # TODO: remove when :vertical is added
-                :space-in-bottom (when bottom
-                                   bottom-h)
                 :set-open |(do (print "opening: " $)
                              (e/put! props :right-open $))}]]])
 
@@ -58,20 +51,21 @@
   [:padding {:left 0 :top 30}
 
    [:background {:color 0x9D9D9Dff}
-    [:row {}
-     [:block {:weight 1}
-      [(props :left) props]]
-     #[:block {:width 2}]
-     (when (props :right)
-       [:block {:weight 1}
-        [(props :right) props]])
+    [:column {}
+     [:row {:weight 1}
+      [:block {:weight 1}
+       [(props :left) props]]
+      #[:block {:width 2}]
+      (when (props :right)
+        [:block {:weight 1}
+         [(props :right) props]])
 
-     #
+      #
 ]
 
-    (when bottom
-      [:block {:height (props :bottom-h)}
-       [bottom props]])
+     (when bottom
+       [:block {}
+        [bottom props]])]
 
     #
 ]])
@@ -84,12 +78,25 @@
   #
 )
 
+# exposing the hiccup layer for debugging purposes
+(var hiccup-layer nil)
+
+(comment
+  (use freja-layout/compile-hiccup)
+
+  # here we can print the element tree
+  # in a decently readable form
+  (-> (get-in c [:root])
+      print-tree)
+  #
+)
+
 (defn init
   []
-  (def c (h/new-layer
-           :text-area
-           text-area-hc
-           state/editor-state))
+  (set hiccup-layer (h/new-layer
+                      :text-area
+                      text-area-hc
+                      state/editor-state))
 
   (e/put! state/editor-state
           :left
