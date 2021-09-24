@@ -24,18 +24,7 @@ jobs:
       - run: cd ${{ github.workspace }}/janet && build_win
         shell: cmd
       #- run: cd ${{ github.workspace }}/janet && build_win test
-      #  shell: cmd
-      - run: dir %USERPROFILE%\AppData\Local
-        shell: cmd
-      - run: dir %USERPROFILE%\AppData\Local\Apps
-        shell: cmd
-      - run: dir %USERPROFILE%\AppData\Local\Apps\janet
-        shell: cmd
-      - run: dir %USERPROFILE%\AppData\Local\Apps\janet\bin
-        shell: cmd
-      - run: "%USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin\\janet.exe -v"
-        shell: cmd
-        continue-on-error: true
+      #  shell: cmd 
       - name: List files in janet build
         run: |
           ls ${{ github.workspace }}/janet/build
