@@ -17,7 +17,7 @@ jobs:
         shell: cmd
       - run: bin/hello
         shell: cmd
-      - run: echo bin >> $GITHUB_PATH
+      - run: echo ${{ github.workspace }}\bin >> $GITHUB_PATH
         shell: cmd
       - run: echo %PATH%
 #      - run: hello
