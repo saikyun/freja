@@ -47,10 +47,13 @@ jobs:
         shell: cmd
       - run: echo %PATH%
         shell: cmd
+      - run: janet -v
+        continue-on-error: true
+        shell: cmd
       - name: Install jpm
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm
         shell: cmd
-      - run: "cd ${{ github.workspace }}/jpm && %USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin\\janet.exe bootstrap.janet"
+      - run: "set JANET_PATH=./ && cd ${{ github.workspace }}/jpm && %USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin\\janet.exe bootstrap.janet"
         shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
