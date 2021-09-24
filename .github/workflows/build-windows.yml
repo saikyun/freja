@@ -43,7 +43,7 @@ jobs:
         shell: cmd
       - run: echo %PATH%
         shell: cmd
-      - run: echo "%USERPROFILE%\AppData\Local\Apps\janet\bin" > $GITHUB_PATH
+      - run: echo %USERPROFILE%\AppData\Local\Apps\janet\bin >> $GITHUB_PATH
         shell: cmd
       - run: echo %PATH%
         shell: cmd
@@ -53,7 +53,7 @@ jobs:
       - name: Install jpm
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm
         shell: cmd
-      - run: "set JANET_PATH=./ && cd ${{ github.workspace }}/jpm && %USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin\\janet.exe bootstrap.janet"
+      - run: "set JANET_PATH=./ && set JANET_BINPATH=%USERPROFILE%\AppData\Local\Apps\janet\bin\ && set JANET_LIBPATH=%USERPROFILE%\AppData\Local\Apps\janet\C\ && set JANET_HEADERPATH=%USERPROFILE%\AppData\Local\Apps\janet\C\ && cd ${{ github.workspace }}/jpm && %USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin\\janet.exe bootstrap.janet"
         shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
