@@ -1,4 +1,4 @@
-aname: Windows Build
+name: Windows Build
 on: [push]
 jobs:
   windows-build:
