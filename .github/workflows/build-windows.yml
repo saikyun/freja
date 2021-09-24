@@ -37,7 +37,7 @@ jobs:
       - name: List files in janet build
         run: |
           ls ${{ github.workspace }}/janet/build
-       - run: echo "%USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+       - run: echo "%USERPROFILE%\AppData\Local\Apps\janet\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - run: janet -v
         continue-on-error: true
       - run: echo %PATH%
