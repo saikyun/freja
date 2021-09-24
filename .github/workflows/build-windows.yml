@@ -19,12 +19,12 @@ jobs:
           ls ${{ github.workspace }}
       - name: Clone janet
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet
-      - run: cd ${{ github.workspace }}/janet && build_win
+      - run: cd ${{ github.workspace }}/janet && build_win all
         shell: cmd
-      - run: cd ${{ github.workspace }}/janet && build_win test
-        shell: cmd
+      #- run: cd ${{ github.workspace }}/janet && build_win test
+      #  shell: cmd
       - name: Install jpm
-        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm && ../janet/build/janet.exe bootstrap.janet
+        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm && janet bootstrap.janet
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
       - name: jpm build
