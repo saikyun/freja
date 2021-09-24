@@ -4,7 +4,9 @@ jobs:
   test:
     runs-on: windows-latest
     steps:
-      - run: echo "lul" >> $GITHUB_PATH && echo %PATH%
+      - run: echo "echo Hello World" >> hello.cmd
+      - run: hello.cmd
+      - run: echo lul >> $GITHUB_PATH && echo %PATH%
         shell: cmd
       - run: echo %PATH%
         shell: cmd
