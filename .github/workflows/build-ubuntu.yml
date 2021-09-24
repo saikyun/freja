@@ -24,7 +24,12 @@ jobs:
       - name: jpm build
         run: jpm build
       - run: echo "🍏 This job's status is ${{ job.status }}."
+      - name: Remove release
+        run: gh release delete -y ubuntu-dont-use-this
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
-        run: gh release create linux-dont-use-this build/freja
+        run: gh release create ubuntu-dont-use-this build/freja
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
