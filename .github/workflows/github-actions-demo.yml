@@ -18,8 +18,7 @@ jobs:
       - name: Install janet
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet && make && make test && sudo make install && sudo make install-jpm-git
       - name: jpm deps
-        run: cd ${{ github.workspace }}/freja
-        run: sudo jpm deps
+        run: cd ${{ github.workspace }}/freja && sudo jpm deps
       - name: jpm build
         run: jpm build
       - run: echo "🍏 This job's status is ${{ job.status }}."
