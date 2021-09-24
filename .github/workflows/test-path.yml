@@ -19,9 +19,11 @@ jobs:
         shell: cmd
       - run: echo bin >> $GITHUB_PATH
         shell: cmd
-      - run: hello
-        shell: cmd
+      - run: echo "%PATH%"
+#      - run: hello
+#        shell: cmd
       - run: echo lul >> $GITHUB_PATH && echo %PATH%
         shell: cmd
       - run: echo %PATH%
         shell: cmd
+      - run: echo "%PATH%"
