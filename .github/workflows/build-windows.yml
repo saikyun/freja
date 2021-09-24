@@ -23,6 +23,8 @@ jobs:
         shell: cmd
       #- run: cd ${{ github.workspace }}/janet && build_win test
       #  shell: cmd
+      - run: ls %USERPROFILE%\AppData\Local\Apps
+      - run: ls %USERPROFILE%\AppData\Local\Apps\Janet
       - run: ls %HOME%\AppData\Local\Apps\
       - run: ls %HOME%\AppData\Local\Apps\janet
       - run: ls %PROGRAMFILES%
