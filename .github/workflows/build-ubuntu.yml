@@ -1,3 +1,4 @@
+lul
 name: Ubuntu Build
 on: [push]
 jobs:

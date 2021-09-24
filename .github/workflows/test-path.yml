@@ -7,3 +7,4 @@ jobs:
       - run: echo "lul" >> $GITHUB_PATH
         shell: cmd
       - run: echo %PATH%
+        shell: cmd
