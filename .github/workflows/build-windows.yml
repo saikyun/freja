@@ -25,6 +25,7 @@ jobs:
       #  shell: cmd
       - name: Install jpm
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm && ../janet/build/janet.exe bootstrap.janet
+        shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
       - name: jpm build
