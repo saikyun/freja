@@ -1,0 +1,30 @@
+name: Windows Build
+on: [push]
+jobs:
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - run: cd ${{ github.workspace }}
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Install janet
+        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet && make && make test && sudo make install && sudo make install-jpm-git
+      - name: jpm deps
+        run: cd ${{ github.workspace }} && sudo jpm deps
+      - name: jpm build
+        run: jpm build
+      - run: echo "🍏 This job's status is ${{ job.status }}."
+      - name: Create release
+        run: gh release create windows-dont-use-this build/freja.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
