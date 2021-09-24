@@ -28,7 +28,9 @@ jobs:
       - name: List files in janet build
         run: |
           ls ${{ github.workspace }}/janet/build
-      - run: "echo \"${{ github.workspace }}\\janet\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append"
+      - run: mkdir ${{ github.workspace }}\janet\bin
+      - run: mv ${{ github.workspace }}\janet\janet.exe ${{ github.workspace }}\janet\bin
+      - run: "echo \"${{ github.workspace }}\\janet\\bin\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append"
       - run: echo %PATH%
         shell: cmd
       - run: echo %PATH%
@@ -51,7 +53,7 @@ jobs:
         shell: cmd
 #      - run: cd ${{ github.workspace }}/jpm && set JANET_PATH="${{ github.workspace }}/janet/dist" && set JANET_BINPATH=${{ github.workspace }}/janet/dist && set JANET_LIBPATH=${{ github.workspace }}/janet/dist && set JANET_HEADERPATH=${{ github.workspace }}/janet/dist && cd ${{ github.workspace }}/jpm && ${{ github.workspace }}/janet/dist/janet.exe bootstrap.janet
 #        shell: cmd
-      - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet && set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\bin&& set JANET_PATH${{ github.workspace }}\janet && janet bootstrap.janet
+      - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet && set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\bin&& set JANET_PATH=${{ github.workspace }}\janet && janet bootstrap.janet
         shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
