@@ -4,11 +4,20 @@ jobs:
   test:
     runs-on: windows-latest
     steps:
-      - run: echo echo Hello World >> hello.cmd
+      - run: md bin
         shell: cmd
-      - run: type hello.cmd
+      - run: echo echo Hello World >> bin/hello.cmd
         shell: cmd
-      - run: hello.cmd
+      - run: type bin/hello.cmd
+        shell: cmd
+      - run: hello
+        continue-on-error: true
+        shell: cmd
+      - run: bin/hello
+        shell: cmd
+      - run: echo bin >> $GITHUB_PATH
+        shell: cmd
+      - run: hello
         shell: cmd
       - run: echo lul >> $GITHUB_PATH && echo %PATH%
         shell: cmd
