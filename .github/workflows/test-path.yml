@@ -8,6 +8,8 @@ jobs:
         shell: cmd
       - run: echo echo Hello World >> bin/hello.cmd
         shell: cmd
+      - run: dir bin
+        shell: cmd
       - run: type bin\hello.cmd
         shell: cmd
       - run: hello
