@@ -19,9 +19,9 @@ jobs:
           ls ${{ github.workspace }}
       - name: Clone janet
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet
-      - run: build_win
+      - run: cd ${{ github.workspace }}/janet && build_win
         shell: cmd
-      - run: build_win test
+      - run: cd ${{ github.workspace }}/janet && build_win test
         shell: cmd
       - run: make install-jpm-git
       - name: jpm deps
