@@ -4,7 +4,7 @@ jobs:
   test:
     runs-on: windows-latest
     steps:
-      - run: echo "echo Hello World" >> hello.cmd
+      - run: echo echo Hello World >> hello.cmd
         shell: cmd
       - run: type hello.cmd
         shell: cmd
