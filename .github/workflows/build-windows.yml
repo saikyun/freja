@@ -32,12 +32,12 @@ jobs:
       - run: echo %PATH%
         shell: cmd
       - run: janet -v
-        continue-on-error: true
+#        continue-on-error: true
         shell: cmd
       - run: echo %PATH%
         shell: cmd
-      - run: echo %USERPROFILE%\AppData\Local\Apps\janet\bin >> $GITHUB_PATH
-        shell: cmd
+#      - run: echo %USERPROFILE%\AppData\Local\Apps\janet\bin >> $GITHUB_PATH
+#        shell: cmd
       - run: echo %PATH%
         shell: cmd
       - run: janet -v
