@@ -1,4 +1,4 @@
-name: Windows Build
+aname: Windows Build
 on: [push]
 jobs:
   windows-build:
@@ -21,7 +21,7 @@ jobs:
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet
       #- run: cd ${{ github.workspace }}/janet && build_win all
       #  shell: cmd
-      - run: cd ${{ github.workspace }}/janet && build_win
+      - run: cd ${{ github.workspace }}/janet && build_win all
         shell: cmd
       #- run: cd ${{ github.workspace }}/janet && build_win test
       #  shell: cmd
