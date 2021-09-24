@@ -31,6 +31,8 @@ jobs:
       - run: mkdir ${{ github.workspace }}\janet\bin
       - run: mv ${{ github.workspace }}\janet\janet.exe ${{ github.workspace }}\janet\bin
       - run: "echo \"${{ github.workspace }}\\janet\\bin\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append"
+      # might be we could use this instead...
+      #- run: "echo \"$env:USERPROFILE\\janet\\bin\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append"
       - run: echo %PATH%
         shell: cmd
       - run: echo %PATH%
@@ -62,6 +64,11 @@ jobs:
         run: jpm build
         shell: cmd
       - run: echo "🍏 This job's status is ${{ job.status }}."
+      - name: Remove release
+        run: gh release delete -y windows-dont-use-this
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
         run: gh release create windows-dont-use-this build/freja.exe
         env:
