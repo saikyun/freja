@@ -1,0 +1,9 @@
+name: test
+on: [push]
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - run: echo "lul" >> $GITHUB_PATH
+        shell: cmd
+      - run: echo %PATH%
