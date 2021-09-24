@@ -18,7 +18,7 @@ jobs:
         run: |
           ls ${{ github.workspace }}
       - name: Install janet
-        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet && make && make test && sudo make install && sudo make install-jpm-git
+        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet && build_win && build_win test && make install-jpm-git
       - name: jpm deps
         run: cd ${{ github.workspace }} && sudo jpm deps
       - name: jpm build
