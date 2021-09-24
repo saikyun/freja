@@ -38,7 +38,7 @@ jobs:
         run: |
           ls ${{ github.workspace }}/janet/build
       - run: echo "%USERPROFILE%\AppData\Local\Apps\janet\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-      - run: janet.exe -v
+      - run: janet -v
         continue-on-error: true
         shell: cmd
       - run: echo %PATH%
