@@ -31,7 +31,7 @@ jobs:
         shell: cmd
       - run: dir %USERPROFILE%\AppData\Local\Apps\janet\bin
         shell: cmd
-      - run: "%USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin\\janet.exe" -v
+      - run: "%USERPROFILE%\\AppData\\Local\\Apps\\janet\\bin\\janet.exe -v"
         shell: cmd
         continue-on-error: true
       - name: List files in janet build
