@@ -24,20 +24,21 @@ jobs:
       - run: cd ${{ github.workspace }}/janet && build_win
         shell: cmd
       #- run: cd ${{ github.workspace }}/janet && build_win test
-      #  shell: cmd 
+      #  shell: cmd
       - name: List files in janet build
         run: |
           ls ${{ github.workspace }}/janet/build
-      - run: echo "${{ github.workspace }}\janet\dist" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: "echo \"${{ github.workspace }}\\janet\\dist\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append"
       - run: echo %PATH%
-        shell: cmd
-      - run: janet -v
-#        continue-on-error: true
         shell: cmd
       - run: echo %PATH%
         shell: cmd
-#      - run: echo %USERPROFILE%\AppData\Local\Apps\janet\bin >> $GITHUB_PATH
-#        shell: cmd
+      - run: dir ${{ github.workspace }}\janet\dist
+        shell: cmd
+      - run: dir ${{ github.workspace }}\janet\build
+        shell: cmd
+      - run: dir ${{ github.workspace }}\janet
+        shell: cmd
       - run: echo %PATH%
         shell: cmd
       - run: janet -v
