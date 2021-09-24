@@ -27,11 +27,13 @@ jobs:
         shell: cmd
       - run: dir %USERPROFILE%\AppData\Local\Apps
         shell: cmd
+      - run: dir %USERPROFILE%\AppData\Local\Apps\janet
+        shell: cmd
       - name: List files in janet build
         run: |
           ls ${{ github.workspace }}/janet/build
       - name: Install jpm
-        run: set PATH=%PATH%;%USERPROFILE%\AppData\Local\Apps\janet && cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm && janet bootstrap.janet
+        run: set PATH=%PATH%;%USERPROFILE%\AppData\Local\Apps\janet\bin && cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm && janet bootstrap.janet
         shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
