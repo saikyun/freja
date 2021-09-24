@@ -19,10 +19,10 @@ jobs:
           ls ${{ github.workspace }}
       - name: Clone janet
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet
-      - run: cd ${{ github.workspace }}/janet && build_win all
-        shell: cmd
-      #- run: cd ${{ github.workspace }}/janet && build_win
+      #- run: cd ${{ github.workspace }}/janet && build_win all
       #  shell: cmd
+      - run: cd ${{ github.workspace }}/janet && build_win
+        shell: cmd
       #- run: cd ${{ github.workspace }}/janet && build_win test
       #  shell: cmd
       - run: dir %USERPROFILE%\AppData\Local
