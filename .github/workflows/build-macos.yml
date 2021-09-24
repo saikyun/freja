@@ -29,6 +29,8 @@ jobs:
       - name: Remove release
         run: gh release delete -y macos-dont-use-this
         continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
         run: gh release create macos-dont-use-this build/freja
         env:
