@@ -53,12 +53,14 @@ jobs:
         shell: cmd
 #      - run: cd ${{ github.workspace }}/jpm && set JANET_PATH="${{ github.workspace }}/janet/dist" && set JANET_BINPATH=${{ github.workspace }}/janet/dist && set JANET_LIBPATH=${{ github.workspace }}/janet/dist && set JANET_HEADERPATH=${{ github.workspace }}/janet/dist && cd ${{ github.workspace }}/jpm && ${{ github.workspace }}/janet/dist/janet.exe bootstrap.janet
 #        shell: cmd
-      - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet\dist && set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\dist&& set JANET_PATH=${{ github.workspace }}\janet&& janet bootstrap.janet
+      - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet\dist&& set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\dist&& set JANET_PATH=${{ github.workspace }}\janet&& janet bootstrap.janet
         shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
+        shell: cmd
       - name: jpm build
         run: jpm build
+        shell: cmd
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Create release
         run: gh release create windows-dont-use-this build/freja.exe
