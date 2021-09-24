@@ -4,8 +4,6 @@ jobs:
   windows-build:
     runs-on: windows-latest
     steps:
-      - run: dir %USERPROFILE%\AppData\Local\Apps
-        shell: cmd
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
@@ -25,12 +23,10 @@ jobs:
         shell: cmd
       #- run: cd ${{ github.workspace }}/janet && build_win test
       #  shell: cmd
+      - run: dir %USERPROFILE%\AppData\Local
+        shell: cmd
       - run: dir %USERPROFILE%\AppData\Local\Apps
         shell: cmd
-      - run: ls %USERPROFILE%\AppData\Local\Apps\Janet
-      - run: ls %HOME%\AppData\Local\Apps\
-      - run: ls %HOME%\AppData\Local\Apps\janet
-      - run: ls %PROGRAMFILES%
       - name: List files in janet build
         run: |
           ls ${{ github.workspace }}/janet/build
