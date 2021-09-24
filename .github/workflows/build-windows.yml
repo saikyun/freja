@@ -51,9 +51,9 @@ jobs:
         continue-on-error: true
         shell: cmd
       - name: Install jpm
-        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm
+        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm
         shell: cmd
-      - run: set JANET_PATH="../janet/dist/Library" && set JANET_BINPATH=${{ github.workspace }}/janet/dist && set JANET_LIBPATH=${{ github.workspace }}/janet/dist && set JANET_HEADERPATH=${{ github.workspace }}/janet/dist && cd ${{ github.workspace }}/jpm && set PREFIX=JANET_PATH=${{ github.workspace }}/janet/dist && ${{ github.workspace }}/janet/dist/janet.exe bootstrap.janet
+      - run: set JANET_PATH="janet/dist/Library" && set JANET_BINPATH=${{ github.workspace }}/janet/dist && set JANET_LIBPATH=${{ github.workspace }}/janet/dist && set JANET_HEADERPATH=${{ github.workspace }}/janet/dist && cd ${{ github.workspace }}/jpm && set PREFIX=JANET_PATH=${{ github.workspace }}/janet/dist && ${{ github.workspace }}/janet/dist/janet.exe jpm/bootstrap.janet
         shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
