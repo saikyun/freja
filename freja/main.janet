@@ -9,7 +9,6 @@
 (import ./defonce :as defonce)
 (put module/cache "freja/defonce" defonce)
 
-
 (import spork/test)
 (def code_api (require "./code_api"))
 (import ./code_api :prefix "")
@@ -26,6 +25,10 @@
 (def events (require "./events"))
 (import ./events :as events)
 (put module/cache "freja/events" events)
+
+(def text_rendering (require "./text_rendering"))
+(import ./text_rendering :as text_rendering)
+(put module/cache "freja/text_rendering" text_rendering)
 
 
 (def fonts (require "./fonts"))
