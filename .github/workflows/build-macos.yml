@@ -4,8 +4,6 @@ jobs:
   macos-build:
     runs-on: macos-latest
     steps:
-      - name: sanity check
-        run: gh
       - name: Install homebrew
         run: ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
       - name: Install glfw
@@ -29,6 +27,6 @@ jobs:
         run: jpm build
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Create release
-        run: gh release create dont-use-this build/freja
+        run: gh release create macos-dont-use-this build/freja
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
