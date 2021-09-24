@@ -28,4 +28,6 @@ jobs:
         shell: cmd
       - run: echo %PATH%
       - run: echo "bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - run: echo $Env:Path
       - run: echo %PATH%
+        shell: cmd
