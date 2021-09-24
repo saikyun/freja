@@ -23,7 +23,7 @@ jobs:
         shell: cmd
       - run: cd ${{ github.workspace }}/janet && build_win test
         shell: cmd
-      - run: make install-jpm-git
+      - run: cd ${{ github.workspace }}/janet && make install-jpm-git
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
       - name: jpm build
