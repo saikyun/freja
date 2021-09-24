@@ -31,3 +31,5 @@ jobs:
       - run: echo $Env:Path
       - run: echo %PATH%
         shell: cmd
+      - run: hello
+        shell: cmd
