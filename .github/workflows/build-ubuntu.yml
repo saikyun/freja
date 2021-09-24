@@ -1,7 +1,7 @@
-name: Linux Build
+name: Ubuntu Build
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  ubuntu-build:
     runs-on: ubuntu-latest
     steps:
       - name: Install linux dependencies

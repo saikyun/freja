@@ -1,7 +1,7 @@
-name: Linux Build
+name: macOS Build
 on: [push]
 jobs:
-  Explore-GitHub-Actions:
+  macos-build:
     runs-on: macos-latest
     steps:
       #- name: Install linux dependencies
