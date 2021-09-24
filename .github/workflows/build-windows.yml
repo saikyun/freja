@@ -23,6 +23,9 @@ jobs:
         shell: cmd
       #- run: cd ${{ github.workspace }}/janet && build_win test
       #  shell: cmd
+      - name: List files in janet build
+        run: |
+          ls ${{ github.workspace }}/janet/build
       - name: Install jpm
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm && ${{ github.workspace }}\janet\build\janet.exe bootstrap.janet
         shell: cmd
