@@ -38,7 +38,6 @@ jobs:
         shell: cmd
       - run: echo %PATH%
         shell: cmd
-      - run: %USERPROFILE%\AppData\Local\Apps\janet\bin\janet.exe -v
       - name: Install jpm
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm && cd jpm && janet.exe bootstrap.janet
         shell: cmd
