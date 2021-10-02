@@ -1,4 +1,3 @@
-lul
 name: macOS Build
 on: [push]
 jobs:
