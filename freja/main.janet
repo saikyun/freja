@@ -365,8 +365,8 @@
     (or (os/getenv "FREJA_PATH")
 
         (let [path (if (= :windows (os/which))
-                     (string (os/getenv "LOCALAPPDATA") path/sep "/freja")
-                     (string (os/getenv "HOME") path/sep "/.config/freja"))]
+                     (string (os/getenv "LOCALAPPDATA") path/sep "freja")
+                     (string (os/getenv "HOME") path/sep ".config" path/sep "freja"))]
           (when (os/stat path)
             (string path path/sep)))
 

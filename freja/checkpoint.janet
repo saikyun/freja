@@ -30,6 +30,7 @@
   # only allow characters that are OK in a path
   # TODO: remove more non-ok characters
   (let [note (string/replace-all path/sep "_SLASH_" note)
+        note (string/replace-all ":" "_COLON_" note)
         checkpoint-dir (path->checkpoint-dir path)
         day-dir (string checkpoint-dir path/sep (checkpoint-date))
         checkpoint-path (string day-dir path/sep (checkpoint-time) " " note)]
