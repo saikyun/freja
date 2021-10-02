@@ -1,4 +1,5 @@
 (import spork/path)
+(import ./file-handling)
 
 (varfn checkpoint-date
   []
@@ -17,7 +18,7 @@
 (varfn path->checkpoint-dir
   [path]
   (let [parts (path/parts (path/abspath path))
-        freja-data-dir (string (os/getenv "HOME") "/.local/share/freja/checkpoints")
+        freja-data-dir (file-handling/data-path)
         checkpoint-dir (string
                          freja-data-dir
                          (string/join [;(array/slice parts 0 -2)

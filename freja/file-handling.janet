@@ -19,8 +19,10 @@
           (string/split path/sep path)))
 
 (defn data-path
-  [path]
-  (string (os/getenv "HOME") "/.local/share/freja" path/sep path))
+  [&opt path]
+  (if (= :win (os/which))
+    (string (os/getenv "LOCALAPPDATA") path/sep "freja" (when path (string path/sep path)))
+    (string (os/getenv "HOME") "/.local/share/freja" (when path (string path/sep path)))))
 
 (var scratch-path nil)
 
@@ -245,7 +247,9 @@
     (print (string `=> (freja-dofile "` path `")`))
 
     (def module-path
-      (string/slice path 0 (dec (- (length (path/ext path))))))
+      (if (path/ext path)
+        (string/slice path 0 (-> (path/ext path) length - dec))
+        path))
 
     (def ns-path (or (first (module/find (path/abspath module-path)))
                      (first (module/find module-path))))
@@ -371,7 +375,10 @@
                                  #:code (string `(freja-dofile "` path `")`)
                                  :fiber (fiber/current)})))
 
+
 (comment
+  (freja-dofile (curenv) "test.janet")
+
   (put-in module/cache ["freja/file-handling" 'fine] @{:ref @[fine]})
 
   #  (freja-dofile state/user-env "test-env.janet")
