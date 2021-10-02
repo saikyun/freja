@@ -360,16 +360,23 @@
   (buffer/push-string
     state/freja-dir
     (or (os/getenv "FREJA_PATH")
-        (when (os/stat (string (os/getenv "HOME") path/sep "/.config/freja"))
-          (string (os/getenv "HOME") path/sep ".config/freja" path/sep))
+
+        (let [path (if (= :win (os/which))
+                     (string (os/getenv "LOCALAPPDATA") path/sep "/freja")
+                     (string (os/getenv "HOME") path/sep "/.config/freja"))]
+          (when (os/stat path)
+            (string path path/sep)))
+
         (let [p (wai/get-executable-path)]
           ### unless running as script
           (unless (string/has-suffix? "janet" p)
             (path/dirname p)))
+
         (when-let [a (dyn :executable)]
           ### running as script
           (when (string/has-suffix? "freja/main.janet" a)
             (string (path/dirname a) ".." path/sep)))
+
         "./"))
 
   (frp/init-chans)
