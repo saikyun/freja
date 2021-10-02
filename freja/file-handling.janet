@@ -20,7 +20,7 @@
 
 (defn data-path
   [&opt path]
-  (if (= :win (os/which))
+  (if (= :windows (os/which))
     (string (os/getenv "LOCALAPPDATA") path/sep "freja" (when path (string path/sep path)))
     (string (os/getenv "HOME") "/.local/share/freja" (when path (string path/sep path)))))
 

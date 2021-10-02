@@ -364,7 +364,7 @@
     state/freja-dir
     (or (os/getenv "FREJA_PATH")
 
-        (let [path (if (= :win (os/which))
+        (let [path (if (= :windows (os/which))
                      (string (os/getenv "LOCALAPPDATA") path/sep "/freja")
                      (string (os/getenv "HOME") path/sep "/.config/freja"))]
           (when (os/stat path)
