@@ -18,7 +18,7 @@
 (varfn path->checkpoint-dir
   [path]
   (let [parts (path/parts (path/abspath path))
-        freja-data-dir (file-handling/data-path)
+        freja-data-dir (file-handling/data-path "")
         checkpoint-dir (string
                          freja-data-dir
                          (string/join [;(array/slice parts 0 -2)
@@ -29,7 +29,7 @@
   [path note]
   # only allow characters that are OK in a path
   # TODO: remove more non-ok characters
-  (let [note (string/replace-all "/" "_SLASH_" note)
+  (let [note (string/replace-all path/sep "_SLASH_" note)
         checkpoint-dir (path->checkpoint-dir path)
         day-dir (string checkpoint-dir path/sep (checkpoint-date))
         checkpoint-path (string day-dir path/sep (checkpoint-time) " " note)]
