@@ -246,8 +246,7 @@
       (set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
 
-      (init-window 900 700
-                   "Freja")
+      (init-window 0 0 "Freja")
 
       (put frp/screen-size :screen/width (get-screen-width))
       (put frp/screen-size :screen/height (get-screen-height))
