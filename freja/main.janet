@@ -173,6 +173,9 @@
 
   (begin-drawing)
 
+  # this seems to stop glitching when initing too big window
+  (rl-load-identity)
+
   (clear-background :white
                     # (theme/colors :background)
 )
@@ -246,7 +249,7 @@
       (set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
 
-      (init-window 900 700
+      (init-window 2900 2700
                    "Freja")
 
       (put frp/screen-size :screen/width (get-screen-width))

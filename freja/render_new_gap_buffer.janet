@@ -1018,9 +1018,7 @@ Render lines doesn't modify anything in gb."
 
 (varfnp generate-texture
         [gb]
-
         (begin-texture-mode (gb :texture))
-
         (rl-push-matrix)
 
         (rl-load-identity)

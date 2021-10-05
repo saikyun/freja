@@ -80,6 +80,9 @@ font must either be:
           :render (fn [self parent-x parent-y]
                     (put self :focused? (= self (in state/focus :focus)))
 
+                    (put self :render-x parent-x)
+                    (put self :render-y parent-y)
+
                     (render self))
 
           :on-event (fn [self ev]
