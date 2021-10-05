@@ -173,6 +173,9 @@
 
   (begin-drawing)
 
+  # this seems to stop glitching when initing too big window
+  (rl-load-identity)
+
   (clear-background :white
                     # (theme/colors :background)
 )
