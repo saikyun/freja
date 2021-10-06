@@ -7,21 +7,26 @@
    (/ b 255)
    (or a 1)])
 
+# M-x list-colors-display in emacs
 (def colors
-  @{1 (rgba->f 120 11 151)
-    2 0x77cc77ff
-    3 :dark-blue
-    4 0xee99ddff
-    5 0x228822ff
-    6 :sky-blue
-    7 :dark-purple
-    8 0x77cc77ff
-    9 :dark-blue
-    10 0xee99ddff
-    11 0x228822ff
-    12 :sky-blue
-    13 :dark-purple})
-
+  @{1 0xff8c00ff # dark orange
+    2 0xff1493ff # deep pink
+    3 0x7fff00ff # chartreuse
+    4 0x00bfffff # deep sky blue
+    5 0xffff00ff # yellow
+    6 0xda70d6ff # orchid
+    7 0x00ff7fff # spring green
+    8 0xff8247ff # siennal
+    # repeat
+    9 0xff8c00ff # dark orange
+   10 0xff1493ff # deep pink
+   11 0x7fff00ff # chartreuse
+   12 0x00bfffff # deep sky blue
+   13 0xffff00ff # yellow
+   14 0xda70d6ff # orchid
+   15 0x00ff7fff # spring green
+   16 0xff8247ff # siennal
+  })
 
 (comment
   (((((((((()))))))))))
