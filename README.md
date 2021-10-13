@@ -42,8 +42,6 @@ If you want to use PREFIX as to not litter system wide libs, check out [sogaiu's
 
 ### changing the theme
 
-NOTE: Use `Ctrl` on Windows / Linux and `Cmd` on MacOS.
-
 1. Start the editor
    1. Linux / MacOS: `mkdir ~/.freja && freja ~/.freja/init.janet`
 1. Copy the following into the file
@@ -66,17 +64,17 @@ NOTE: Use `Ctrl` on Windows / Linux and `Cmd` on MacOS.
               :string (rgba 230 219 115)
               :keyword (rgba 174 128 255)})
 ```
-3. Press `Ctrl/Cmd+L`
+3. Press `Ctrl+L`
 4. Press a button to force the text area to rerender
 
 The above is a port of the Monokai theme by Wimer Hazenberg.
 
 ## Evaluation environment
 
-Whenever you run hit `Ctrl/Cmd+L` you run `freja/file_handling/save-and-dofile`.  
+Whenever you run hit `Ctrl+L` you run `freja/file_handling/save-and-dofile`.  
 This saves the file, and then runs the file using a variant of janet's `dofile`.  
 This leads to a new environment table being created (using `make-env`).  
-This environment table is then used whenever you hit `Ctrl/Cmd+Enter`,  
+This environment table is then used whenever you hit `Ctrl+Enter`,  
 which calls `freja/input/eval-it`.  
 `eval-it` will run the code to the left of the cursor, specifically,  
 a symbol, keyword, string, number, struct, table, tuple (including a function call), or array.  
@@ -103,9 +101,9 @@ Some examples:
 This can be very useful when trying to run example code in files,  
 or just play around with the code.
 
-The main way to use this is to open a file, hit `Ctrl/Cmd+L`  
+The main way to use this is to open a file, hit `Ctrl+L`  
 which will make Freja look at the environment of that file.  
-Successive calls to `Ctrl/Cmd+Enter` and `Ctrl/Cmd+L` will then act in that environment.
+Successive calls to `Ctrl+Enter` and `Ctrl+L` will then act in that environment.
 
 ## Thanks
 
