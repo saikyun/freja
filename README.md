@@ -45,19 +45,19 @@ If you want to use PREFIX as to not litter system wide libs, check out [sogaiu's
 ```
 # | is the cursor
 1 2| 3
-# eval-it
+# hit Ctrl+Enter
 #=> 2
 
 "a b c"|
-# eval-it
+# Ctrl+Enter
 #=> "a b c"
 
 "a b| c"
-# eval-it
+# Ctrl+Enter
 #=> b is undefined
 
 (+ 1 2 3)|
-# eval-it
+# Ctrl+Enter
 #=> 6
 ```
 This can be very useful when trying to run example code in files,  
