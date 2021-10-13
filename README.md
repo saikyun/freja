@@ -74,7 +74,7 @@ The above is a port of the Monokai theme by Wimer Hazenberg.
 ## Evaluation environment
 
 Whenever you run hit `Ctrl/Cmd+L` you run `freja/file_handling/save-and-dofile`.  
-This saves the file, and then runs the file using janet's `dofile`.  
+This saves the file, and then runs the file using a variant of janet's `dofile`.  
 This leads to a new environment table being created (using `make-env`).  
 This environment table is then used whenever you hit `Ctrl/Cmd+Enter`,  
 which calls `freja/input/eval-it`.  
