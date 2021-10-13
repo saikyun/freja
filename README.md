@@ -40,46 +40,8 @@ If you want to run freja anywhere, it's better to `jpm install` it, or `jpm buil
 
 If you want to use PREFIX as to not litter system wide libs, check out [sogaiu's post about it](https://github.com/saikyun/freja/issues/30#issuecomment-907937626).
 
-### changing the theme
+### Some examples
 
-1. Start the editor
-   1. Linux / MacOS: `mkdir ~/.freja && freja ~/.freja/init.janet`
-1. Copy the following into the file
-```
-(import freja/theme :prefix "")
-
-(merge-into colors
-            @{:text (rgba 248 248 243)
-              :border [0.396 0.478 0.513]
-              :background (rgba 39 40 33)
-              :textarea [0.992 0.965 0.88]
-              :selected-text [0.992 0.965 0.88]
-              :selected-text-background :blue
-              :caret [0.396 0.478 0.513]
-              
-              :game-bg (rgba 134 173 172)
-              
-              :call (rgba 166 226 45)
-              :special-symbol (rgba 102 217 238)
-              :string (rgba 230 219 115)
-              :keyword (rgba 174 128 255)})
-```
-3. Press `Ctrl+L`
-4. Press a button to force the text area to rerender
-
-The above is a port of the Monokai theme by Wimer Hazenberg.
-
-## Evaluation environment
-
-Whenever you run hit `Ctrl+L` you run `freja/file_handling/save-and-dofile`.  
-This saves the file, and then runs the file using a variant of janet's `dofile`.  
-This leads to a new environment table being created (using `make-env`).  
-This environment table is then used whenever you hit `Ctrl+Enter`,  
-which calls `freja/input/eval-it`.  
-`eval-it` will run the code to the left of the cursor, specifically,  
-a symbol, keyword, string, number, struct, table, tuple (including a function call), or array.  
-
-Some examples:
 ```
 # | is the cursor
 1 2| 3
@@ -104,6 +66,17 @@ or just play around with the code.
 The main way to use this is to open a file, hit `Ctrl+L`  
 which will make Freja look at the environment of that file.  
 Successive calls to `Ctrl+Enter` and `Ctrl+L` will then act in that environment.
+
+
+## Evaluation environment
+
+Whenever you run hit `Ctrl+L` you run `freja/file_handling/save-and-dofile`.  
+This saves the file, and then runs the file using a variant of janet's `dofile`.  
+This leads to a new environment table being created (using `make-env`).  
+This environment table is then used whenever you hit `Ctrl+Enter`,  
+which calls `freja/input/eval-it`.  
+`eval-it` will run the code to the left of the cursor, specifically,  
+a symbol, keyword, string, number, struct, table, tuple (including a function call), or array.  
 
 ## Thanks
 
