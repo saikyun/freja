@@ -12,28 +12,45 @@
 
 (varfn mag
   [v]
-  (assert (= (length v) 2)
-          "mag only works on v2")
+  (case (length v)
+    2
+    (let [[x y] v]
+      (math/sqrt (+ (math/pow x 2)
+                    (math/pow y 2))))
 
-  (def [x y] v)
+    3
+    (let [[x y z] v]
+      (math/sqrt (+ (math/pow x 2)
+                    (math/pow y 2)
+                    (math/pow z 2))))
 
-  (math/sqrt (+ (math/pow x 2)
-                (math/pow y 2))))
+    (error "mag only works on v2 / v3")))
 
 (varfn mag-sqr
   [v]
-  (assert (= (length v) 2)
-          "mag only works on v2")
-  
-  (def [x y] v)
-  
-  (+ (math/pow x 2)
-     (math/pow y 2)))
+  (case (length v)
+    2
+    (let [[x y] v]
+      (+ (math/pow x 2)
+         (math/pow y 2)))
+
+    3
+    (let [[x y z] v]
+      (+ (math/pow x 2)
+         (math/pow y 2)
+         (math/pow z 2)))
+
+    (error "mag-sqr only works on v2 / v3")))
 
 (varfn dist-sqr
   [v1 v2]
   (math/abs
     (mag-sqr (v- v1 v2))))
+
+(varfn dist
+  [v1 v2]
+  (math/abs
+    (mag (v- v1 v2))))
 
 (varfn normalize
   [v]
@@ -41,4 +58,5 @@
   (if (> m 0)
     (seq [p :in v]
       (/ p m))
-    @[0 0]))
+    (seq [_ :in v]
+      0)))

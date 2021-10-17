@@ -58,11 +58,15 @@ font must either be:
             (when state
               (put state :element self))
 
+            (print "focus game")
+            (e/put! state/focus :focus self)
+            (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)
+
             (global-set-key
               [:alt :u]
               (fn [_]
                 (e/put! state/focus :focus self)
-                (e/put! state/editor-state :right-focus true))))
+                (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true))))
 
           :children []
 
@@ -87,20 +91,29 @@ font must either be:
 
           :on-event (fn [self ev]
 
+                      (defn unfocus
+                        []
+                        (show-cursor)
+                        (put-in state/editor-state
+                                [:left-state :editor :gb :blink] 0)
+                        (e/put! state/focus :focus
+                                (get-in state/editor-state
+                                        [:left-state :editor])))
+
                       (match ev
                         [:key-down :d]
                         (when (key-down? :left-alt)
-                          (put-in state/editor-state
-                                  [:left-state :editor :gb :blink] 0)
-                          (e/put! state/focus :focus
-                                  (get-in state/editor-state
-                                          [:left-state :editor])))
+                          (unfocus))
+
+                        [:key-down :escape]
+                        (unfocus)
 
                         ['(or (= (ev 0) :press)
-                              (= (ev 0) :mouse-move)) _]
+                              # (= (ev 0) :mouse-move)
+) _]
                         (do
                           (e/put! state/focus :focus self)
-                          (e/put! state/editor-state :right-focus true)))
+                          (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)))
 
                       (when on-event
                         (on-event ev)))})))
@@ -117,7 +130,7 @@ props allows following keys:
   [props]
   (assert (props :render) "start-game needs :render")
 
-  (e/put! state/editor-state :right
+  (e/put! state/editor-state (if (props :left) :left :right)
           (fn [outer-props]
             [:background {:color (if (outer-props :right-focus)
                                    (theme/comp-cols :background)

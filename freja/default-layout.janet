@@ -49,12 +49,12 @@
     (put props :right-state @{}))
 
   [:padding {:left 0 :top 30}
-
    [:background {:color 0x9D9D9Dff}
     [:column {}
      [:row {:weight 1}
-      [:block {:weight 1}
-       [(props :left) props]]
+      (when (props :left)
+        [:block {:weight 1}
+         [(props :left) props]])
       #[:block {:width 2}]
       (when (props :right)
         [:block {:weight 1}

@@ -215,7 +215,7 @@
                                (unless (empty? state/out)
                                  (events/push! frp/out (string state/out))
                                  (buffer/clear state/out))
-                               (ev/sleep 0.01)))
+                               (ev/sleep 0.0001)))
                            ([err fib]
                              (let [path "text_experiment_dump"]
                                (debug/stacktrace fib err)
