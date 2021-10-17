@@ -117,7 +117,6 @@
   [:event-handler {:on-event
                    (fn [self [ev-kind]]
                      (when (my-props :open-menu)
-                       (print "wtf?")
                        (when (= ev-kind :release)
                          (print "release close menu")
                          (e/put! my-props :open-menu nil))))}
