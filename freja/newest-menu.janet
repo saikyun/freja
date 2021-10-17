@@ -48,8 +48,11 @@
     :label label
     :hotkey hotkey}]
 
-  (default hotkey (i/get-hotkey ((state :focused-text-area) :binds) f))
-  (assert hotkey (string "no hotkey for " f))
+  (default hotkey (or
+                    (-?> (i/get-hotkey ((state :focused-text-area) :binds) f)
+                        hotkey->string)
+                    ""))
+  (unless hotkey (string "no hotkey for " f))
 
   [:clickable {:on-click (fn [_]
                            (e/put! my-props :open-menu nil)
@@ -66,7 +69,7 @@
              :weight 1}
      [:text {:color hotkey-color
              :size 22
-             :text (hotkey->string hotkey)}]]]])
+             :text hotkey}]]]])
 
 (defn file-menu
   [props]
