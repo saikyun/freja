@@ -75,7 +75,7 @@ font must either be:
             (-> el
                 (put :width (max (or (el :preset-width) max-width)))
                 (put :height (or (el :preset-height)
-                                 (- max-height 55)))
+                                 max-height))
                 (put :content-width (el :width))
                 (put :layout/lines nil))
 
@@ -139,8 +139,8 @@ props allows following keys:
               [custom props]]])))
 
 (when (dyn :freja/loading-file)
-  (start-game {:render (fn render [&keys {}]
-                         (draw-rectangle 10 10 100 100 :blue))
+  (start-game {:render (fn render [{:width width :height height}]
+                         (draw-rectangle 10 10 (- width 20) (- height 20) :blue))
                :on-event (fn on-event [ev] (pp ev))
                :change (fn [] (print "such change"))
                :state @{}})
