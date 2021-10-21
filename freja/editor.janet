@@ -118,8 +118,8 @@
     (print "new editor state for " id)
     (put state :editor (ta/default-textarea-state))
 
-#    (when initial-path
-#      ((file-open-binds :load-file) (state :editor) initial-path))
+    #    (when initial-path
+    #      ((file-open-binds :load-file) (state :editor) initial-path))
 
     (set editor-new? true))
 
@@ -182,6 +182,8 @@
                         :text/size 22
                         :height 28
 
+                        :text/color (t/colors :text)
+
                         :init (defn focus-textarea-on-init [self _]
                                 (e/put! state/focus :focus (self :state)))
 
@@ -204,6 +206,7 @@
           [ta/textarea {:weight 1
                         :text/size 22
                         :height 28
+                        :text/color (t/colors :text)
                         :state file-open}]]
 
          :search
@@ -220,6 +223,7 @@
           [ta/textarea {:weight 1
                         :text/size 22
                         :height 28
+                        :text/color (t/colors :text)
                         :state search-state}]])]]
      #
 )
