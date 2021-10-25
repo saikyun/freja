@@ -388,10 +388,7 @@
 
   (file-handling/ensure-dir (file-handling/data-path ""))
 
-  #                           # running as script
-  (if-let [file (get args (if (dyn :executable)
-                            2
-                            1))]
+  (if-let [file (get args 1)]
     (let [[path line column]
           (peg/match
             '(* (<- (some (if-not ":" 1)))
