@@ -19,14 +19,14 @@
     8 0xff8247ff # siennal
     # repeat
     9 0xff8c00ff # dark orange
-   10 0xff1493ff # deep pink
-   11 0x7fff00ff # chartreuse
-   12 0x00bfffff # deep sky blue
-   13 0xffff00ff # yellow
-   14 0xda70d6ff # orchid
-   15 0x00ff7fff # spring green
-   16 0xff8247ff # siennal
-  })
+    10 0xff1493ff # deep pink
+    11 0x7fff00ff # chartreuse
+    12 0x00bfffff # deep sky blue
+    13 0xffff00ff # yellow
+    14 0xda70d6ff # orchid
+    15 0x00ff7fff # spring green
+    16 0xff8247ff # siennal
+})
 
 (def colors
   @{1 0xff8c00ff # dark orange
@@ -40,14 +40,14 @@
     # repeat
     # I thought the dark orange was too similar to siennal
     9 :blue # 0xff8c00ff # dark orange
-   10 0xff1493ff # deep pink
-   11 0x7fff00ff # chartreuse
-   12 0x00bfffff # deep sky blue
-   13 0xffff00ff # yellow
-   14 0xda70d6ff # orchid
-   15 0x00ff7fff # spring green
-   16 0xff8247ff # siennal
-  })
+    10 0xff1493ff # deep pink
+    11 0x7fff00ff # chartreuse
+    12 0x00bfffff # deep sky blue
+    13 0xffff00ff # yellow
+    14 0xda70d6ff # orchid
+    15 0x00ff7fff # spring green
+    16 0xff8247ff # siennal
+})
 
 (comment
   (((((((((()))))))))))
@@ -79,7 +79,7 @@
     #
     :comment (sequence "#"
                        (any (if-not (set "\r\n") 1)))
-    #
+    # 
     :form (choice :reader-macro
                   :collection
                   :literal)
@@ -146,7 +146,8 @@
                               (sequence "x" [2 :hex])
                               (sequence "u" [4 :hex])
                               (sequence "U" [6 :hex])
-                              (error (constant "bad escape"))))
+                              #(error (constant "bad escape"))
+))
     #
     :hex (range "09" "af" "AF")
     #
@@ -369,4 +370,4 @@
   [gb]
   (set depth 0)
   (peg/match jg # delims-pos-grammar
- (content gb)))
+             (content gb)))
