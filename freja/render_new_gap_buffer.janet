@@ -9,6 +9,87 @@
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
 
+
+(def faulty-stuf
+  ``
+hej
+phoentpoa
+dig
+ho
+htneosua
+``)
+
+(def faulty-stuf
+  ``
+hej
+hej
+hej
+``)
+
+
+## DEBUGGING STUFF
+
+(import ./state)
+(import ./events :as e)
+
+(defn safe-slice
+  [s start stop]
+  (string/slice s start (min (length s) stop)))
+
+(defn show-keys
+  [o ks]
+  [:block {}
+   ;(seq [k :in ks
+          :let [s (string/format "%p %p" k (get o k))]]
+      [:block {}
+       (safe-slice s 0 1000)])])
+
+(e/put!
+  state/editor-state
+  :bottom-right
+  (fn [{:right-state rs}]
+    (def {:editor editor} rs)
+    (def {:gb gb} editor)
+
+    (try
+      [:padding {:all 6
+                 :weight 1}
+       [:block {}
+        [:block {}
+         "gb"]
+
+        (string "nof lines: " (length (gb :lines)))
+
+        (show-keys gb [:caret
+                       :scroll
+                       :checked-word
+                       :lines
+                       :y-poses])
+
+        [:padding {:top 16}
+         [:block {:padding-top 16}
+          "gb keys"]
+         [:block {}
+          (safe-slice (string/format "%p" (keys gb)) 0 1000)]]
+
+        [:padding {:top 16}
+         [:block {}
+          "Editor keys"]
+         [:block {}
+          (safe-slice (string/format "%p" (keys editor)) 0 1000)]]
+
+        [:block {}
+         "Right state keys"]
+        [:block {}
+         (safe-slice (string/format "%p" (keys rs)) 0 1000)]]]
+      ([err fib]
+        (debug/stacktrace fib err)
+        "err"))))
+# (e/put! state/editor-state :bottom-right nil)
+
+## END OF DEBUGGING STUFF
+
+
 (setdyn :freja/ns "freja/render_new_gap_buffer")
 
 (use profiling/profile)
@@ -22,6 +103,7 @@
   [{:position position
     :offset offset
     :size size}]
+
   (def [_ y] position)
   (def [_ oy] offset)
   (def [_ h] size)
@@ -72,6 +154,29 @@
         #(debug/stacktrace (fiber/current))
         sz)
       sz)))
+
+(varfn width-between
+  [gb start stop]
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
+  (def [x-scale y-scale] screen-scale)
+  (var acc-w 0)
+
+  (gb-iterate
+    gb
+    start stop
+    i c
+    (let [[w h] (get-size sizes c)] (+= acc-w w)))
+
+  acc-w)
+
+(comment
+  (width-between gb-data 0 10)
+
+  (gb-iterate
+    gb-data
+    0 100
+    i c
+    (print i)))
 
 (varfn index-passing-max-width
   "Returns the index of the char exceeding the max width.
@@ -184,11 +289,21 @@ Returns `nil` if the max width is never exceeded."
 
   (def treshold (- width (offset 0) (or width-of-last-line-number 0)))
 
+  (put gb :checked-word nil)
+
   (defn check-if-word-is-too-wide
     [old-w i c]
+
+    (put-in gb [:checked-word :fst :treshsh i] (> (+ x old-w) treshold))
+
     (if (> (+ x old-w) treshold) ## we went outside the max width
       (do ## so rowbreak before the word
-        (when (not= beginning-of-word-i 0)
+
+        (put-in gb [:checked-word :fst i] beginning-of-word-i)
+
+        (when (and (not= beginning-of-word-i 0)
+                   (not= (inc (last lines)) beginning-of-word-i))
+          (put-in gb [:checked-word :fst :beginning-of-word-i beginning-of-word-i x] true)
           (array/push lines beginning-of-word-i)
           (array/push line-numbers line-number)
           (array/push y-poses y)
@@ -197,19 +312,30 @@ Returns `nil` if the max width is never exceeded."
         (set x old-w)
 
         (when (> (+ x old-w) treshold)
+          (put-in gb [:checked-word :break-up beginning-of-word-i x] true)
+
           ## then we need to break up the word
           (var break-i beginning-of-word-i)
+
           (while (set break-i (-?> (index-passing-max-width
                                      gb
                                      break-i
                                      i
                                      treshold)
-                                   dec)) # hotheotehtehomoa
+                                   dec))
             (array/push lines break-i)
             (array/push line-numbers line-number)
             (array/push y-poses y)
             (array/push line-flags :word-wrap)
-            (+= y h))))
+            (+= y h)
+
+            # after breaking up the word
+            # set the x to the width of the last line
+            (set x (width-between gb (last lines) (inc i)))
+            # tbh not sure why I need this
+            #(+= x (first (get-size sizes c)))
+
+            (put-in gb [:checked-word :break-up beginning-of-word-i :after-x] x))))
 
       (+= x (+ old-w (first (get-size sizes c))))))
 
@@ -248,23 +374,40 @@ Returns `nil` if the max width is never exceeded."
               (>= line-number line-limit))
       (return stop-gb-iterate)))
 
+  (put-in gb [:checked-word :too-far :is-it?] (not (> (+ y y-offset) y-limit)))
+
   (when (not (> (+ y y-offset) y-limit))
     (let [old-w w]
       (set w 0)
 
+      (put-in gb [:checked-word :too-far :x-w] (+ x old-w))
+      (put-in gb [:checked-word :too-far :threshold]
+              treshold)
+      (put-in gb [:checked-word :too-far :last-line]
+              (last lines))
+      (put-in gb [:checked-word :too-far :beg-wo]
+              beginning-of-word-i)
+
       (if (> (+ x old-w) treshold) ## we went outside the max width
+
         (do ## so rowbreak before the word
-          (when (not= beginning-of-word-i 0)
+
+          (when (and
+                  (not= beginning-of-word-i 0)
+                  (not= (inc (last lines)) beginning-of-word-i))
+            (put-in gb [:checked-word :end-fst beginning-of-word-i x] true)
             (array/push lines beginning-of-word-i)
             (array/push line-numbers line-number)
             (array/push y-poses y)
             (array/push line-flags :word-wrap)
             (+= y h))
+
           (set x old-w)
 
           ## is the word also longer than the line?
           (when (> (+ x old-w) treshold)
             ## then we need to break up the word
+            (put-in gb [:checked-word :end-break-up beginning-of-word-i x] true)
             (var break-i beginning-of-word-i)
             (while (set break-i (-?> (index-passing-max-width
                                        gb
@@ -276,7 +419,12 @@ Returns `nil` if the max width is never exceeded."
               (array/push line-numbers line-number)
               (array/push y-poses y)
               (array/push line-flags :word-wrap)
-              (+= y h))))))
+              (+= y h))))
+
+        (do
+
+          (put-in gb [:checked-word :end-fst] nil)
+          (put-in gb [:checked-word :end-break-up] nil))))
 
     (array/push lines stop)
     (array/push line-numbers line-number)
@@ -296,29 +444,6 @@ Returns `nil` if the max width is never exceeded."
           stop (max selection caret)]
       (and (>= i start)
            (< i stop)))))
-
-(varfn width-between
-  [gb start stop]
-  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
-  (def [x-scale y-scale] screen-scale)
-  (var acc-w 0)
-
-  (gb-iterate
-    gb
-    start stop
-    i c
-    (let [[w h] (get-size sizes c)] (+= acc-w w)))
-
-  acc-w)
-
-(comment
-  (width-between gb-data 0 10)
-
-  (gb-iterate
-    gb-data
-    0 100
-    i c
-    (print i)))
 
 (varfn render-selection-box
   [gb start stop y]
@@ -1016,23 +1141,23 @@ Render lines doesn't modify anything in gb."
                 (* y-scale (* (gb :text/size) (gb :text/line-height)))
                 (height gb)))
 
-(varfnp generate-texture
-        [gb]
-        (begin-texture-mode (gb :texture))
-        (rl-push-matrix)
+(varfn generate-texture
+  [gb]
+  (begin-texture-mode (gb :texture))
+  (rl-push-matrix)
 
-        (rl-load-identity)
+  (rl-load-identity)
 
-        # you can use blank for slightly thinner text
-        (clear-background (or (when (not= (gb :scroll)
-                                          (gb :render-scroll)) :blank)
-                              (gb :background)
-                              (get-in gb [:colors :background])
-                              :blue))
-        (inner-draw gb)
-        (rl-pop-matrix)
+  # you can use blank for slightly thinner text
+  (clear-background (or (when (not= (gb :scroll)
+                                    (gb :render-scroll)) :blank)
+                        (gb :background)
+                        (get-in gb [:colors :background])
+                        :blue))
+  (inner-draw gb)
+  (rl-pop-matrix)
 
-        (end-texture-mode))
+  (end-texture-mode))
 
 (defn document-bottom
   [gb y]
@@ -1185,6 +1310,9 @@ Render lines doesn't modify anything in gb."
             changed-scroll
             changed-styling
             rs-changed)
+
+    ## DEBUG TODO: REMOVE
+    (e/put! state/editor-state :force-refresh true)
 
     (when changed
       (put gb :delim-ps (rb/gb->delim-ps gb)))

@@ -25,15 +25,17 @@
   [props & _]
   (def {:bottom bottom
         :bottom-h bottom-h} props)
-  [:background {:color (if (props :right-focus)
-                         (t/comp-cols :background)
-                         :blank)}
-   [:padding {:all 2}
-    [e/editor @{:state (props :right-state)
-                :id :right
-                :open (props :right-open)
-                :set-open |(do (print "opening: " $)
-                             (e/put! props :right-open $))}]]])
+  [:block {:height 100
+           :width 100}
+   [:background {:color (if (props :right-focus)
+                          (t/comp-cols :background)
+                          :blank)}
+    [:padding {:all 2}
+     [e/editor @{:state (props :right-state)
+                 :id :right
+                 :open (props :right-open)
+                 :set-open |(do (print "opening: " $)
+                              (e/put! props :right-open $))}]]]])
 
 
 (defn text-area-hc
@@ -56,9 +58,18 @@
         [:block {:weight 1}
          [(props :left) props]])
       #[:block {:width 2}]
-      (when (props :right)
-        [:block {:weight 1}
-         [(props :right) props]])
+
+      [:block {:weight 1}
+       [:column {}
+        (when (props :right)
+          (if (or (not (props :bottom-right))
+                  (props :right-focus))
+            [:block {:weight 1}
+             [(props :right) props]]
+            [(props :right) props]))
+
+        (when (props :bottom-right)
+          [(props :bottom-right) props])]]
 
       #
 ]
@@ -104,9 +115,8 @@
 
   (e/put! state/editor-state
           :right
-          nil
-          #default-right-editor
-)
+          #nil
+          default-right-editor)
 
   (frp/subscribe!
     state/focus
