@@ -59,17 +59,20 @@
          [(props :left) props]])
       #[:block {:width 2}]
 
-      [:block {:weight 1}
-       [:column {}
-        (when (props :right)
-          (if (or (not (props :bottom-right))
-                  (props :right-focus))
-            [:block {:weight 1}
-             [(props :right) props]]
-            [(props :right) props]))
 
-        (when (props :bottom-right)
-          [(props :bottom-right) props])]]
+      (when (or (props :right)
+                (props :bottom-right))
+        [:block {:weight 1}
+         [:column {}
+          (when (props :right)
+            (if (or (not (props :bottom-right))
+                    (props :right-focus))
+              [:block {:weight 1}
+               [(props :right) props]]
+              [(props :right) props]))
+
+          (when (props :bottom-right)
+            [(props :bottom-right) props])]])
 
       #
 ]
@@ -115,8 +118,9 @@
 
   (e/put! state/editor-state
           :right
-          #nil
-          default-right-editor)
+          nil
+          #default-right-editor
+)
 
   (frp/subscribe!
     state/focus

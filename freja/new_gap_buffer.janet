@@ -1204,9 +1204,10 @@ Otherwise moves the caret backward one character."
 Returns column (nof characters from left newline) for caret position `i`.
 ``
   [s i]
-  (if-let [m (peg/match column-peg s (min (length s) i))]
-    (- (length s) (m 0))
-    0))
+  (let [pos (min (length s) i)]
+    (if-let [[n] (peg/match column-peg s pos)]
+      [n (- pos n)]
+      0)))
 
 (defn column!
   ``
@@ -1216,11 +1217,17 @@ Wrapper for `column` for gap buffers.
   (column (content gb) i))
 
 (comment
+  (import freja/state)
+
+  (def gb (get-in state/editor-state [:left-state :editor :gb]))
+  (column! gb 13)
+
   (column ``
-aoe.hej
-aoe
+1
+2
+322
 ``
-          8)
+          9)
   #=> 3
 )
 

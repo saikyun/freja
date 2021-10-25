@@ -9,9 +9,12 @@
 (import ./rainbow :as rb :fresh true)
 (import ./highlighting :as hl :fresh true)
 
+(comment
 
-(def faulty-stuf
-  ``
+  ## DEBUGGING STUFF
+
+  (def faulty-stuf
+    ``
 hej
 phoentpoa
 dig
@@ -19,75 +22,77 @@ ho
 htneosua
 ``)
 
-(def faulty-stuf
-  ``
+  (def faulty-stuf
+    ``
 hej
 hej
 hej
 ``)
 
+  (import ./state)
+  (import ./events :as e)
 
-## DEBUGGING STUFF
+  (defn safe-slice
+    [s start stop]
+    (string/slice s start (min (length s) stop)))
 
-(import ./state)
-(import ./events :as e)
-
-(defn safe-slice
-  [s start stop]
-  (string/slice s start (min (length s) stop)))
-
-(defn show-keys
-  [o ks]
-  [:block {}
-   ;(seq [k :in ks
-          :let [s (string/format "%p %p" k (get o k))]]
-      [:block {}
-       (safe-slice s 0 1000)])])
-
-(e/put!
-  state/editor-state
-  :bottom-right
-  (fn [{:right-state rs}]
-    (def {:editor editor} rs)
-    (def {:gb gb} editor)
-
-    (try
-      [:padding {:all 6
-                 :weight 1}
-       [:block {}
+  (defn show-keys
+    [o ks]
+    [:block {}
+     ;(seq [k :in ks
+            :let [s (string/format "%p %p" k (get o k))]]
         [:block {}
-         "gb"]
+         (safe-slice s 0 1000)])])
 
-        (string "nof lines: " (length (gb :lines)))
+  (e/put!
+    state/editor-state
+    :bottom-right
+    (fn [{:right-state rs}]
+      (def {:editor editor} rs)
+      (def {:gb gb} editor)
 
-        (show-keys gb [:caret
-                       :scroll
-                       :checked-word
-                       :lines
-                       :y-poses])
-
-        [:padding {:top 16}
-         [:block {:padding-top 16}
-          "gb keys"]
+      (try
+        [:padding {:all 6
+                   :weight 1}
          [:block {}
-          (safe-slice (string/format "%p" (keys gb)) 0 1000)]]
+          [:block {}
+           "gb"]
 
-        [:padding {:top 16}
-         [:block {}
-          "Editor keys"]
-         [:block {}
-          (safe-slice (string/format "%p" (keys editor)) 0 1000)]]
+          (string "nof lines: " (length (gb :lines)))
 
-        [:block {}
-         "Right state keys"]
-        [:block {}
-         (safe-slice (string/format "%p" (keys rs)) 0 1000)]]]
-      ([err fib]
-        (debug/stacktrace fib err)
-        "err"))))
-# (e/put! state/editor-state :bottom-right nil)
+          (show-keys gb [:caret
+                         :scroll
+                         :checked-word
+                         :lines
+                         :y-poses])
 
-## END OF DEBUGGING STUFF
+          [:padding {:top 16}
+           [:block {:padding-top 16}
+            "gb keys"]
+           [:block {}
+            (safe-slice (string/format "%p" (keys gb)) 0 1000)]]
+
+          [:padding {:top 16}
+           [:block {}
+            "Editor keys"]
+           [:block {}
+            (safe-slice (string/format "%p" (keys editor)) 0 1000)]]
+
+          [:block {}
+           "Right state keys"]
+          [:block {}
+           (safe-slice (string/format "%p" (keys rs)) 0 1000)]]]
+        ([err fib]
+          (debug/stacktrace fib err)
+          "err"))))
+  # (e/put! state/editor-state :bottom-right nil)
+
+  ## END OF DEBUGGING STUFF
+
+  #
+)
+
+#
 
 
 (setdyn :freja/ns "freja/render_new_gap_buffer")
@@ -1312,7 +1317,7 @@ Render lines doesn't modify anything in gb."
             rs-changed)
 
     ## DEBUG TODO: REMOVE
-    (e/put! state/editor-state :force-refresh true)
+    # (e/put! state/editor-state :force-refresh true)
 
     (when changed
       (put gb :delim-ps (rb/gb->delim-ps gb)))
