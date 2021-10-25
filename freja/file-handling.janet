@@ -328,7 +328,9 @@
 
     (set state/user-env env)
 
-    (cond ns-name
+    # TODO: fix this and ensure it works with any .janet-file afterwards
+    (cond (and false
+               ns-name)
       (let [ns (require ns-name)]
         (loop [k :keys env
                :let [existing-sym (ns k)
