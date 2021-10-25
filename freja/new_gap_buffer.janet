@@ -657,7 +657,8 @@ Updates caret etc as expected."
          :gap gap} (move-gap-to-caret! gb)
         gap-i (- caret gap-start)
         to-delete (gb-slice gb (dec (gb :caret)) (gb :caret))]
-    (when (= (gb :caret) 0)
+    (when (and (not selection)
+               (= (gb :caret) 0))
       (break gb))
 
     (if selection
