@@ -1195,6 +1195,35 @@ Otherwise moves the caret backward one character."
 
   (peg/match (finder "a") "bac" 0))
 
+(def- column-peg
+  (peg/compile ~{:back (> -1 (+ (* (set "\r\n") ($)) :back))
+                 :main :back}))
+
+(defn column
+  ``
+Returns column (nof characters from left newline) for caret position `i`.
+``
+  [s i]
+  (if-let [m (peg/match column-peg s (min (length s) i))]
+    (- (length s) (m 0))
+    0))
+
+(defn column!
+  ``
+Wrapper for `column` for gap buffers.
+``
+  [gb i]
+  (column (content gb) i))
+
+(comment
+  (column ``
+aoe.hej
+aoe
+``
+          8)
+  #=> 3
+)
+
 
 ### initialization
 
