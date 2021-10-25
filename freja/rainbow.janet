@@ -184,7 +184,7 @@
     #          (any :input)
     #          (choice ")"
     #                  (error (constant "missing )"))))
-    (* (cmt (* ($) "@(") ,inc-depth) (any :input) (opt (cmt (* ($) ")") ,dec-depth)))
+    (* (cmt (* "@" ($) "(") ,inc-depth) (any :input) (opt (cmt (* ($) ")") ,dec-depth)))
 
     #
     :tuple #(sequence "("
@@ -197,7 +197,7 @@
     #                         (any :input)
     #                         (choice "]"
     #                                 (error (constant "missing ]"))))
-    (* (cmt (* ($) "@[") ,inc-depth) (any :input) (opt (cmt (* ($) "]") ,dec-depth)))
+    (* (cmt (* "@" ($) "[") ,inc-depth) (any :input) (opt (cmt (* ($) "]") ,dec-depth)))
     #
     :bracket-tuple #(sequence "["
     #                         (any :input)
@@ -209,7 +209,7 @@
     #          (any :input)
     #          (choice "}"
     #                  (error (constant "missing }"))))
-    (* (cmt (* ($) "@{") ,inc-depth) (any :input) (opt (cmt (* ($) "}") ,dec-depth)))
+    (* (cmt (* "@" ($) "{") ,inc-depth) (any :input) (opt (cmt (* ($) "}") ,dec-depth)))
     #
     :struct #(sequence "{"
     #                  (any :input)
