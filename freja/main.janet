@@ -330,14 +330,59 @@
 
 
 (defn main [& args]
+
+  (when (= "--help" (get args 1))
+    (print ``
+freja <file/flag>
+
+file             path to file you want to edit
+
+flags:
+--open-init      opens your init.janet, used for customization
+--paths          paths that freja uses
+--version        prints freja version
+``)
+    (os/exit 0))
+
   (when (= "--version" (get args 1))
     (print (string "freja " version/ver-str))
     (os/exit 0))
+
+  (def open-init (= "--open-init" (get args 1)))
 
   (set file-handling/scratch-path (file-handling/data-path "scratch"))
 
   (when-let [syspath (os/getenv "JANET_PATH")]
     (setdyn :syspath syspath))
+
+  (buffer/push-string
+    state/freja-dir
+    (or (os/getenv "FREJA_PATH")
+
+        (let [path (if (= :windows (os/which))
+                     (string (os/getenv "LOCALAPPDATA") path/sep "freja")
+                     (string (os/getenv "HOME") path/sep ".config" path/sep "freja"))]
+          (when (os/stat path)
+            (string path path/sep)))
+
+        (let [p (wai/get-executable-path)]
+          ### unless running as script
+          (unless (string/has-suffix? "janet" p)
+            (path/dirname p)))
+
+        (when-let [a (dyn :executable)]
+          ### running as script
+          (when (string/has-suffix? "freja/main.janet" a)
+            (string (path/dirname a) ".." path/sep)))
+
+        "./"))
+
+
+  (when (= "--paths" (get args 1))
+    (print "init.janet: " (string state/freja-dir "init.janet"))
+    (print "data (e.g. checkpoints/backups): " (file-handling/data-path ""))
+    (print "scratch: " file-handling/scratch-path)
+    (os/exit 0))
 
   (put module/cache "freja-jaylib" freja-jaylib)
   (put module/cache "freja/state" state)
@@ -362,41 +407,21 @@
   #(buffer/push-string derp/derp "from main")
   (pp args)
 
-  (buffer/push-string
-    state/freja-dir
-    (or (os/getenv "FREJA_PATH")
-
-        (let [path (if (= :windows (os/which))
-                     (string (os/getenv "LOCALAPPDATA") path/sep "freja")
-                     (string (os/getenv "HOME") path/sep ".config" path/sep "freja"))]
-          (when (os/stat path)
-            (string path path/sep)))
-
-        (let [p (wai/get-executable-path)]
-          ### unless running as script
-          (unless (string/has-suffix? "janet" p)
-            (path/dirname p)))
-
-        (when-let [a (dyn :executable)]
-          ### running as script
-          (when (string/has-suffix? "freja/main.janet" a)
-            (string (path/dirname a) ".." path/sep)))
-
-        "./"))
-
   (frp/init-chans)
 
   (file-handling/ensure-dir (file-handling/data-path ""))
 
   (if-let [file (get args 1)]
     (let [[path line column]
-          (peg/match
-            '(* (<- (some (if-not ":" 1)))
-                (opt (* ":"
-                        (<- (some (if-not ":" 1)))))
-                (opt (* ":"
-                        (<- (some (if-not ":" 1))))))
-            file)]
+          (if open-init
+            [(string state/freja-dir "init.janet")]
+            (peg/match
+              '(* (<- (some (if-not ":" 1)))
+                  (opt (* ":"
+                          (<- (some (if-not ":" 1)))))
+                  (opt (* ":"
+                          (<- (some (if-not ":" 1))))))
+              file))]
       (set state/initial-file [path
                                (-?> line scan-number)
                                (-?> column scan-number)]))
