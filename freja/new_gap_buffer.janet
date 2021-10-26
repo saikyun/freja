@@ -1206,7 +1206,7 @@ Returns column (nof characters from left newline) for caret position `i`.
   [s i]
   (let [pos (min (length s) i)]
     (if-let [[n] (peg/match column-peg s pos)]
-      [n (- pos n)]
+      (- pos n)
       0)))
 
 (defn column!
