@@ -2,6 +2,11 @@
 
 Self-modifiable text editor implemented in Janet.
 
+## social
+
+[![image](https://user-images.githubusercontent.com/2477927/138828275-273ca9a8-b531-41ba-b387-0918c19b5489.png)  
+Join us on Discord!](https://discord.gg/YYKr25uDhj)
+
 ## try it
 
 ### prerequisites
