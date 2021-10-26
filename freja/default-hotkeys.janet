@@ -125,7 +125,7 @@
 
 (defn eval-it
   [props]
-  (evaling/eval-it (get-in props [:context :top-env])
+  (evaling/eval-it state/user-env
                    (evaling/gb-get-last-sexp props)))
 
 (var gb-binds @{:control @{:shift @{:f format!

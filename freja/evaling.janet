@@ -100,10 +100,9 @@ ouae
 
   (try
     (do
-      (fiber/setenv (fiber/current) state/user-env)
-      (fiber/setenv (fiber/current) state/user-env)
-      (put state/user-env :out state/out)
-      (put state/user-env :err state/out)
+      (fiber/setenv (fiber/current) env)
+      (put env :out state/out)
+      (put env :err state/out)
       (def res (eval-string code))
       (e/push! state/eval-results {:value res
                                  #:code code
