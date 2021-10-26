@@ -1239,7 +1239,8 @@ Wrapper for `column` for gap buffers.
     (if (= (chr "#") (in (content gb) start-of-line))
       (do
         (delete-region! gb start-of-line (inc start-of-line))
-        (move-n gb -1))
+        (when (= col 1)
+          (put gb :stickiness :down)))
       (do
         (insert-string-at-pos! gb start-of-line "#")
         (move-n gb 1)))))
