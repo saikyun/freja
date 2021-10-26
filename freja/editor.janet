@@ -83,10 +83,7 @@
 
 (def file-open-binds
   (-> @{}
-      (table/setproto dh/file-open-binds)
-      (merge-into
-        @{:escape (fn [props] (:escape props))
-          :enter (fn [props] (:enter props))})))
+      (table/setproto dh/file-open-binds)))
 
 (def search-binds
   (-> @{}
