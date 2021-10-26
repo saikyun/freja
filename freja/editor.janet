@@ -6,8 +6,14 @@
 (import freja/file-handling :as fh)
 (import freja/new_gap_buffer :as gb)
 (import freja/render_new_gap_buffer :as rgb)
+(import ./evaling)
 
 (use profiling/profile)
+
+(varfn eval-expr
+  [props]
+  (evaling/eval-it state/user-env
+                   (string ((gb/commit! props) :text))))
 
 (varfn search
   [props]
@@ -85,6 +91,10 @@
   (-> @{}
       (table/setproto dh/file-open-binds)))
 
+(def eval-binds
+  (-> @{}
+      (table/setproto dh/eval-binds)))
+
 (def search-binds
   (-> @{}
       (table/setproto dh/search-binds)))
@@ -106,6 +116,9 @@
   (unless (state :file-open)
     (put state :file-open (ta/default-textarea-state :binds file-open-binds)))
 
+  (unless (state :eval-expr)
+    (put state :eval-expr (ta/default-textarea-state :binds eval-binds)))
+
   (unless (state :search)
     (put state :search (ta/default-textarea-state :binds search-binds)))
 
@@ -121,6 +134,7 @@
     (set editor-new? true))
 
   (def {:file-open file-open
+        :eval-expr eval-state
         :search search-state
         :editor editor-state} state)
 
@@ -131,6 +145,11 @@
           (fn [_]
             (set-open :file-open)
             (e/put! state/focus :focus file-open)))
+
+  (put-in editor-state [:gb :eval-expr]
+          (fn [_]
+            (set-open :eval-expr)
+            (e/put! state/focus :focus eval-state)))
 
   (put-in editor-state [:gb :search]
           (fn [_]
@@ -151,6 +170,13 @@
             (set-open false)
             ((file-open-binds :load-file) editor-state (string ((gb/commit! props) :text)))
             (e/put! state/focus :focus editor-state)))
+
+  (put-in eval-state [:gb :escape]
+          (fn [props]
+            (set-open false)
+            (e/put! state/focus :focus editor-state)))
+
+  (put-in eval-state [:gb :eval-expr] eval-expr)
 
   (put-in search-state [:gb :search-target] (editor-state :gb))
 
@@ -205,6 +231,17 @@
                         :height 28
                         :text/color (t/colors :text)
                         :state file-open}]]
+
+         :eval-expr
+         [:row {}
+          [:text {:size 22
+                  :color (t/comp-cols :text/color)
+                  :text "Eval: "}]
+          [ta/textarea {:weight 1
+                        :text/size 22
+                        :height 28
+                        :text/color (t/colors :text)
+                        :state eval-state}]]
 
          :search
          [:row {}
