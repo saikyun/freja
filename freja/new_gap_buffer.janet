@@ -821,7 +821,8 @@ You should probably use `insert-string-at-caret!` instead."
 (varfn insert-string-at-pos!
   "Inserts string `s` at `pos`."
   [gb pos s]
-  (let [gb (insert-string-at-pos* gb pos s)]
+  (let [caret (gb :caret)
+        gb (insert-string-at-pos* gb pos s)]
 
     (-> gb
         (update :lowest-changed-at min* pos)
@@ -831,9 +832,9 @@ You should probably use `insert-string-at-caret!` instead."
           :actions
           array/push
           {:kind :insert
-           :caret-before pos
+           :caret-before caret
            :content s
-           :caret-after pos
+           :caret-after caret
            :start pos
            :stop (+ pos (length s))}))))
 
@@ -1033,7 +1034,7 @@ Otherwise moves the caret backward one character."
 
       (case kind
         :insert (-> gb
-                    (delete-region* i-before i-after)
+                    (delete-region* start stop)
                     (put :caret i-before)
                     (put :selection sel-before)
                     (put :changed true))
@@ -1231,6 +1232,17 @@ Wrapper for `column` for gap buffers.
   #=> 3
 )
 
+(defn comment-line
+  [gb]
+  (let [col (column! gb (gb :caret))
+        start-of-line (- (gb :caret) col)]
+    (if (= (chr "#") (in (content gb) start-of-line))
+      (do
+        (delete-region! gb start-of-line (inc start-of-line))
+        (move-n gb -1))
+      (do
+        (insert-string-at-pos! gb start-of-line "#")
+        (move-n gb 1)))))
 
 ### initialization
 
