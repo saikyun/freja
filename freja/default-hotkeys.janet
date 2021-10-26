@@ -144,14 +144,8 @@
 (table/setproto gb-binds global-keys)
 
 (def file-open-binds @{:load-file checkpoint/load-file-with-checkpoints
-
-                       :escape
-                       (fn [props]
-                         (gb/deselect props))
-
-                       :enter (fn [props]
-                                (reset-blink props)
-                                ((props :on-enter) props (string ((gb/commit! props) :text))))})
+                       :escape (fn [props] (:escape props))
+                       :enter (fn [props] (:enter props))})
 
 (table/setproto file-open-binds global-keys)
 
