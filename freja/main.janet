@@ -226,20 +226,24 @@
                              (print (debug/stacktrace fib err))
                              (ev/sleep 1))))))))
 
-(defn run-init-file
-  []
-  (def env (data :top-env))
+(defn run-file
+  [path]
+  #  (def env (data :top-env))
   (try
     (do
       (file-handling/freja-dofile
-        env
-        (string state/freja-dir "init.janet")
+        top-env
+        path
         # :env (fiber/getenv (fiber/current))
         #:env env
 ))
     ([err fib]
       (print "nope")
       (print (debug/stacktrace fib err)))))
+
+(defn run-init-file
+  []
+  (run-file (string state/freja-dir "init.janet")))
 
 (defn start
   []
@@ -377,7 +381,6 @@ flags:
 
         "./"))
 
-
   (when (= "--paths" (get args 1))
     (print "init.janet: " (string state/freja-dir "init.janet"))
     (print "data (e.g. checkpoints/backups): " (file-handling/data-path ""))
@@ -411,7 +414,32 @@ flags:
 
   (file-handling/ensure-dir (file-handling/data-path ""))
 
-  (if-let [file (get args 1)]
+  (when (= "--dofile" (get args 1))
+    (if-let [path (tracev (get args 2))]
+      (do
+        (defn initial-dofile [_]
+
+          (try
+            (do
+              (run-file path))
+            ([err fib]
+              (print "nope")
+              (print (debug/stacktrace fib err))))
+
+          (frp/unsubscribe-finally! frp/frame-chan initial-dofile)
+          #(set state/quit true)
+)
+
+        (print "subscribing!")
+
+        (frp/subscribe-finally! frp/frame-chan initial-dofile))
+
+      (do (print "--dofile needs a filepath as a second argument")
+        (os/exit 0))))
+
+  (if-let [file (if (= "--dofile" (get args 1))
+                  (get args 2)
+                  (get args 1))]
     (let [[path line column]
           (if open-init
             [(string state/freja-dir "init.janet")]
