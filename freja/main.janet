@@ -194,6 +194,12 @@
                            (when state/quit-hook
                              (state/quit-hook))
 
+                           # if we're gonna quit, let's print what's in state/out
+                           # before quitting
+                           (when (not (empty? state/out))
+                             (with-dyns [:out stdout]
+                               (print state/out)))
+
                            (checkpoint/save-file-with-checkpoint
                              (get-in state/editor-state [:left-state :editor :gb])
                              "before quitting")
