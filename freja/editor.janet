@@ -125,7 +125,8 @@
         :editor editor-state} state)
 
   (when id
-    (put editor-state :id id))
+    (put editor-state :id id)
+    (put-in editor-state [:gb :id] id))
 
   (put-in editor-state [:gb :open-file]
           (fn [_]

@@ -11,8 +11,22 @@
 
 (comment
 
+  (import freja/default-hotkeys :as dh)
+
+  (dh/global-set-key [:control :k]
+                     (fn [_]
+                       (print (os/execute ["./start-freja" "--dofile" "repro-scroll-bug.janet"] :p))))
+
   ## DEBUGGING STUFF
 
+
+
+(import ./state)
+(import ./events :as e)
+
+
+(ev/spawn
+  (ev/sleep 0.5)
   (def faulty-stuf
     ``
 hej
@@ -29,9 +43,6 @@ hej
 hej
 ``)
 
-  (import ./state)
-  (import ./events :as e)
-
   (defn safe-slice
     [s start stop]
     (string/slice s start (min (length s) stop)))
@@ -46,14 +57,13 @@ hej
 
   (e/put!
     state/editor-state
-    :bottom-right
-    (fn [{:right-state rs}]
+    :right
+    (fn [{:left-state rs}]
       (def {:editor editor} rs)
       (def {:gb gb} editor)
 
       (try
-        [:padding {:all 6
-                   :weight 1}
+        [:padding {:all 6}
          [:block {}
           [:block {}
            "gb"]
@@ -86,10 +96,13 @@ hej
           (debug/stacktrace fib err)
           "err"))))
   # (e/put! state/editor-state :bottom-right nil)
+)
+(import freja/default-hotkeys :as dh)
 
-  ## END OF DEBUGGING STUFF
 
-  #
+## END OF DEBUGGING STUFF
+
+#
 )
 
 #
@@ -242,39 +255,92 @@ Returns `nil` if the max width is never exceeded."
                                0 3
                                20))))
 
+(varfn line-of-i
+  [gb i]
+  (def {:lines lines
+        :line-flags line-flags
+        :stickiness stickiness} gb)
+
+  (let [line-index (->> (binary-search-closest lines |(compare i $))
+                        ## binary-search-closest returns length of 
+                        ## array when outside length of array
+                        (max 0)
+                        (min (dec (length lines))))
+        line-flag (line-flags line-index)]
+
+    (if (and (= i (lines line-index)) ## end of line
+             (= line-flag :word-wrap)
+             (= stickiness :down))
+      (inc line-index)
+      line-index)))
+
 (varfn word-wrap-gap-buffer
-  [props
-
-   sizes
-
-   lines
-   y-poses
-   line-flags
-   line-numbers
-
-   gb
-   start
-   start-line
+  [gb
 
    stop
-   width
-   h
    y-offset
    y-limit
 
-   &keys {:line-limit line-limit}]
+   &keys {:line-limit line-limit
+          :changed changed
+          :change-pos change-pos}]
+
+  (def {:lines lines
+        :y-poses y-poses
+        :line-flags line-flags
+        :line-numbers line-numbers} gb)
+
+  (var start-line-i (cond (empty? lines)
+                      nil
+
+                      (not changed)
+                      (dec (length lines))
+
+                      (not change-pos)
+                      nil
+
+                      # else
+                      (dec (line-of-i gb change-pos))))
+
+  (when start-line-i
+    (while (= :word-wrap (get line-flags (dec start-line-i)))
+      (-- start-line-i)))
+
+  (set start-line-i (if (neg? start-line-i) nil start-line-i))
+
+  (def width (inner-width gb))
+  (def h (* (gb :text/size) (gb :text/line-height)))
+
+  #                     # this is equal to the last char of the line
+  #                     # so we inc to get the first char on the next line
+  (def start-i (or (-?> (get lines start-line-i)
+                        inc) 0))
+
+  (comment when (gb :id)
+           (print)
+           (print "word wrap " (gb :id))
+           (print "start-i: " start-i)
+           (print "start-line-i: " start-line-i)
+           (print "stop: " stop)
+           (print "last line-numbers: " (last line-numbers))
+           (debug/stacktrace (fiber/current)))
+
+  (def line-limit 999999999999999)
+  (def y-limit 999999999999999)
 
   (default line-limit 999999999999)
 
-  (def old-y-pos (get y-poses start-line 0))
-  (def old-line-number (get line-numbers start-line 1))
+  (def old-y-pos (get y-poses start-line-i 0))
+  (def old-line-number (get line-numbers start-line-i 1))
+
+  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
   # remove everything after start
   # since start is where a change (might) have happened
-  (array/remove lines (or start-line 0) (length lines))
-  (array/remove y-poses (or start-line 0) (length y-poses))
-  (array/remove line-flags (or start-line 0) (length line-flags))
-  (array/remove line-numbers (or start-line 0) (length line-numbers))
+  (array/remove lines (or start-line-i 0) (length lines))
+  (array/remove y-poses (or start-line-i 0) (length y-poses))
+  (array/remove line-flags (or start-line-i 0) (length line-flags))
+  (array/remove line-numbers (or start-line-i 0) (length line-numbers))
   #(array/clear lines)
   #(array/clear y-poses)
   #(array/clear line-flags)
@@ -307,7 +373,8 @@ Returns `nil` if the max width is never exceeded."
         (put-in gb [:checked-word :fst i] beginning-of-word-i)
 
         (when (and (not= beginning-of-word-i 0)
-                   (not= (inc (last lines)) beginning-of-word-i))
+                   (or (empty? lines)
+                       (not= (inc (last lines)) beginning-of-word-i)))
           (put-in gb [:checked-word :fst :beginning-of-word-i beginning-of-word-i x] true)
           (array/push lines beginning-of-word-i)
           (array/push line-numbers line-number)
@@ -346,9 +413,10 @@ Returns `nil` if the max width is never exceeded."
 
   (gb-iterate
     gb
-    start
+    start-i
     stop
     i c
+
     (case c newline
       (do (check-if-word-is-too-wide w i c)
         (array/push lines i)
@@ -702,25 +770,6 @@ Render lines doesn't modify anything in gb."
   #  (print "rendered " nof-lines " lines")
 )
 
-(varfn line-of-i
-  [gb i]
-  (def {:lines lines
-        :line-flags line-flags
-        :stickiness stickiness} gb)
-
-  (let [line-index (->> (binary-search-closest lines |(compare i $))
-                        ## binary-search-closest returns length of 
-                        ## array when outside length of array
-                        (max 0)
-                        (min (dec (length lines))))
-        line-flag (line-flags line-index)]
-
-    (if (and (= i (lines line-index)) ## end of line
-             (= line-flag :word-wrap)
-             (= stickiness :down))
-      (inc line-index)
-      line-index)))
-
 (varfn current-line
   [gb]
   (line-of-i gb (gb :caret)))
@@ -911,22 +960,10 @@ Render lines doesn't modify anything in gb."
   (def line-flags (gb :line-flags))
   (def line-numbers (gb :line-numbers))
 
-  (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
-
   (word-wrap-gap-buffer
     gb
-    sizes
-    lines
-    y-poses
-    line-flags
-    line-numbers
 
-    gb
-    (or (last lines) 0)
-    (if (empty? lines) nil (dec (length lines)))
     (gb-length gb)
-    (inner-width gb)
-    (* (gb :text/size) (gb :text/line-height))
     0
     99999999
 
@@ -1014,19 +1051,8 @@ Render lines doesn't modify anything in gb."
 
   (word-wrap-gap-buffer
     gb
-    #(gb :sizes)
-    sizes
-    lines
-    y-poses
-    line-flags
-    line-numbers
 
-    gb
-    (or (last lines) 0)
-    (if (empty? lines) nil (dec (length lines)))
     index
-    (inner-width gb)
-    (* (gb :text/size) (gb :text/line-height))
     0
     99999999)
 
@@ -1039,19 +1065,8 @@ Render lines doesn't modify anything in gb."
 
     (word-wrap-gap-buffer
       gb
-      #(gb :sizes)
-      sizes
-      lines
-      y-poses
-      line-flags
-      line-numbers
 
-      gb
-      (or (last lines) 0)
-      (if (empty? lines) nil (dec (length lines)))
       (gb-length gb)
-      (inner-width gb)
-      (* (gb :text/size) (gb :text/line-height))
       0
       (pos 1))
 
@@ -1184,7 +1199,7 @@ Render lines doesn't modify anything in gb."
           rt (load-render-texture w h)]
       (put gb :texture rt))))
 
-(defnp word-wrap
+(defn word-wrap
   [gb]
   (def {:position position
         :offset offset
@@ -1207,44 +1222,15 @@ Render lines doesn't modify anything in gb."
 
   (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
-  (var start-line (cond (empty? lines)
-                    nil
-
-                    (not changed)
-                    (dec (length lines))
-
-                    (not change-pos)
-                    nil
-
-                    # else
-                    (dec (line-of-i gb change-pos))))
-
-  (while (= :word-wrap (get line-flags start-line))
-    (-- start-line))
-
-  (set start-line (if (neg? start-line) nil start-line))
-
-  (def start-pos (if-not start-line
-                   0
-                   (lines start-line)))
-
   (word-wrap-gap-buffer
     gb
-    sizes
-    lines
-    y-poses
-    line-flags
-    line-numbers
-
-    gb
-    start-pos
-    start-line
 
     (gb-length gb)
-    (inner-width gb)
-    (* (gb :text/size) (gb :text/line-height))
     0
-    (+ 0 (- (height gb) scroll))))
+    (+ 0 (- (height gb) scroll))
+
+    :changed changed
+    :change-pos change-pos))
 
 (defn refocus-caret
   [gb]
@@ -1317,6 +1303,7 @@ Render lines doesn't modify anything in gb."
             rs-changed)
 
     ## DEBUG TODO: REMOVE
+
     # (e/put! state/editor-state :force-refresh true)
 
     (when changed
