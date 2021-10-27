@@ -212,6 +212,14 @@
                              (with-dyns [:out state/out
                                          :err state/out]
                                (internal-frame)
+
+                               # if we're gonna quit, let's print what's in state/out
+                               # before quitting
+                               (when (or state/quit
+                                         (window-should-close))
+                                 (with-dyns [:out stdout]
+                                   (print state/out)))
+
                                (unless (empty? state/out)
                                  (events/push! frp/out (string state/out))
                                  (buffer/clear state/out))

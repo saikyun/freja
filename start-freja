@@ -1,2 +1,2 @@
 #!/bin/bash
-janet ~/programmering/freja/freja/main.janet $1
+janet ~/programmering/freja/freja/main.janet $1 $2
