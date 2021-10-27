@@ -349,6 +349,14 @@ Creates a regular subscription."
     (update-in deps [:deps emitter] |(array/push (or $ @[]) cb))
     :ok))
 
+(defn unsubscribe!
+  "Take an event emitter (e.g. a ev/channel)
+and a callback (e.g. single arity function).
+Removes a regular subscription."
+  [emitter cb]
+  (update-in deps [:deps emitter]
+             (fn [subs] (filter |(not= $ cb) subs)))
+  :ok)
 
 (defn subscribe-finally!
   "Take an event emitter (e.g. a ev/channel)
