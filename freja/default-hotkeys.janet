@@ -128,7 +128,12 @@
   (evaling/eval-it state/user-env
                    (evaling/gb-get-last-sexp props)))
 
+(defn eval-expr
+  [props]
+  (:eval-expr props))
+
 (var gb-binds @{:control @{:shift @{:f format!
+                                    :e eval-expr
                                     #
 }
 
@@ -148,6 +153,12 @@
                        :enter (fn [props] (:enter props))})
 
 (table/setproto file-open-binds global-keys)
+
+(def eval-binds
+  @{:escape |(:escape $)
+    :enter |(:eval-expr $)})
+
+(table/setproto eval-binds global-keys)
 
 (def search-binds
   @{:escape |(:escape $)
