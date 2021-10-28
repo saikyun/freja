@@ -509,8 +509,8 @@ Returns `nil` if the max width is never exceeded."
     (array/push line-flags :regular))
 
   (comment when (gb :id)
-    (print "last line-numbers: " (last line-numbers))
-    (debug/stacktrace (fiber/current)))
+           (print "last line-numbers: " (last line-numbers))
+           (debug/stacktrace (fiber/current)))
 
   lines)
 
@@ -1323,7 +1323,10 @@ Render lines doesn't modify anything in gb."
     (put gb :caret-pos (index->pos gb (gb :caret)))
 
     (when changed-x-pos
-      (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0])))
+      (put gb :memory-of-caret-x-pos (get-in gb [:caret-pos 0]))
+      (if (= 0 (gb :memory-of-caret-x-pos))
+        (put gb :stickiness :down)
+        (put gb :stickiness :right)))
 
     (when (and (not (gb :dont-refocus)) (or changed changed-nav))
       # can be changed by refocus-caret

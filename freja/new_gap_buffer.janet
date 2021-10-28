@@ -911,6 +911,7 @@ Deletes selection."
     (insert-char-at-caret gb k))
 
   (-> gb
+      (put :changed-x-pos true)
       (put :changed true)))
 
 ### navigation
@@ -958,7 +959,7 @@ Otherwise moves the caret forward one character."
     (deselect gb)
     (-> gb
         (update-caret inc)
-        (put :stickiness :right)
+        #(put :stickiness :right)
         (put :changed-nav true)
         (put :changed-x-pos true))))
 
@@ -970,7 +971,7 @@ Otherwise moves the caret backward one character."
     (deselect gb)
     (-> gb
         (update-caret dec)
-        (put :stickiness :down)
+        #(put :stickiness :down)
         (put :changed-nav true)
         (put :changed-x-pos true))))
 

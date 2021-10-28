@@ -219,6 +219,60 @@
 
           char-i)))))
 
+(varfn get-mouse-pos-line
+  [props [mx my]]
+
+  (def {:lines lines
+        :y-poses y-poses
+        :line-flags line-flags
+        :position position
+        :offset offset
+        :width-of-last-line-number width-of-last-line-number
+        :scroll scroll} props)
+
+  (def [x-pos y-pos] position)
+  (def [ox oy] offset)
+
+  (def y-offset (+ oy y-pos (* # (conf :mult)
+                               scroll)))
+
+  (def [x-scale _] screen-scale)
+
+  (unless (empty? lines)
+    (let [line-index (-> (binary-search-closest
+                           y-poses
+                           |(compare my (+ $ y-offset)))
+                         dec
+                         (max 0))
+          row-start-pos (if (= 0 line-index)
+                          0
+                          (lines (dec line-index)))
+          row-end-pos (lines line-index)
+          char-i (render-gb/index-passing-middle-max-width
+                   props
+                   row-start-pos
+                   row-end-pos
+                   # take mouse x in absolute space
+                   # and remove the stuff left of
+                   # the beginning of the row (e.g. line number width)
+                   (- mx
+                      (render-gb/abs-text-x props 0)))
+
+          flag (line-flags (max 0 (dec line-index)))]
+
+      [(max 0 (dec line-index))
+       (min
+         (gb/gb-length props)
+         (cond
+           (zero? char-i) char-i
+
+           (and (= flag :regular)
+                (= row-start-pos char-i)) ## to the left of \n
+           (inc char-i)
+
+           char-i))])))
+
+
 (varfn handle-shift-mouse-down
   [props [kind mouse-pos] cb]
   (def {:lines lines
@@ -281,7 +335,8 @@
         :y-poses y-poses
         :size size
         :sizes sizes
-        :scroll scroll} props)
+        :scroll scroll
+        :width-of-last-line-number width-of-last-line-number} props)
   (def [kind mouse-pos] event)
   (def [x y] mouse-pos)
 
@@ -319,14 +374,19 @@
       (handle-shift-mouse-down props event cb)
 
       (= kind :press)
-      (cb kind |(let [cur-index (get-mouse-pos props mouse-pos)]
+      (cb kind |(let [[line cur-index] (get-mouse-pos-line props mouse-pos)
+                      #              # if true, this means cur-index is at the start of the line
+                      stickiness (if (= cur-index (lines line))
+                                   :down
+                                   :right)]
                   (-> props
                       reset-blink
                       (put :down-index cur-index)
                       (put :selection nil)
                       (put :changed-selection true)
                       (put :caret cur-index)
-                      (put :stickiness (if (< x x-offset) :down :right))
+                      (put :changed-x-pos true)
+                      (put :stickiness stickiness)
                       (put :changed-nav true))))
 
       (and (= kind :drag)
