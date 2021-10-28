@@ -20,15 +20,13 @@
   ## DEBUGGING STUFF
 
 
+  (import ./state)
+  (import ./events :as e)
 
-(import ./state)
-(import ./events :as e)
-
-
-(ev/spawn
-  (ev/sleep 0.5)
-  (def faulty-stuf
-    ``
+  (ev/spawn
+    (ev/sleep 0.5)
+    (def faulty-stuf
+      ``
 hej
 phoentpoa
 dig
@@ -36,73 +34,72 @@ ho
 htneosua
 ``)
 
-  (def faulty-stuf
-    ``
+    (def faulty-stuf
+      ``
 hej
 hej
 hej
 ``)
 
-  (defn safe-slice
-    [s start stop]
-    (string/slice s start (min (length s) stop)))
+    (defn safe-slice
+      [s start stop]
+      (string/slice s start (min (length s) stop)))
 
-  (defn show-keys
-    [o ks]
-    [:block {}
-     ;(seq [k :in ks
-            :let [s (string/format "%p %p" k (get o k))]]
-        [:block {}
-         (safe-slice s 0 1000)])])
-
-  (e/put!
-    state/editor-state
-    :right
-    (fn [{:left-state rs}]
-      (def {:editor editor} rs)
-      (def {:gb gb} editor)
-
-      (try
-        [:padding {:all 6}
-         [:block {}
+    (defn show-keys
+      [o ks]
+      [:block {}
+       ;(seq [k :in ks
+              :let [s (string/format "%p %p" k (get o k))]]
           [:block {}
-           "gb"]
+           (safe-slice s 0 1000)])])
 
-          (string "nof lines: " (length (gb :lines)))
+    (e/put!
+      state/editor-state
+      :right
+      (fn [{:left-state rs}]
+        (def {:editor editor} rs)
+        (def {:gb gb} editor)
 
-          (show-keys gb [:caret
-                         :scroll
-                         :checked-word
-                         :lines
-                         :y-poses])
-
-          [:padding {:top 16}
-           [:block {:padding-top 16}
-            "gb keys"]
+        (try
+          [:padding {:all 6}
            [:block {}
-            (safe-slice (string/format "%p" (keys gb)) 0 1000)]]
+            [:block {}
+             "gb"]
 
-          [:padding {:top 16}
-           [:block {}
-            "Editor keys"]
-           [:block {}
-            (safe-slice (string/format "%p" (keys editor)) 0 1000)]]
+            (string "nof lines: " (length (gb :lines)))
 
-          [:block {}
-           "Right state keys"]
-          [:block {}
-           (safe-slice (string/format "%p" (keys rs)) 0 1000)]]]
-        ([err fib]
-          (debug/stacktrace fib err)
-          "err"))))
-  # (e/put! state/editor-state :bottom-right nil)
+            (show-keys gb [:caret
+                           :scroll
+                           :checked-word
+                           :lines
+                           :y-poses])
+
+            [:padding {:top 16}
+             [:block {:padding-top 16}
+              "gb keys"]
+             [:block {}
+              (safe-slice (string/format "%p" (keys gb)) 0 1000)]]
+
+            [:padding {:top 16}
+             [:block {}
+              "Editor keys"]
+             [:block {}
+              (safe-slice (string/format "%p" (keys editor)) 0 1000)]]
+
+            [:block {}
+             "Right state keys"]
+            [:block {}
+             (safe-slice (string/format "%p" (keys rs)) 0 1000)]]]
+          ([err fib]
+            (debug/stacktrace fib err)
+            "err"))))
+    # (e/put! state/editor-state :bottom-right nil)
 )
-(import freja/default-hotkeys :as dh)
+  (import freja/default-hotkeys :as dh)
 
+  ## END OF DEBUGGING STUFF
 
-## END OF DEBUGGING STUFF
-
-#
+  #
 )
 
 #
@@ -303,7 +300,12 @@ Returns `nil` if the max width is never exceeded."
                       (dec (line-of-i gb change-pos))))
 
   (when start-line-i
-    (while (= :word-wrap (get line-flags (dec start-line-i)))
+    # it seems (line-of-i gb change-pos) gets a line after
+    # the line we want to start on
+    (-- start-line-i)
+
+    # if we're on a word-wrapped line, we recalculate the whole line
+    (while (= :word-wrap (get line-flags start-line-i))
       (-- start-line-i)))
 
   (set start-line-i (if (neg? start-line-i) nil start-line-i))
@@ -311,10 +313,8 @@ Returns `nil` if the max width is never exceeded."
   (def width (inner-width gb))
   (def h (* (gb :text/size) (gb :text/line-height)))
 
-  #                     # this is equal to the last char of the line
-  #                     # so we inc to get the first char on the next line
-  (def start-i (or (-?> (get lines start-line-i)
-                        inc) 0))
+  (def start-i (or (-?> (get lines start-line-i))
+                   0))
 
   (comment when (gb :id)
            (print)
@@ -322,8 +322,7 @@ Returns `nil` if the max width is never exceeded."
            (print "start-i: " start-i)
            (print "start-line-i: " start-line-i)
            (print "stop: " stop)
-           (print "last line-numbers: " (last line-numbers))
-           (debug/stacktrace (fiber/current)))
+           (print "last line-numbers: " (last line-numbers)))
 
   (def line-limit 999999999999999)
   (def y-limit 999999999999999)
@@ -417,6 +416,11 @@ Returns `nil` if the max width is never exceeded."
     stop
     i c
 
+    (comment when (gb :id)
+             (def lul @"")
+             (buffer/push lul c)
+             (print "char: " lul))
+
     (case c newline
       (do (check-if-word-is-too-wide w i c)
         (array/push lines i)
@@ -503,6 +507,10 @@ Returns `nil` if the max width is never exceeded."
     (array/push line-numbers line-number)
     (array/push y-poses y)
     (array/push line-flags :regular))
+
+  (comment when (gb :id)
+    (print "last line-numbers: " (last line-numbers))
+    (debug/stacktrace (fiber/current)))
 
   lines)
 

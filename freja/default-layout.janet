@@ -51,7 +51,7 @@
     (put props :right-state @{}))
 
   [:padding {:left 0 :top 30}
-   [:background {:color 0x9D9D9Dff}
+   [:background {:color (t/colors :background)}
     [:column {}
      [:row {:weight 1}
       (when (props :left)
