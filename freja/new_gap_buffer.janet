@@ -624,6 +624,7 @@ Updates caret etc as expected."
         gb (-> gb
                (put :selection nil)
                (put-caret new-caret-pos)
+               (put :changed-x-pos true)
                (put :changed true))]
     (-> gb
         (update :lowest-changed-at min* start)
