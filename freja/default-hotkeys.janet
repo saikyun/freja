@@ -107,11 +107,11 @@
   [props]
   (set state/quit true))
 
-(defn open-file
+(defn open-file-dialogue
   [props]
   (:open-file props))
 
-(defn goto-line
+(defn goto-line-dialogue
   [props]
   (:goto-line props))
 
@@ -119,7 +119,7 @@
   [props &opt note]
   (checkpoint/save-file-with-checkpoint props note))
 
-(defn search
+(defn search-dialogue
   [props]
   (:search props))
 
@@ -128,18 +128,18 @@
   (evaling/eval-it state/user-env
                    (evaling/gb-get-last-sexp props)))
 
-(defn eval-expr
+(defn eval-expr-dialogue
   [props]
   (:eval-expr props))
 
 (var gb-binds @{:control @{:shift @{:f format!
-                                    :e eval-expr
+                                    :e eval-expr-dialogue
                                     #
 }
 
-                           :f search
-                           :g goto-line
-                           :o open-file
+                           :f search-dialogue
+                           :g goto-line-dialogue
+                           :o open-file-dialogue
                            :l fh/save-and-dofile
                            :s save-file
                            :q quit
