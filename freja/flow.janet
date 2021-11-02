@@ -19,7 +19,7 @@
   (default font "EBGaramond")
   (default spacing 1)
   (default color 0x000000ee)
-  (keys a/fonts)
+
   (def font (if (keyword? font)
               (case font
                 :monospace "MplusCode"
@@ -42,6 +42,34 @@ font must either be:
                  size
                  spacing
                  color))
+
+(defn measure-text
+  [text &keys {:size size
+               :font font
+               :spacing spacing}]
+  (default size 22)
+  (default font "EBGaramond")
+  (default spacing 1)
+  (def font (if (keyword? font)
+              (case font
+                :monospace "MplusCode"
+                :serif "EBGaramond"
+                :sans-serif "Poppins"
+                (error (string/format ``
+font must either be:
+* keyword :monospace, :serif or :sans-serif
+* string corresponding to a loaded font: %p
+``
+                                      (keys a/fonts))))
+              font))
+
+  (def font (a/font font size))
+  (tr/measure-text* font
+                    (if (string? text)
+                      text
+                      (string/format "%p" text))
+                    size
+                    spacing))
 
 (defn custom
   [props]
