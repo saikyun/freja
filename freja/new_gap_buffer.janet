@@ -1273,13 +1273,49 @@ Wrapper for `column` for gap buffers.
 
     :not-changed-timer 0
 
+    :hooks/new-line @[]
+    :hooks/invalidate-cache @[]
+
     :lines @[]
     :y-poses @[]
     :line-flags @[]
     :line-numbers @[]})
 
 
-### render
+(defn remove-hook
+``
+removes a hook named by k, of type hook-name from gb
+``
+  [gb hook-name k]
+  (update gb hook-name
+          (fn [hooks]
+            (if-let [i (find-index |(= k (first $)) hooks)]
+              (array/remove hooks i)
+              hooks))))
+
+(defn add-hook
+``
+adds a hook with name k
+to the type hook-name in gb
+``
+  [gb hook-name k hook]
+
+  (def hs (in gb hook-name))
+  (assert hs (string/format
+               "%p is not a valid hook. valid hooks are: %p"
+               hook-name
+               (filter |(string/has-prefix? "hooks/" $) (keys gb))))
+
+  (assert (function? hook) "hook must be a function")
+
+  (remove-hook gb hook-name k)
+
+  (array/push hs [k hook])
+  #
+)
+
+
+### render for debugging
 
 (varfn render
   "Creates a textual representation of a gap buffer.

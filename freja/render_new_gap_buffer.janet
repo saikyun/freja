@@ -271,6 +271,24 @@ Returns `nil` if the max width is never exceeded."
       (inc line-index)
       line-index)))
 
+(defn invalidate-cache-hook
+  ``
+called when cache is invalidated
+line-i is the lowest line index that is invalidated
+``
+  [gb line-i]
+  (loop [[k hook] :in (in gb :hooks/invalidate-cache)]
+    (hook gb k line-i)))
+
+(defn new-line-hook
+  ``
+current-line is a buffer that is cleared after each
+new-line-hook call, so don't save this
+``
+  [gb line-i current-line]
+  (loop [[k hook] :in (in gb :hooks/new-line)]
+    (hook gb k line-i current-line)))
+
 (varfn word-wrap-gap-buffer
   [gb
 
@@ -297,13 +315,11 @@ Returns `nil` if the max width is never exceeded."
                       nil
 
                       # else
-                      (dec (line-of-i gb change-pos))))
+                      # not sure why I have to remove 2 here
+                      # if I don't do this, it won't start on the right line
+                      (- (line-of-i gb change-pos) 2)))
 
   (when start-line-i
-    # it seems (line-of-i gb change-pos) gets a line after
-    # the line we want to start on
-    (-- start-line-i)
-
     # if we're on a word-wrapped line, we recalculate the whole line
     (while (= :word-wrap (get line-flags start-line-i))
       (-- start-line-i)))
@@ -313,19 +329,19 @@ Returns `nil` if the max width is never exceeded."
   (def width (inner-width gb))
   (def h (* (gb :text/size) (gb :text/line-height)))
 
-  (def start-i (or (-?> (get lines start-line-i))
-                   0))
+  (def start-i (get lines start-line-i 0))
 
   (comment when (gb :id)
-           (print)
            (print "word wrap " (gb :id))
            (print "start-i: " start-i)
+           (print "last lines: " (last lines))
+           (print "length lines: " (length lines))
            (print "start-line-i: " start-line-i)
            (print "stop: " stop)
            (print "last line-numbers: " (last line-numbers)))
 
-  (def line-limit 999999999999999)
-  (def y-limit 999999999999999)
+  #(def line-limit 999999999999999)
+  #(def y-limit 999999999999999)
 
   (default line-limit 999999999999)
 
@@ -336,10 +352,14 @@ Returns `nil` if the max width is never exceeded."
 
   # remove everything after start
   # since start is where a change (might) have happened
-  (array/remove lines (or start-line-i 0) (length lines))
-  (array/remove y-poses (or start-line-i 0) (length y-poses))
-  (array/remove line-flags (or start-line-i 0) (length line-flags))
-  (array/remove line-numbers (or start-line-i 0) (length line-numbers))
+
+  (let [start-line-i (or start-line-i 0)]
+    (array/remove lines start-line-i (length lines))
+    (array/remove y-poses start-line-i (length y-poses))
+    (array/remove line-flags start-line-i (length line-flags))
+    (array/remove line-numbers start-line-i (length line-numbers))
+    (invalidate-cache-hook gb start-line-i))
+
   #(array/clear lines)
   #(array/clear y-poses)
   #(array/clear line-flags)
@@ -349,6 +369,9 @@ Returns `nil` if the max width is never exceeded."
   (var y old-y-pos)
   (var w 0)
   (var line-number old-line-number)
+
+  # used for hooks to get the text of the current line
+  (def current-line @"")
 
   (var s (buffer/new 1))
   (var beginning-of-word-i 0)
@@ -360,6 +383,22 @@ Returns `nil` if the max width is never exceeded."
   (def treshold (- width (offset 0) (or width-of-last-line-number 0)))
 
   (put gb :checked-word nil)
+
+  (defn new-line
+    [line-i line-number flag line-h]
+
+    (array/push lines line-i)
+    (array/push line-numbers line-number)
+    (array/push y-poses y)
+    (array/push line-flags flag)
+    (+= y line-h)
+
+    (new-line-hook gb (dec (length lines)) current-line)
+
+    (buffer/clear current-line)
+
+    (comment when (gb :id)
+             (print "new line: " line-i)))
 
   (defn check-if-word-is-too-wide
     [old-w i c]
@@ -374,12 +413,9 @@ Returns `nil` if the max width is never exceeded."
         (when (and (not= beginning-of-word-i 0)
                    (or (empty? lines)
                        (not= (inc (last lines)) beginning-of-word-i)))
-          (put-in gb [:checked-word :fst :beginning-of-word-i beginning-of-word-i x] true)
-          (array/push lines beginning-of-word-i)
-          (array/push line-numbers line-number)
-          (array/push y-poses y)
-          (array/push line-flags :word-wrap)
-          (+= y h))
+          # debug-info
+          # (put-in gb [:checked-word :fst :beginning-of-word-i beginning-of-word-i x] true)
+          (new-line beginning-of-word-i line-number :word-wrap h))
         (set x old-w)
 
         (when (> (+ x old-w) treshold)
@@ -394,11 +430,7 @@ Returns `nil` if the max width is never exceeded."
                                      i
                                      treshold)
                                    dec))
-            (array/push lines break-i)
-            (array/push line-numbers line-number)
-            (array/push y-poses y)
-            (array/push line-flags :word-wrap)
-            (+= y h)
+            (new-line break-i line-number :word-wrap h)
 
             # after breaking up the word
             # set the x to the width of the last line
@@ -416,6 +448,8 @@ Returns `nil` if the max width is never exceeded."
     stop
     i c
 
+    (buffer/push current-line c)
+
     (comment when (gb :id)
              (def lul @"")
              (buffer/push lul c)
@@ -423,12 +457,8 @@ Returns `nil` if the max width is never exceeded."
 
     (case c newline
       (do (check-if-word-is-too-wide w i c)
-        (array/push lines i)
-        (array/push line-numbers line-number)
+        (new-line i line-number :regular h)
         (++ line-number)
-        (array/push y-poses y)
-        (array/push line-flags :regular)
-        (+= y h)
         (set x 0)
         (set w 0)
         (set beginning-of-word-i (inc i)))
@@ -453,17 +483,27 @@ Returns `nil` if the max width is never exceeded."
 
   (put-in gb [:checked-word :too-far :is-it?] (not (> (+ y y-offset) y-limit)))
 
+  (comment when (gb :id)
+           (tracev stop)
+           (tracev (gb-length gb))
+           (tracev (not (> (tracev (+ y y-offset)) (tracev y-limit)))))
+
+  # this should only be run if bottom of buffer is not visible
   (when (not (> (+ y y-offset) y-limit))
     (let [old-w w]
       (set w 0)
 
-      (put-in gb [:checked-word :too-far :x-w] (+ x old-w))
-      (put-in gb [:checked-word :too-far :threshold]
-              treshold)
-      (put-in gb [:checked-word :too-far :last-line]
-              (last lines))
-      (put-in gb [:checked-word :too-far :beg-wo]
-              beginning-of-word-i)
+      (comment
+        # debug
+        (put-in gb [:checked-word :too-far :x-w] (+ x old-w))
+        (put-in gb [:checked-word :too-far :threshold]
+                treshold)
+        (put-in gb [:checked-word :too-far :last-line]
+                (last lines))
+        (put-in gb [:checked-word :too-far :beg-wo]
+                beginning-of-word-i)
+        #
+)
 
       (if (> (+ x old-w) treshold) ## we went outside the max width
 
@@ -472,12 +512,9 @@ Returns `nil` if the max width is never exceeded."
           (when (and
                   (not= beginning-of-word-i 0)
                   (not= (inc (last lines)) beginning-of-word-i))
-            (put-in gb [:checked-word :end-fst beginning-of-word-i x] true)
-            (array/push lines beginning-of-word-i)
-            (array/push line-numbers line-number)
-            (array/push y-poses y)
-            (array/push line-flags :word-wrap)
-            (+= y h))
+            # debug
+            # (put-in gb [:checked-word :end-fst beginning-of-word-i x] true)
+            (new-line beginning-of-word-i line-number :word-wrap h))
 
           (set x old-w)
 
@@ -492,21 +529,15 @@ Returns `nil` if the max width is never exceeded."
                                        stop
                                        treshold)
                                      dec))
-              (array/push lines break-i)
-              (array/push line-numbers line-number)
-              (array/push y-poses y)
-              (array/push line-flags :word-wrap)
-              (+= y h))))
+              (new-line break-i line-number :word-wrap h))))
 
         (do
-
           (put-in gb [:checked-word :end-fst] nil)
           (put-in gb [:checked-word :end-break-up] nil))))
 
-    (array/push lines stop)
-    (array/push line-numbers line-number)
-    (array/push y-poses y)
-    (array/push line-flags :regular))
+    # we always add a line at the end -- just to have the last element in lines
+    # makes it easier when looping over lines
+    (new-line stop line-number :regular h))
 
   (comment when (gb :id)
            (print "last line-numbers: " (last line-numbers))
