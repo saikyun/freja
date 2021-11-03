@@ -315,11 +315,14 @@ new-line-hook call, so don't save this
                       nil
 
                       # else
-                      # not sure why I have to remove 2 here
-                      # if I don't do this, it won't start on the right line
-                      (- (line-of-i gb change-pos) 2)))
+                      # start from the beginning of the line that was changed
+                      (- (line-of-i gb change-pos) 1)))
 
   (when start-line-i
+    # not sure why we need to go one line back
+    # but if we don't, we get the scrolling bug
+    # maybe this can be removed if I rework the refocus-code
+    (-- start-line-i)
     # if we're on a word-wrapped line, we recalculate the whole line
     (while (= :word-wrap (get line-flags start-line-i))
       (-- start-line-i)))
@@ -393,7 +396,7 @@ new-line-hook call, so don't save this
     (array/push line-flags flag)
     (+= y line-h)
 
-    (new-line-hook gb line-i current-line)
+    (new-line-hook gb (dec (length lines)) current-line)
 
     (buffer/clear current-line)
 
