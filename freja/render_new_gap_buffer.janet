@@ -393,7 +393,7 @@ new-line-hook call, so don't save this
     (array/push line-flags flag)
     (+= y line-h)
 
-    (new-line-hook gb (dec (length lines)) current-line)
+    (new-line-hook gb line-i current-line)
 
     (buffer/clear current-line)
 
