@@ -320,7 +320,7 @@ Doesn't skip delimiters in the beginning."
   (def f (fiber/new (fn [] (index-char-start gb start))))
 
   (loop [[i c] :iterate (resume f)]
-    (when (word-delimiter? c)
+    (when (pred c)
       (break))
 
     (set target-i i))
@@ -359,7 +359,7 @@ Doesn't skip delimiters in the beginning."
   (def f (fiber/new (fn [] (index-char-backward-start gb (max 0 (dec start))))))
 
   (loop [[i c] :iterate (resume f)]
-    (when (word-delimiter? c)
+    (when (pred c)
       (break))
 
     (set target-i i))
