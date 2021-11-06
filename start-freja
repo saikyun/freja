@@ -1,2 +1,2 @@
 #!/bin/bash
-janet main.janet $1 $2
+janet freja/main.janet $1 $2
