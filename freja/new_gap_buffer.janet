@@ -542,6 +542,50 @@ Doesn't skip delimiters in the beginning."
       (put :changed-x-pos true)
       (put :changed-selection true)))
 
+(defn index-start-of-line
+  ``
+  Returns the index of the newline before i.
+  ``
+  [gb i]
+  (search-backward gb |(= $ (chr "\n")) i))
+
+(defn index-end-of-line
+  ``
+  Returns the index of the newline after i.
+  ``
+  [gb i]
+  (search-forward gb |(= $ (chr "\n")) i))
+
+(varfn beginning-of-line?
+  ``
+Returns true if the caret is at the beginning of the line.
+``
+  [gb]
+  (= (gb :caret)
+     (index-start-of-line gb (gb :caret))))
+
+(varfn end-of-line?
+  ``
+Returns true if the caret is at the end of the line.
+``
+  [gb]
+  (= (gb :caret)
+     (index-end-of-line gb (gb :caret))))
+
+(varfn beginning-of-line
+  ``
+Moves the caret to the beginning of the line.
+``
+  [gb]
+  (put-caret gb (index-start-of-line gb (gb :caret))))
+
+(varfn end-of-line
+  ``
+Moves the caret to the end of the line.
+``
+  [gb]
+  (put-caret gb (index-end-of-line gb (gb :caret))))
+
 ### gap movement
 
 (varfn put-gap-pos!
@@ -1283,7 +1327,7 @@ Wrapper for `column` for gap buffers.
 
 
 (defn remove-hook
-``
+  ``
 removes a hook named by k, of type hook-name from gb
 ``
   [gb hook-name k]
@@ -1294,7 +1338,7 @@ removes a hook named by k, of type hook-name from gb
               hooks))))
 
 (defn add-hook
-``
+  ``
 adds a hook with name k
 to the type hook-name in gb
 ``

@@ -1,7 +1,7 @@
 (import spork/test)
 (use freja-jaylib)
 (import ./dumb :prefix "")
-(import ./new_gap_buffer :prefix "")
+(import ./new_gap_buffer :as gb)
 (import ./textfield_api :prefix "")
 (import ./text_rendering :as tr)
 (import ./find_row_etc :prefix "")
@@ -176,7 +176,7 @@ hej
   (def [x-scale y-scale] screen-scale)
   (var acc-w 0)
 
-  (gb-iterate
+  (gb/gb-iterate
     gb
     start stop
     i c
@@ -187,7 +187,7 @@ hej
 (comment
   (width-between gb-data 0 10)
 
-  (gb-iterate
+  (gb/gb-iterate
     gb-data
     0 100
     i c
@@ -204,7 +204,7 @@ Returns `nil` if the max width is never exceeded."
 
   (var acc-w 0)
 
-  (gb-iterate
+  (gb/gb-iterate
     gb
     start stop
     i c
@@ -225,7 +225,7 @@ Returns `nil` if the max width is never exceeded."
 
   (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
 
-  (or (gb-iterate
+  (or (gb/gb-iterate
         gb
         start stop
         i c
@@ -445,7 +445,7 @@ new-line-hook call, so don't save this
 
       (+= x (+ old-w (first (get-size sizes c))))))
 
-  (gb-iterate
+  (gb/gb-iterate
     gb
     start-i
     stop
@@ -458,7 +458,7 @@ new-line-hook call, so don't save this
              (buffer/push lul c)
              (print "char: " lul))
 
-    (case c newline
+    (case c gb/newline
       (do (check-if-word-is-too-wide w i c)
         (new-line i line-number :regular h)
         (++ line-number)
@@ -468,7 +468,7 @@ new-line-hook call, so don't save this
 
       (chr "\r") (do)
 
-      space
+      gb/space
       (let [old-w w]
         (set w 0)
 
@@ -582,7 +582,7 @@ new-line-hook call, so don't save this
         (var stop-x nil)
         (var acc-w 0)
 
-        (gb-iterate
+        (gb/gb-iterate
           gb
           start stop
           i c
@@ -755,7 +755,7 @@ Render lines doesn't modify anything in gb."
                          (rel-y gb (* y-scale (- line-y line-start-y)))]
                         :gray)))
 
-      (gb-iterate
+      (gb/gb-iterate
         gb
         last-gb-index l
         i c
@@ -838,16 +838,16 @@ Render lines doesn't modify anything in gb."
   [gb]
   (if (zero? (gb :scroll))
     (-> gb
-        deselect
+        gb/deselect
         reset-blink
-        (put-caret 0))
+        (gb/put-caret 0))
     (let [target (+ (- (gb :scroll))
                     (* 2 (gb :text/size)))
           line (dec (binary-search-closest (gb :y-poses) |(compare target $)))]
       (-> gb
-          deselect
+          gb/deselect
           reset-blink
-          (put-caret (max 0 (index-above-cursor-on-line gb line)))
+          (gb/put-caret (max 0 (index-above-cursor-on-line gb line)))
           (update :scroll + (- (height gb) (* 3 (gb :text/size))))
           (update :scroll min 0)
           (put :changed-scroll true)))))
@@ -870,13 +870,13 @@ Render lines doesn't modify anything in gb."
                |(compare target-pos $))]
     (if (= line (length (gb :lines)))
       (-> gb
-          deselect
+          gb/deselect
           reset-blink
-          (put-caret (gb-length gb)))
+          (gb/put-caret (gb/gb-length gb)))
       (-> gb
-          deselect
+          gb/deselect
           reset-blink
-          (put-caret (index-above-cursor-on-line gb line))
+          (gb/put-caret (index-above-cursor-on-line gb line))
           (update :scroll - (- (height gb) (* 3 (gb :text/size))))
           (update :scroll min 0)
           (put :changed-scroll true)))))
@@ -909,7 +909,7 @@ Render lines doesn't modify anything in gb."
             (lines next-line) ## end of next line
             mocxp) ## current x position
           (lines next-line))
-      (gb-length gb))))
+      (gb/gb-length gb))))
 
 (varfn index-start-of-line
   [gb]
@@ -925,8 +925,8 @@ Render lines doesn't modify anything in gb."
 (varfn move-to-start-of-line
   [gb]
   (-> gb
-      deselect
-      (put-caret (index-start-of-line gb))
+      gb/deselect
+      (gb/put-caret (index-start-of-line gb))
       (put :stickiness :down)
       (put :changed-x-pos true)))
 
@@ -936,7 +936,7 @@ Render lines doesn't modify anything in gb."
     (put gb :selection (gb :caret)))
 
   (-> gb
-      (put-caret (index-start-of-line gb))
+      (gb/put-caret (index-start-of-line gb))
       (put :stickiness :down)
       (put :changed-selection true)
       (put :changed-x-pos true)))
@@ -944,8 +944,8 @@ Render lines doesn't modify anything in gb."
 (varfn move-to-end-of-line
   [gb]
   (-> gb
-      deselect
-      (put-caret ((gb :lines) (current-line gb)))
+      gb/deselect
+      (gb/put-caret ((gb :lines) (current-line gb)))
       (put :stickiness :right)
       (put :changed-x-pos true)))
 
@@ -955,7 +955,7 @@ Render lines doesn't modify anything in gb."
     (put gb :selection (gb :caret)))
 
   (-> gb
-      (put-caret ((gb :lines) (current-line gb)))
+      (gb/put-caret ((gb :lines) (current-line gb)))
       (put :stickiness :right)
       (put :changed-selection true)
       (put :changed-x-pos true)))
@@ -989,9 +989,9 @@ Render lines doesn't modify anything in gb."
 (varfn move-up!
   [gb]
   (-> gb
-      deselect
+      gb/deselect
       reset-blink
-      (put-caret (index-above-cursor gb))))
+      (gb/put-caret (index-above-cursor gb))))
 
 
 (varfn line-number->line
@@ -1005,7 +1005,7 @@ Render lines doesn't modify anything in gb."
   (word-wrap-gap-buffer
     gb
 
-    (gb-length gb)
+    (gb/gb-length gb)
     0
     99999999
 
@@ -1026,9 +1026,9 @@ Render lines doesn't modify anything in gb."
                 0
                 ((gb :lines) line))]
     (-> gb
-        deselect
+        gb/deselect
         reset-blink
-        (put-caret index)
+        (gb/put-caret index)
         move-to-start-of-line)))
 
 (varfn select-move-up!
@@ -1037,7 +1037,7 @@ Render lines doesn't modify anything in gb."
     (put gb :selection (gb :caret)))
 
   (-> gb
-      (put-caret (index-above-cursor gb))
+      (gb/put-caret (index-above-cursor gb))
       (put :changed-selection true)))
 
 (varfn i-at-beginning-of-line?
@@ -1052,7 +1052,7 @@ Render lines doesn't modify anything in gb."
 (varfn move-down!
   [gb]
 
-  (deselect gb)
+  (gb/deselect gb)
 
   ### this part is done to set stickiness to down
   # when the caret is at the far left of a line
@@ -1063,7 +1063,7 @@ Render lines doesn't modify anything in gb."
 
   (reset-blink gb)
 
-  (put-caret gb (index-below-cursor gb)))
+  (gb/put-caret gb (index-below-cursor gb)))
 
 (varfn select-move-down!
   [gb]
@@ -1071,7 +1071,7 @@ Render lines doesn't modify anything in gb."
     (put gb :selection (gb :caret)))
 
   (-> gb
-      (put-caret (index-below-cursor gb))
+      (gb/put-caret (index-below-cursor gb))
       (put :changed-selection true)))
 
 (comment
@@ -1108,7 +1108,7 @@ Render lines doesn't modify anything in gb."
     (word-wrap-gap-buffer
       gb
 
-      (gb-length gb)
+      (gb/gb-length gb)
       0
       (pos 1))
 
@@ -1267,7 +1267,7 @@ Render lines doesn't modify anything in gb."
   (word-wrap-gap-buffer
     gb
 
-    (gb-length gb)
+    (gb/gb-length gb)
     0
     (+ 0 (- (height gb) scroll))
 
@@ -1626,10 +1626,10 @@ Render lines doesn't modify anything in gb."
 
   (var last-i 0)
   (loop [l :in lines]
-    (gb-iterate gb
-                last-i l
-                i c
-                (prin (-> (buffer/new 1)
-                          (buffer/push-byte c))))
+    (gb/gb-iterate gb
+                   last-i l
+                   i c
+                   (prin (-> (buffer/new 1)
+                             (buffer/push-byte c))))
     (print)
     (set last-i l)))
