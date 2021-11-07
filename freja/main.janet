@@ -149,8 +149,6 @@
   #  (draw-text* (conf :text) (string (data :latest-res)) [605 660] :blue)
 )
 
-(var texture nil)
-
 (defn styling-worker
   [parent]
   # TODO: fix with new thherad stuff
@@ -304,8 +302,6 @@
         (default-layout/init)
         (menu/init)
         (echoer/init)
-
-        (set texture (load-render-texture 500 500))
 
         (loop-it)))
     ([err fib]
