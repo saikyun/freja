@@ -1,4 +1,4 @@
-(import ./state)
+(import freja/state)
 (import freja/events :as e)
 
 (use ./new_gap_buffer)
@@ -98,18 +98,22 @@ ouae
   [env code]
   (print "=> " (string/trim code))
 
+  (def last-env (curenv))
+  (def out state/out)
   (try
     (do
       (fiber/setenv (fiber/current) env)
-      (put env :out state/out)
-      (put env :err state/out)
+      (put env :out out)
+      (put env :err out)
       (def res (eval-string code))
+      (fiber/setenv (fiber/current) last-env)
       (e/push! state/eval-results {:value res
                                  #:code code
                                  :fiber (fiber/current)})
       #      (pp res)
 )
     ([err fib]
+      (fiber/setenv (fiber/current) last-env)
       (debug/stacktrace fib err)
 
       (e/push! state/eval-results {:error err
