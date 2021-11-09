@@ -10,38 +10,6 @@
 (import freja/text_rendering :as tr)
 (import freja/assets :as a)
 
-(defn draw-text
-  [text pos &keys {:size size
-                   :font font
-                   :spacing spacing
-                   :color color}]
-  (default size 22)
-  (default font "EBGaramond")
-  (default spacing 1)
-  (default color 0x000000ee)
-
-  (def font (if (keyword? font)
-              (case font
-                :monospace "MplusCode"
-                :serif "EBGaramond"
-                :sans-serif "Poppins"
-                (error (string/format ``
-font must either be:
-* keyword :monospace, :serif or :sans-serif
-* string corresponding to a loaded font: %p
-``
-                                      (keys a/fonts))))
-              font))
-
-  (def font (a/font font size))
-  (tr/draw-text* font
-                 (if (string? text)
-                   text
-                   (string/format "%p" text))
-                 pos
-                 size
-                 spacing
-                 color))
 
 (defn measure-text
   [text &keys {:size size
@@ -70,6 +38,53 @@ font must either be:
                       (string/format "%p" text))
                     size
                     spacing))
+
+(defn draw-text
+  [text pos &keys {:size size
+                   :font font
+                   :spacing spacing
+                   :center center
+                   :color color}]
+  (default size 22)
+  (default font "EBGaramond")
+  (default spacing 1)
+  (default color 0x000000ee)
+
+  (def font (if (keyword? font)
+              (case font
+                :monospace "MplusCode"
+                :serif "EBGaramond"
+                :sans-serif "Poppins"
+                (error (string/format ``
+font must either be:
+* keyword :monospace, :serif or :sans-serif
+* string corresponding to a loaded font: %p
+``
+                                      (keys a/fonts))))
+              font))
+
+  (def pos
+    (if-not center
+      pos
+      (let [[x y] pos
+            [w h] (measure-text text pos
+                                :size size
+                                :font font
+                                :spacing spacing
+                                :center center
+                                :color color)]
+        [(- x (* 0.5 w))
+         (- y (* 0.5 h))])))
+
+  (def font (a/font font size))
+  (tr/draw-text* font
+                 (if (string? text)
+                   text
+                   (string/format "%p" text))
+                 pos
+                 size
+                 spacing
+                 color))
 
 (defn custom
   [props]
