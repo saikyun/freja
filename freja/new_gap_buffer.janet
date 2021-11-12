@@ -1304,11 +1304,11 @@ Wrapper for `column` for gap buffers.
   ``
   [gb pos]
   (var n 0)
-  (gb/gb-iterate gb
-                 0 pos
-                 i c
-                 (when (= c (chr "\n"))
-                   (++ n)))
+  (gb-iterate gb
+              0 pos
+              i c
+              (when (= c (chr "\n"))
+                (++ n)))
   n)
 
 (defn current-line-number
