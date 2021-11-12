@@ -1280,6 +1280,12 @@ Wrapper for `column` for gap buffers.
 )
 
 (defn comment-line
+  ``
+  Toggles comment for a single line.
+  Inserts a "#" at the beginning of a line,
+  unless there is already a "#" at the beginning,
+  then it removes the "#" instead.
+  ``
   [gb]
   (let [col (column! gb (gb :caret))
         start-of-line (- (gb :caret) col)]
@@ -1291,6 +1297,26 @@ Wrapper for `column` for gap buffers.
       (do
         (insert-string-at-pos! gb start-of-line "#")
         (move-n gb 1)))))
+
+(defn line-number
+  ``
+  Returns 0-indexed line number for caret position `pos`.
+  ``
+  [gb pos]
+  (var n 0)
+  (gb/gb-iterate gb
+                 0 pos
+                 i c
+                 (when (= c (chr "\n"))
+                   (++ n)))
+  n)
+
+(defn current-line-number
+  ``
+  Returns 0-indexed line number for current caret position.
+  ``
+  [gb]
+  (line-number gb (gb :caret)))
 
 ### initialization
 
