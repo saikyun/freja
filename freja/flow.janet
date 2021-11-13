@@ -67,11 +67,10 @@ font must either be:
     (if-not center
       pos
       (let [[x y] pos
-            [w h] (measure-text text pos
+            [w h] (measure-text text
                                 :size size
                                 :font font
                                 :spacing spacing
-                                :center center
                                 :color color)]
         [(- x (* 0.5 w))
          (- y (* 0.5 h))])))
