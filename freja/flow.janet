@@ -10,7 +10,6 @@
 (import freja/text_rendering :as tr)
 (import freja/assets :as a)
 
-
 (defn measure-text
   [text &keys {:size size
                :font font
@@ -33,7 +32,7 @@ font must either be:
 
   (def font (a/font font size))
   (tr/measure-text* font
-                    (if (string? text)
+                    (if (or (buffer? text) (string? text))
                       text
                       (string/format "%p" text))
                     size
@@ -77,7 +76,7 @@ font must either be:
 
   (def font (a/font font size))
   (tr/draw-text* font
-                 (if (string? text)
+                 (if (or (buffer? text) (string? text))
                    text
                    (string/format "%p" text))
                  pos
