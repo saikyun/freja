@@ -42,7 +42,7 @@
       (i/handle-scroll-event (self :gb) n)
       (put self :event/changed true))
 
-    ['(i/mouse-events (first ev)) _]
+    [(_ (i/mouse-events (first ev))) _]
     (i/handle-mouse-event
       (self :gb)
       ev

@@ -149,9 +149,9 @@ font must either be:
                         [:key-down :escape]
                         (unfocus)
 
-                        ['(or (= (ev 0) :press)
-                              # (= (ev 0) :mouse-move)
-) _]
+                        [(_ (or (= (ev 0) :press)
+                                # (= (ev 0) :mouse-move)
+)) _]
                         (do
                           (e/put! state/focus :focus self)
                           (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)))

@@ -134,8 +134,19 @@
            (with-dyns [:text/get-font a/font]
              ((self :render)
                (self :root))))
-   :on-event (defnp hiccup-on-event [self ev]
+   :compile (defn compile
+              [self props]
+              (compile-tree
+                (self :hiccup)
+                props
+                :tags (self :tags)
+                :max-width (self :max-width)
+                :max-height (self :max-height)
+                :text/font (self :text/font)
+                :text/size (self :text/size)
+                :old-root (self :root)))
 
+   :on-event (defnp hiccup-on-event [self ev]
                (try
                  (match ev
                    @{:screen/width w
@@ -144,33 +155,15 @@
                      (put self :max-width w)
                      (put self :max-height h)
 
-                     (put self :root
-                          (compile-tree
-                            (self :hiccup)
-                            (self :props)
-                            :tags (self :tags)
-                            :max-width (self :max-width)
-                            :max-height (self :max-height)
-                            :text/font (self :text/font)
-                            :text/size (self :text/size)
-                            :old-root (self :root))))
+                     (put self :root (:compile self (self :props))))
 
                    [:dt dt]
                    (:draw self dt)
 
-                   '(table? ev)
+                   (_ (table? ev))
                    (do # (print "compiling tree!")
                      (put self :props ev)
-                     (put self :root
-                          (compile-tree
-                            (self :hiccup)
-                            ev
-                            :tags (self :tags)
-                            :max-width (self :max-width)
-                            :max-height (self :max-height)
-                            :text/font (self :text/font)
-                            :text/size (self :text/size)
-                            :old-root (self :root))))
+                     (put self :root (:compile self ev)))
 
                    (handle-ev (self :root) ev (self :name)))
 
@@ -246,7 +239,9 @@
     render-tree
     default-hiccup-renderer)
 
-  (put props :event/changed true)
+  #(put props :event/changed true)
+
+  (put render-tree :root (:compile render-tree props))
 
   (frp/subscribe! props render-tree)
   (frp/subscribe-finally! frp/frame-chan render-tree)
