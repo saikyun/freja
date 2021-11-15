@@ -21,12 +21,12 @@
                        (when (get (f :gb) :open-file)
                          (put self :focused-text-area (f :gb)))))
 
-(def label-color 0xffffffee)
-(def hotkey-color 0xffffffbb)
-(def damp-color 0xffffff88)
-(def highlight-color 0xffffffee)
-(def bar-bg 0x2D2D2Dff)
-(def dropdown-bg 0x3E3E3Eff)
+(def label-color 0xeeffffff)
+(def hotkey-color 0xbbffffff)
+(def damp-color 0x88ffffff)
+(def highlight-color 0xeeffffff)
+(def bar-bg 0xff2D2D2D)
+(def dropdown-bg 0xff3E3E3E)
 
 (def kws {:control "Ctrl"})
 

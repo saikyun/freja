@@ -47,7 +47,7 @@ font must either be:
   (default size 22)
   (default font "EBGaramond")
   (default spacing 1)
-  (default color 0x000000ee)
+  (default color 0xee000000)
 
   (def font (if (keyword? font)
               (case font

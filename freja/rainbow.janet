@@ -9,44 +9,44 @@
 
 # M-x list-colors-display in emacs
 (def colors
-  @{1 0xff8c00ff # dark orange
-    2 0xff1493ff # deep pink
-    3 0x7fff00ff # chartreuse
-    4 0x00bfffff # deep sky blue
-    5 0xffff00ff # yellow
-    6 0xda70d6ff # orchid
-    7 0x00ff7fff # spring green
-    8 0xff8247ff # siennal
+  @{1 0xffff8c00 # dark orange
+    2 0xffff1493 # deep pink
+    3 0xff7fff00 # chartreuse
+    4 0xff00bfff # deep sky blue
+    5 0xffffff00 # yellow
+    6 0xffda70d6 # orchid
+    7 0xff00ff7f # spring green
+    8 0xffff8247 # siennal
     # repeat
-    9 0xff8c00ff # dark orange
-    10 0xff1493ff # deep pink
-    11 0x7fff00ff # chartreuse
-    12 0x00bfffff # deep sky blue
-    13 0xffff00ff # yellow
-    14 0xda70d6ff # orchid
-    15 0x00ff7fff # spring green
-    16 0xff8247ff # siennal
+    9 0xffff8c00 # dark orange
+    10 0xffff1493 # deep pink
+    11 0xff7fff00 # chartreuse
+    12 0xff00bfff # deep sky blue
+    13 0xffffff00 # yellow
+    14 0xffda70d6 # orchid
+    15 0xff00ff7f # spring green
+    16 0xffff8247 # siennal
 })
 
 (def colors
-  @{1 0xff8c00ff # dark orange
-    2 0xff1493ff # deep pink
-    3 0x7fff00ff # chartreuse
-    4 0x00bfffff # deep sky blue
-    5 0xffff00ff # yellow
-    6 0xda70d6ff # orchid
-    7 0x00ff7fff # spring green
-    8 0xff8247ff # siennal
+  @{1 0xffff8c00 # dark orange
+    2 0xffff1493 # deep pink
+    3 0xff7fff00 # chartreuse
+    4 0xff00bfff # deep sky blue
+    5 0xffffff00 # yellow
+    6 0xffda70d6 # orchid
+    7 0xff00ff7f # spring green
+    8 0xffff8247 # siennal
     # repeat
     # I thought the dark orange was too similar to siennal
     9 :blue # 0xff8c00ff # dark orange
-    10 0xff1493ff # deep pink
-    11 0x7fff00ff # chartreuse
-    12 0x00bfffff # deep sky blue
-    13 0xffff00ff # yellow
-    14 0xda70d6ff # orchid
-    15 0x00ff7fff # spring green
-    16 0xff8247ff # siennal
+    10 0xffff1493 # deep pink
+    11 0xff7fff00 # chartreuse
+    12 0xff00bfff # deep sky blue
+    13 0xffffff00 # yellow
+    14 0xffda70d6 # orchid
+    15 0xff00ff7f # spring green
+    16 0xffff8247 # siennal
 })
 
 (comment

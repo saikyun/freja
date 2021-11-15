@@ -91,7 +91,7 @@ but with optional keys one can modify these.
                    spacing))
 
 
-(def def-bg 0x2d2d2dff)
+(def def-bg 0xff2d2d2d)
 
 (var render-comp nil)
 (var ev-comp nil)

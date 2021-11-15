@@ -136,7 +136,7 @@
   (default text/font (dyn :text/font "Poppins"))
   (default text/line-height (dyn :text/line-height 1))
   (default text/spacing (dyn :text/spacing 1))
-  (default text/color (dyn :text/color 0x000000ff))
+  (default text/color (dyn :text/color 0xff000000))
 
   (put-in state [:gb :text/size] text/size)
   (put-in state [:gb :text/font] text/font)

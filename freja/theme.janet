@@ -43,6 +43,6 @@
 
 (def font-size 22)
 
-(def comp-cols {:background 0x882491ff
-                :text/color 0xffffffee
-                :caret/color 0xffffff80})
+(def comp-cols {:background 0xff882491
+                :text/color 0xeeffffff
+                :caret/color 0x80ffffff})
