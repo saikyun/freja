@@ -7,6 +7,17 @@ Self-modifiable text editor implemented in Janet.
 [![image](https://user-images.githubusercontent.com/2477927/138828275-273ca9a8-b531-41ba-b387-0918c19b5489.png)  
 Join us on Discord!](https://discord.gg/YYKr25uDhj)
 
+## status
+
+Freja is in beta.
+It's stable, and crashes are rare. Files are backed up on opening / closing, so it's hard to lose work.
+
+Some functions are missing (autocomplete when opening files, changing between files quickly).
+There is currently an issue on Windows that makes it hard to evaluate code inside Freja.
+
+Currently mostly usable for Janet, no other language specific tooling.
+It works as a regular text editor, so I write C in Freja.
+
 ## try it
 
 ### prerequisites
