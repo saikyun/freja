@@ -15,6 +15,35 @@
 
 (def focus @{})
 
+(def editor-components
+  @{})
+
+(def editor-state-creators
+  @{})
+
+(defn ext->editor
+  [ext &opt data]
+  (default ext (do (print "no ext provided, defaulting to .janet")
+                 ".janet"))
+  [((editor-components ext) data)
+   ((editor-state-creators ext) data)])
+
+(defn add-ext-handling
+  [ext component creator]
+  (put editor-components ext component)
+  (put editor-state-creators ext creator))
+
+
+(defn focus!
+  ``
+  Sets global focus to x.
+  ``
+  [x]
+  (-> focus
+      (put :last-focus (focus :focus))
+      (put :focus x)
+      (put :event/changed true)))
+
 (def out @"")
 (def err @"")
 

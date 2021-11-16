@@ -80,6 +80,10 @@
 (import ./hiccup :as hiccup)
 (put module/cache "freja/hiccup" hiccup)
 
+(def open-file (require "./open-file"))
+(import ./open-file)
+(put module/cache "freja/open-file" open-file)
+
 (def default-hotkeys (require "./default-hotkeys"))
 (import ./default-hotkeys)
 (put module/cache "freja/default-hotkeys" default-hotkeys)
@@ -106,6 +110,8 @@
 
 (import ./newest-menu :as menu)
 (import ./default-layout)
+
+(import ./handle-ext/init :as ext-init)
 
 (comment
   (top-env 'ta/split-words))
@@ -422,6 +428,8 @@ flags:
 
   (frp/init-chans)
 
+  (pp state/editor-components)
+
   (file-handling/ensure-dir (file-handling/data-path ""))
 
   (when (= "--dofile" (get args 1))
@@ -450,19 +458,12 @@ flags:
   (if-let [file (if (= "--dofile" (get args 1))
                   (get args 2)
                   (get args 1))]
-    (let [[path line column]
-          (if open-init
-            [(string state/freja-dir "init.janet")]
-            (peg/match
-              '(* (<- (some (if-not ":" 1)))
-                  (opt (* ":"
-                          (<- (some (if-not ":" 1)))))
-                  (opt (* ":"
-                          (<- (some (if-not ":" 1))))))
-              file))]
-      (set state/initial-file [path
-                               (-?> line scan-number)
-                               (-?> column scan-number)]))
+
+    (open-file/open-file
+      (if open-init
+        (string state/freja-dir "init.janet")
+        file))
+
     (do
       (unless (os/stat file-handling/scratch-path)
         (spit file-handling/scratch-path ``
@@ -472,7 +473,7 @@ flags:
 (print "Welcome to your personal scratch file!")
 ``))
 
-      (set state/initial-file [file-handling/scratch-path])))
+      (open-file/open-file file-handling/scratch-path)))
 
   (start)
 

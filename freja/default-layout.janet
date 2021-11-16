@@ -2,6 +2,7 @@
 (import freja/theme :as t)
 (import freja/hiccup :as h)
 (import freja/events :as e)
+(import freja/file-handling :as fh)
 (import freja/state)
 (import freja/frp)
 (use freja/defonce)
@@ -54,11 +55,30 @@
    [:background {:color (t/colors :background)}
     [:column {}
      [:row {:weight 1}
-      (when (props :left)
-        [:block {:weight 1}
-         [(props :left) props]])
-      #[:block {:width 2}]
+      [:column {}
+       #
+       (when (props :left)
+         [:block {:weight 1}
+          [(props :left) props]])
+       #
+       (when (props :old-left)
+         [:block {}
+          [:clickable
+           {:on-click
+            (fn [_]
+              (def [compo state] (props :old-left))
 
+              (e/put! props :left compo)
+              (e/put! props :left-state state)
+              #
+)}
+           [:text {:color :red
+                   :size 24
+                   :text "huh?" # (get props :old-left "nothing")
+}]]])
+       #
+]
+      #[:block {:width 2}]
 
       (when (or (props :right)
                 (props :bottom-right))
@@ -105,6 +125,11 @@
   #
 )
 
+(comment
+  (print (string/format "%P" (keys (get-in state/editor-state [:left-state :editor :gb]))))
+  #
+)
+
 (defn init
   []
   (set hiccup-layer (h/new-layer
@@ -121,6 +146,23 @@
           nil
           #default-right-editor
 )
+
+  (comment
+    (get state/editor-state :old-left)
+    (get state/editor-state :last-left)
+    #
+)
+
+  (frp/subscribe!
+    state/editor-state
+    (fn [{:last-left last-left
+          :old-left old-left
+          :left left
+          :left-state left-state}]
+      (when (not= last-left [left left-state])
+        (when last-left
+          (e/put! state/editor-state :old-left last-left))
+        (e/put! state/editor-state :last-left [left left-state]))))
 
   (frp/subscribe!
     state/focus

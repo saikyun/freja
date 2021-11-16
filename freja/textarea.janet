@@ -48,7 +48,7 @@
       ev
       (fn [kind f]
         (f)
-        (e/put! state/focus :focus self)
+        (state/focus! self)
         (put (self :gb) :event/changed true)))))
 
 (varfn draw-textarea

@@ -5,7 +5,9 @@
 (import freja/file-handling :as fh)
 (import freja/input)
 (import freja/checkpoint)
+(import freja/events :as e)
 (import ./evaling)
+(import ./open-file)
 
 (varfn reset-blink
   [props]
@@ -148,9 +150,13 @@
 
 (table/setproto gb-binds global-keys)
 
-(def file-open-binds @{:load-file checkpoint/load-file-with-checkpoints
-                       :escape (fn [props] (:escape props))
-                       :enter (fn [props] (:enter props))})
+(def file-open-binds
+  @{:load-file
+    (fn [props path]
+      (open-file/open-file ;(fh/string->path-line-column path)))
+    # checkpoint/load-file-with-checkpoints
+    :escape (fn [props] (:escape props))
+    :enter (fn [props] (:enter props))})
 
 (table/setproto file-open-binds global-keys)
 

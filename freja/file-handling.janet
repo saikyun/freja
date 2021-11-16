@@ -5,6 +5,40 @@
 (import ./events :as e)
 (import spork/path)
 
+(defn string->path-line-column
+  ``
+  Takes a string with format "path:line:column"
+  and turns it into [path line column].
+  ``
+  [path-string]
+  (let [[path line column]
+        (peg/match
+          '(* (<- (some (if-not ":" 1)))
+              (opt (* ":"
+                      (<- (some (if-not ":" 1)))))
+              (opt (* ":"
+                      (<- (some (if-not ":" 1))))))
+          path-string)]
+    [path
+     (-?> line scan-number)
+     (-?> column scan-number)]))
+
+(comment
+  (string->path-line-column
+    "aoeu.exe")
+  #=> ["aoeu.exe" nil nil]
+  
+  (string->path-line-column
+    "aoeu.exe:123")
+  #=> ["aoeu.exe" 123 nil]
+  
+  (string->path-line-column
+    "aoeu.exe:123:5")
+  #=> ["aoeu.exe" 123 5]
+  #
+  )
+  
+
 #(setdyn :freja/ns "freja/file-handling")
 
 (defn ensure-dir
@@ -42,7 +76,6 @@
 
 (varfn load-file
   [props path]
-
   (-> (props :gb)
       (replace-content (read-file path))
       (put :path path)
