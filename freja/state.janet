@@ -15,6 +15,13 @@
 
 (def focus @{})
 
+(def out @"")
+(def err @"")
+
+(def editor-state @{})
+
+(var user-env (make-env))
+
 (def editor-components
   @{})
 
@@ -33,6 +40,20 @@
   (put editor-components ext component)
   (put editor-state-creators ext creator))
 
+(defn push-buffer-stack
+  [o]
+  (def new-stack (-> (filter |(not= o $) (editor-state :stack))
+                     (array/push o)))
+  (-> editor-state
+      (put :stack new-stack)
+      (put :event/changed true)))
+
+(defn remove-buffer-stack
+  [o]
+  (def new-stack (filter |(not= o $) (editor-state :stack)))
+  (-> editor-state
+      (put :stack new-stack)
+      (put :event/changed true)))
 
 (defn focus!
   ``
@@ -43,13 +64,6 @@
       (put :last-focus (focus :focus))
       (put :focus x)
       (put :event/changed true)))
-
-(def out @"")
-(def err @"")
-
-(def editor-state @{})
-
-(var user-env (make-env))
 
 (defn ev/check
   [chan]

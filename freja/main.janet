@@ -264,7 +264,7 @@
   (run-file (string state/freja-dir "init.janet")))
 
 (defn start
-  []
+  [file]
   (try
     (do
       (set-config-flags :vsync-hint)
@@ -308,6 +308,19 @@
         (default-layout/init)
         (menu/init)
         (echoer/init)
+
+        (if file
+          (open-file/open-file file)
+          (do
+            (unless (os/stat file-handling/scratch-path)
+              (spit file-handling/scratch-path ``
+# This is your personal scratch file
+# if you want to try it out, just hit Ctrl/Cmd + L
+
+(print "Welcome to your personal scratch file!")
+``))
+
+            (open-file/open-file file-handling/scratch-path)))
 
         (loop-it)))
     ([err fib]
@@ -455,26 +468,11 @@ flags:
       (do (print "--dofile needs a filepath as a second argument")
         (os/exit 0))))
 
-  (if-let [file (if (= "--dofile" (get args 1))
-                  (get args 2)
-                  (get args 1))]
-
-    (open-file/open-file
-      (if open-init
-        (string state/freja-dir "init.janet")
-        file))
-
-    (do
-      (unless (os/stat file-handling/scratch-path)
-        (spit file-handling/scratch-path ``
-# This is your personal scratch file
-# if you want to try it out, just hit Ctrl/Cmd + L
-
-(print "Welcome to your personal scratch file!")
-``))
-
-      (open-file/open-file file-handling/scratch-path)))
-
-  (start)
+  (start (if open-init
+           (string state/freja-dir "init.janet")
+           (when-let [file (if (= "--dofile" (get args 1))
+                             (get args 2)
+                             (get args 1))]
+             file)))
 
   (print "JANET_PATH is: " (dyn :syspath)))

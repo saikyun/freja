@@ -193,98 +193,102 @@
                                     (set-open open)))
 
   [:block {}
-   (when-let [c (props :open)]
-     [:background {:color (t/comp-cols :background)}
-      [:padding {:all 4}
-       (case c
-         :goto-line
-         [:row {}
-          [:text {:size 22
-                  :color (t/comp-cols :text/color)
-                  :text "Go to line: "}]
-          [ta/textarea {:weight 1
-                        :text/size 22
-                        :height 28
+   [:column {}
+    (when-let [c (props :open)]
+      [:background {:color (t/comp-cols :background)}
+       [:padding {:all 4}
+        (case c
+          :goto-line
+          [:row {}
+           [:text {:size 22
+                   :color (t/comp-cols :text/color)
+                   :text "Go to line: "}]
+           [ta/textarea {:weight 1
+                         :text/size 22
+                         :height 28
 
-                        :text/color (t/colors :text)
+                         :text/color (t/colors :text)
 
-                        :init (defn focus-textarea-on-init [self _]
-                                (e/put! state/focus :focus (self :state)))
+                         :init (defn focus-textarea-on-init [self _]
+                                 (e/put! state/focus :focus (self :state)))
 
-                        :extra-binds
+                         :extra-binds
 
-                        @{:escape (fn [props]
+                         @{:escape (fn [props]
+                                     (set-open false)
+                                     (e/put! state/focus :focus editor-state))
+                           :enter (fn [props]
                                     (set-open false)
-                                    (e/put! state/focus :focus editor-state))
-                          :enter (fn [props]
-                                   (set-open false)
-                                   (e/put! state/focus :focus editor-state)
-                                   (rgb/goto-line-number (editor-state :gb)
-                                                         (scan-number (gb/content props))))}}]]
+                                    (e/put! state/focus :focus editor-state)
+                                    (rgb/goto-line-number (editor-state :gb)
+                                                          (scan-number (gb/content props))))}}]]
 
-         :file-open
-         [:row {}
-          [:text {:size 22
-                  :color (t/comp-cols :text/color)
-                  :text "Open: "}]
-          [ta/textarea {:weight 1
-                        :text/size 22
-                        :height 28
-                        :text/color (t/colors :text)
-                        :state file-open}]]
+          :file-open
+          [:row {}
+           [:text {:size 22
+                   :color (t/comp-cols :text/color)
+                   :text "Open: "}]
+           [ta/textarea {:weight 1
+                         :text/size 22
+                         :height 28
+                         :text/color (t/colors :text)
+                         :state file-open}]]
 
-         :eval-expr
-         [:row {}
-          [:text {:size 22
-                  :color (t/comp-cols :text/color)
-                  :text "Eval: "}]
-          [ta/textarea {:weight 1
-                        :text/size 22
-                        :height 28
-                        :text/color (t/colors :text)
-                        :state eval-state}]]
+          :eval-expr
+          [:row {}
+           [:text {:size 22
+                   :color (t/comp-cols :text/color)
+                   :text "Eval: "}]
+           [ta/textarea {:weight 1
+                         :text/size 22
+                         :height 28
+                         :text/color (t/colors :text)
+                         :state eval-state}]]
 
-         :search
-         [:row {}
-          [:text {:size 22
-                  :color (t/comp-cols :text/color)
-                  :text (string "Search "
-                                (when-let [mi (get-in search-state [:gb :match-index])]
-                                  (string
-                                    (inc mi)
-                                    "/"
-                                    (get-in search-state [:gb :nof-matches])))
-                                " ")}]
-          [ta/textarea {:weight 1
-                        :text/size 22
-                        :height 28
-                        :text/color (t/colors :text)
-                        :state search-state}]])]]
-     #
+          :search
+          [:row {}
+           [:text {:size 22
+                   :color (t/comp-cols :text/color)
+                   :text (string "Search "
+                                 (when-let [mi (get-in search-state [:gb :match-index])]
+                                   (string
+                                     (inc mi)
+                                     "/"
+                                     (get-in search-state [:gb :nof-matches])))
+                                 " ")}]
+           [ta/textarea {:weight 1
+                         :text/size 22
+                         :height 28
+                         :text/color (t/colors :text)
+                         :state search-state}]])]]
+      #
 )
 
-   [:background {:color (t/colors :background)}
-    [:padding {:left 6 :top 6}
-     [ta/textarea {:init
-                   (fn [self _]
-                     (when editor-new?
-                       (def gb (get-in state [:editor :gb]))
-                       (when-let [[path line column] initial-file]
-                         ((file-open-binds :load-file) (state :editor) path)
-                         (when line
-                           (rgb/goto-line-number gb line))
-                         (when column
-                           (gb/move-n gb column))))
+    
+    [:background {:weight 1
+                  :color (t/colors :background)}
+     [:padding {:left 6 :top 6}
+      [ta/textarea {:init
+                    (fn [self _]
+                      (when editor-new?
+                        (def gb (get-in state [:editor :gb]))
+                        (when-let [[path line column] initial-file]
+                          ((file-open-binds :load-file) (state :editor) path)
+                          (when line
+                            (rgb/goto-line-number gb line))
+                          (when column
+                            (gb/move-n gb column))))
 
-                     (when focus-on-init
-                       (e/put! state/focus :focus editor-state)))
-                   :text/spacing 0.5
-                   :text/size 20
-                   :text/font "MplusCode"
-                   :text/color (t/colors :text)
-                   :state editor-state
-                   :show-line-numbers true
-                   :space-in-bottom space-in-bottom}]]]
+                      (when focus-on-init
+                        (print "focusing!")
+                        (e/put! state/focus :focus editor-state)))
+                    :text/spacing 0.5
+                    :text/size 20
+                    :text/font "MplusCode"
+                    :text/color (t/colors :text)
+                    :state editor-state
+                    :show-line-numbers true
+                    :space-in-bottom space-in-bottom}]]]
 
-   #
-])
+    #
+]])

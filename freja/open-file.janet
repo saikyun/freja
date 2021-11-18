@@ -1,4 +1,4 @@
-(import freja/state)
+(import ./state)
 (import freja/events :as e)
 (import freja/new_gap_buffer :as gb)
 (import freja/render_new_gap_buffer :as rgb)
@@ -11,9 +11,8 @@
   @{})
 
 (defn open-file*
-  [[comp state]]
-  (e/put! state/editor-state :left comp)
-  (e/put! state/editor-state :left-state state))
+  [compo-state]
+  (state/push-buffer-stack compo-state))
 
 (defn open-file
   [path &opt line column]

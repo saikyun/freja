@@ -3,6 +3,7 @@
 (import freja/hiccup :as h)
 (import freja/events :as e)
 (import freja/file-handling :as fh)
+(import freja/new_gap_buffer :as gb)
 (import freja/state)
 (import freja/frp)
 (use freja/defonce)
@@ -15,12 +16,15 @@
                          (t/comp-cols :background)
                          :blank)}
    [:padding {:all 2}
-    [e/editor {:state (props :left-state)
+    [e/editor {:state props
                :id :left
                :focus-on-init true
                :initial-file state/initial-file
-               :open (props :left-open)
-               :set-open |(e/put! props :left-open $)}]]])
+               :open (props :open)
+               :set-open |(do (print "opening: " $)
+                            # TODO: remove
+                            (e/put! state/editor-state :force-refresh true)
+                            (e/put! props :open $))}]]])
 
 (defn default-right-editor
   [props & _]
@@ -38,15 +42,41 @@
                  :set-open |(do (print "opening: " $)
                               (e/put! props :right-open $))}]]]])
 
+(defn stack-row
+  [{:hiccup hiccup
+    :cant-close cant-close}]
+  (def [_ state] hiccup)
+  [:block {}
+   [:row {}
+    [:clickable
+     {:weight 1
+      :on-click (fn [_]
+                  (state/push-buffer-stack hiccup)
+                  (when (state :focus)
+                    (:focus state)))}
+     [:padding {:all 4}
+      [:text {:size 16
+              :color :white
+              :text (state :freja/label)}]]]
+    (unless cant-close
+      [:clickable
+       {:on-click (fn [_]
+                    (state/remove-buffer-stack hiccup)
+                    (when-let [[_ top-state] (last (state/editor-state :stack))]
+                      (when (:focus top-state)
+                        (:focus top-state))))}
+       [:padding {:all 4}
+        [:text {:size 16
+                :color :white
+                :text "X"}]]])
+    #
+]])
 
 (defn text-area-hc
   [props & _]
 
   (def {:bottom bottom
         :bottom-h bottom-h} props)
-
-  (unless (props :left-state)
-    (put props :left-state @{}))
 
   (unless (props :right-state)
     (put props :right-state @{}))
@@ -55,29 +85,19 @@
    [:background {:color (t/colors :background)}
     [:column {}
      [:row {:weight 1}
-      [:column {}
-       #
-       (when (props :left)
-         [:block {:weight 1}
-          [(props :left) props]])
-       #
-       (when (props :old-left)
-         [:block {}
-          [:clickable
-           {:on-click
-            (fn [_]
-              (def [compo state] (props :old-left))
-
-              (e/put! props :left compo)
-              (e/put! props :left-state state)
-              #
-)}
-           [:text {:color :red
-                   :size 24
-                   :text "huh?" # (get props :old-left "nothing")
-}]]])
-       #
-]
+      #
+      (unless (empty? (props :stack))
+        (let [s (reverse (props :stack))
+              top (first s)
+              rest (take 3 (drop 1 s))]
+          [:column {}
+           [stack-row {:hiccup top
+                       :cant-close (empty? rest)}]
+           [:block {:weight 1}
+            top]
+           ;(seq [hiccup :in rest
+                  :let [[compo state] hiccup]]
+              [stack-row {:hiccup hiccup}])]))
       #[:block {:width 2}]
 
       (when (or (props :right)
@@ -132,14 +152,18 @@
 
 (defn init
   []
+  # (put state/editor-state :stack @[[default-left-editor @{}]])
+  (unless (state/editor-state :stack)
+    (put state/editor-state :stack @[]))
+
   (set hiccup-layer (h/new-layer
                       :text-area
                       text-area-hc
                       state/editor-state))
 
-  (e/put! state/editor-state
-          :left
-          default-left-editor)
+  #  (e/put! state/editor-state
+  #         :stack
+  #        default-left-editor)
 
   (e/put! state/editor-state
           :right
@@ -148,25 +172,18 @@
 )
 
   (comment
-    (get state/editor-state :old-left)
+    (keys (get-in state/editor-state [:old-left 1 :freja/label]))
     (get state/editor-state :last-left)
     #
 )
 
   (frp/subscribe!
-    state/editor-state
-    (fn [{:last-left last-left
-          :old-left old-left
-          :left left
-          :left-state left-state}]
-      (when (not= last-left [left left-state])
-        (when last-left
-          (e/put! state/editor-state :old-left last-left))
-        (e/put! state/editor-state :last-left [left left-state]))))
-
-  (frp/subscribe!
     state/focus
-    (fn [{:focus focus}]
+    (fn [{:focus focus
+          :last-focut last-focus}]
+      (unless (= focus last-focus)
+        (e/put! state/editor-state :force-refresh true))
+
       (if (= focus (get-in state/editor-state [:left-state :editor]))
         (unless (state/editor-state :left-focus)
           (e/put! state/editor-state :left-focus true))
