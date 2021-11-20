@@ -192,57 +192,78 @@
   []
 
   (set loop-fiber
-       (ev/call (fn [] (while true
-                         (when (or state/quit
-                                   (window-should-close))
-                           (when state/quit-hook
-                             (state/quit-hook))
+       (ev/call
+         (fn []
+           (while true
+             (when (or state/quit
+                       (window-should-close))
+               (when state/quit-hook
+                 (state/quit-hook))
 
-                           # if we're gonna quit, let's print what's in state/out
-                           # before quitting
-                           (when (not (empty? state/out))
-                             (with-dyns [:out stdout]
-                               (print state/out)))
+               # if we're gonna quit, let's print what's in state/out
+               # before quitting
+               (when (not (empty? state/out))
+                 (with-dyns [:out stdout]
+                   (print state/out)))
 
-                           (checkpoint/save-file-with-checkpoint
-                             (get-in state/editor-state [:left-state :editor :gb])
-                             "before quitting")
+               (var any-quit-failed false)
+               (loop [[_ s] :in (state/editor-state :stack)]
+                 (try
+                   (:freja/quit s)
+                   ([err fib]
+                     (set any-quit-failed true)
+                     (with-dyns [:out stdout]
+                       (debug/stacktrace fib err)
+                       (let [string-rep (string/format "%.40m" s)
+                             dump-path (file-handling/data-path (string "dump-" (os/time) "-" (math/floor (* 100000 (math/random)))))]
+                         (print "couldn't save. here's the state in text form:")
+                         (print string-rep)
+                         (print)
+                         (print "also dumping it to: " dump-path)
+                         (spit dump-path string-rep))))))
 
-                           (close-window)
-                           (os/exit)
-                           (error "QUIT!"))
+               #(checkpoint/save-file-with-checkpoint
+               #  (get-in state/editor-state [:left-state :editor :gb])
+               #  "before quitting")
 
-                         (try
-                           (do
-                             # prints might have happened between renders
-                             (unless (empty? state/out)
-                               (events/push! frp/out (string state/out))
-                               (buffer/clear state/out))
+               (if any-quit-failed
+                 (set state/quit false)
+                 (do
+                   (close-window)
+                   (os/exit)
+                   (error "QUIT!"))))
 
-                             (with-dyns [:out state/out
-                                         :err state/out]
-                               (internal-frame)
+             (try
+               (do
+                 # prints might have happened between renders
+                 (unless (empty? state/out)
+                   (events/push! frp/out (string state/out))
+                   (buffer/clear state/out))
 
-                               # if we're gonna quit, let's print what's in state/out
-                               # before quitting
-                               (when (or state/quit
-                                         (window-should-close))
-                                 (with-dyns [:out stdout]
-                                   (print state/out)))
+                 (with-dyns [:out state/out
+                             :err state/out]
+                   (internal-frame)
 
-                               (unless (empty? state/out)
-                                 (events/push! frp/out (string state/out))
-                                 (buffer/clear state/out))
-                               (ev/sleep 0.0001)))
-                           ([err fib]
-                             (let [path "text_experiment_dump"]
-                               (debug/stacktrace fib err)
-                               ## TODO:  Dump-state
-                               #(dump-state path gb-data)
-                               #(print "Dumped state to " path)
+                   # if we're gonna quit, let's print what's in state/out
+                   # before quitting
+                   (when (or state/quit
+                             (window-should-close))
+                     (with-dyns [:out stdout]
+                       (print state/out)))
+
+                   (unless (empty? state/out)
+                     (events/push! frp/out (string state/out))
+                     (buffer/clear state/out))
+                   (ev/sleep 0.0001)))
+               ([err fib]
+                 (let [path "text_experiment_dump"]
+                   (debug/stacktrace fib err)
+                   ## TODO:  Dump-state
+                   #(dump-state path gb-data)
+                   #(print "Dumped state to " path)
 )
-                             (print (debug/stacktrace fib err))
-                             (ev/sleep 1))))))))
+                 (print (debug/stacktrace fib err))
+                 (ev/sleep 1))))))))
 
 (defn run-file
   [path]

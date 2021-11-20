@@ -134,10 +134,33 @@
   [props]
   (:eval-expr props))
 
+(defn close-buffer
+  [_]
+  (if (>= 1 (length (state/editor-state :stack)))
+    (print "Can't close a lonely buffer.")
+    (do
+      (state/remove-buffer-stack (last (state/editor-state :stack)))
+      (when-let [[_ top-state] (last (state/editor-state :stack))]
+        (when (:freja/focus top-state)
+          (:freja/focus top-state))))))
+
+(defn swap-top-two-buffers
+  [_]
+  (if (>= 1 (length (state/editor-state :stack)))
+    (print "Can't swap, only one buffer open.")
+    (let [s (state/editor-state :stack)]
+      (state/push-buffer-stack (s (- (length s) 2)))
+      (when-let [[_ top-state] (last (state/editor-state :stack))]
+        (when (:freja/focus top-state)
+          (:freja/focus top-state))))))
+
 (var gb-binds @{:control @{:shift @{:f format!
                                     :e eval-expr-dialogue
                                     #
 }
+
+                           :w close-buffer
+                           :tab swap-top-two-buffers
 
                            :f search-dialogue
                            :g goto-line-dialogue

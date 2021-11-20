@@ -52,8 +52,8 @@
      {:weight 1
       :on-click (fn [_]
                   (state/push-buffer-stack hiccup)
-                  (when (state :focus)
-                    (:focus state)))}
+                  (when (state :freja/focus)
+                    (:freja/focus state)))}
      [:padding {:all 4}
       [:text {:size 16
               :color :white
@@ -63,8 +63,8 @@
        {:on-click (fn [_]
                     (state/remove-buffer-stack hiccup)
                     (when-let [[_ top-state] (last (state/editor-state :stack))]
-                      (when (:focus top-state)
-                        (:focus top-state))))}
+                      (when (:freja/focus top-state)
+                        (:freja/focus top-state))))}
        [:padding {:all 4}
         [:text {:size 16
                 :color :white

@@ -32,8 +32,13 @@
   [ext &opt data]
   (default ext (do (print "no ext provided, defaulting to .janet")
                  ".janet"))
-  [((editor-components ext) data)
-   ((editor-state-creators ext) data)])
+  (def compo (get editor-components ext))
+  (default compo (do (print "no component found for " ext ", defaulting to .janet")
+                   (editor-components ".janet")))
+  (def state-creator (get editor-state-creators ext))
+  (default state-creator (do (print "no state-creator found for " ext ", defaulting to .janet")
+                   (editor-state-creators ".janet")))
+  [(compo data) (state-creator data)])
 
 (defn add-ext-handling
   [ext component creator]

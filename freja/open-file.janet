@@ -3,7 +3,6 @@
 (import freja/new_gap_buffer :as gb)
 (import freja/render_new_gap_buffer :as rgb)
 (import freja/theme)
-(import freja/editor)
 (import freja/checkpoint)
 (import spork/path)
 
@@ -21,7 +20,7 @@
     (open-file* comp-state)
     (let [new-state (state/ext->editor (path/ext path) {:path path})]
       (put open-files path new-state)
-      (open-file* new-state)))
+      (open-file* (tracev new-state))))
 
   (let [gb (get-in open-files [path :editor :gb])]
     (when line

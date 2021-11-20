@@ -13,8 +13,12 @@
 
   (put state :editor (textarea/default-textarea-state))
   (put state :freja/label path)
-  (put state :focus (fn [{:editor editor}]
-                      (state/focus! editor)))
+  (put state :freja/focus (fn [{:editor editor}]
+                            (state/focus! editor)))
+  (put state :freja/quit (fn [{:editor editor}]
+                           (checkpoint/save-file-with-checkpoint
+                             (editor :gb)
+                             "before quitting")))
 
   (checkpoint/load-file-with-checkpoints (state :editor) path)
 
