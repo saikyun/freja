@@ -4,6 +4,8 @@ jobs:
   ubuntu-build:
     runs-on: ubuntu-latest
     steps:
+      - name: apt-update
+        run: sudo apt-get update
       - name: Install linux dependencies
         run: sudo apt-get install libglfw3-dev libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
