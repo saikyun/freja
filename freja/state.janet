@@ -15,6 +15,8 @@
 
 (def focus @{})
 
+(def keys-down @{})
+
 (def out @"")
 (def err @"")
 

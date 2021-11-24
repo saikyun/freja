@@ -311,8 +311,7 @@
 
     (try
       (do
-        # disabled for now, for some reason imports seem to stop working when doing this first
-        (freja-dofile* path :evaluator flycheck-evaluator)
+        # (freja-dofile* path :evaluator flycheck-evaluator)
 
         #        (print "second step")
 

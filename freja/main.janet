@@ -289,7 +289,7 @@
   (try
     (do
       (set-config-flags :vsync-hint)
-      (set-config-flags :window-highdpi)
+      #(set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
 
       (init-window 800 600 "Freja")

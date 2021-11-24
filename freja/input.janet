@@ -30,6 +30,10 @@
     :selected-pos nil
     :last-text-pos nil})
 
+(defn key-down?
+  [k]
+  (state/keys-down k))
+
 (varfn meta-down?
   []
   (if (= :macos (os/which))

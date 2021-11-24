@@ -156,19 +156,21 @@ Emits events when rerendering is needed.
     (e/push! chars @[:char k])
     (set k (get-char-pressed)))
 
-  (loop [[k dl] :pairs delay-left
-         :let [left ((update delay-left k - dt) k)]]
-    (when (<= left 0)
-      (e/push! keyboard @[:key-repeat k])
-      (put delay-left k i/repeat-delay)))
-
+  # must release keys before...
   (loop [k :in kb/possible-keys]
     (when (key-released? k)
-      (put delay-left k nil)
-      (e/push! keyboard @[:key-release k]))
+      (e/push! keyboard @[:key-release k])))
 
+  # ...checking for held keys
+  (loop [[k dl] :pairs state/keys-down
+         # might just have been released
+         :when (not (key-released? k))
+         :let [left ((update state/keys-down k - dt) k)]]
+    (when (<= left 0)
+      (e/push! keyboard @[:key-repeat k])))
+
+  (loop [k :in kb/possible-keys]
     (when (key-pressed? k)
-      (put delay-left k i/initial-delay)
       (e/push! keyboard @[:key-down k]))))
 
 (varfn handle-scroll
@@ -283,6 +285,18 @@ Emits events when rerendering is needed.
 (def finally
   @{frame-chan [render-deps]})
 
+(defn handle-key-events
+  [ev]
+  (match ev
+    [:key-release k]
+    (put state/keys-down k nil)
+
+    [:key-repeat k]
+    (put state/keys-down k i/repeat-delay)
+
+    [:key-down k]
+    (put state/keys-down k i/initial-delay)))
+
 (varfn init-chans
   []
   (print "initing chans")
@@ -297,7 +311,7 @@ Emits events when rerendering is needed.
 
   (def dependencies
     @{mouse @[]
-      keyboard @[|(:on-event (state/focus :focus) $)]
+      keyboard @[handle-key-events |(:on-event (state/focus :focus) $)]
       chars @[|(:on-event (state/focus :focus) $)]
       state/focus @[]
       callbacks @[handle-callbacks]
