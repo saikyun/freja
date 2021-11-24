@@ -90,7 +90,7 @@
         (let [s (reverse (props :stack))
               top (first s)
               rest (take 3 (drop 1 s))]
-          [:column {}
+          [:column {:weight 1}
            [stack-row {:hiccup top
                        :cant-close (empty? rest)}]
            [:block {:weight 1}
