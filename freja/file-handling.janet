@@ -27,17 +27,17 @@
   (string->path-line-column
     "aoeu.exe")
   #=> ["aoeu.exe" nil nil]
-  
+
   (string->path-line-column
     "aoeu.exe:123")
   #=> ["aoeu.exe" 123 nil]
-  
+
   (string->path-line-column
     "aoeu.exe:123:5")
   #=> ["aoeu.exe" 123 5]
   #
-  )
-  
+)
+
 
 #(setdyn :freja/ns "freja/file-handling")
 
@@ -311,7 +311,7 @@
 
     (try
       (do
-        # (freja-dofile* path :evaluator flycheck-evaluator)
+        (freja-dofile* path :evaluator flycheck-evaluator)
 
         #        (print "second step")
 
