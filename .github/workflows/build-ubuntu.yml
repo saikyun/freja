@@ -31,6 +31,9 @@ jobs:
       - run: cd ${{ github.workspace }} && ls
       - run: cd ${{ github.workspace }} && ls ./build
       - run: ls ${{ github.workspace }}/build
+      - run: ls ${{ github.workspace }} && ./start-freja --help
+      - name: run test
+        run: cd ${{ github.workspace }} && ./start-freja --dofile test/basic.janet
       - name: run --help
         run: cd ${{ github.workspace }} && ./build/freja --help
       - name: run test
