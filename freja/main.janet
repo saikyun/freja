@@ -380,10 +380,14 @@
          (string/trimr (ev/read (proc :out) :all)))
        ([err]
          (eprintf "failed to determine commit: %p" err)
-         (os/exit 1))))
-
+         #(os/exit 1)
+)))
 
 (defn main [& args]
+  (set state/freja-script-path (first args))
+
+  (when (dyn :executable)
+    (fonts/init-fonts))
 
   (when (= "--help" (get args 1))
     (print ``
@@ -435,6 +439,7 @@ flags:
     (print "init.janet: " (string state/freja-dir "init.janet"))
     (print "data (e.g. checkpoints/backups): " (file-handling/data-path ""))
     (print "scratch: " file-handling/scratch-path)
+    (print "freja script path: " state/freja-script-path)
     (os/exit 0))
 
   (put module/cache "freja-jaylib" freja-jaylib)

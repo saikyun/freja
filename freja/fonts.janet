@@ -1,4 +1,5 @@
 (use freja-jaylib)
+(import freja/state)
 (import spork/path)
 (import ./dumb :prefix "")
 (import ./text_rendering :as tr)
@@ -71,9 +72,37 @@
 # these are slurped on top level in order
 # to be included in the binary when
 # running `jpm build`
-(def mplus (slurp (path/join "fonts" "MplusCodeLatin60-Medium.otf")))
-(def poppins (slurp (path/join "fonts" "Poppins-Regular.otf")))
-(def ebgaramond (slurp (path/join "fonts" "EBGaramond12-Regular.otf")))
+
+(def extra-path (or (when-let [a (tracev (dyn :executable))]
+                      ### running as script
+                      (when (string/has-suffix? "freja/main.janet" a)
+                        (string (path/dirname a) ".." path/sep)))
+                    ""))
+
+(var mplus nil)
+(var poppins nil)
+(var ebgaramond nil)
+
+(defn init-fonts
+  []
+  (def extra-path
+    (or
+      (-?> state/freja-script-path
+           path/dirname
+           path/parts
+           (slice 0 -3))
+      []))
+  (set mplus (slurp (path/join ;extra-path
+                               "fonts" "MplusCodeLatin60-Medium.otf")))
+  (set poppins (slurp (path/join ;extra-path
+                                 "fonts" "Poppins-Regular.otf")))
+  (set ebgaramond (slurp (path/join ;extra-path
+                                    "fonts" "EBGaramond12-Regular.otf"))))
+
+
+(try (init-fonts)
+  ([err fib]
+    (print "couldn't load fonts in top level")))
 
 # storage for loaded fonts
 (def fonts @{})

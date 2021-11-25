@@ -3,6 +3,8 @@
 
 (setdyn :freja/ns "freja/state")
 
+(var freja-script-path @"")
+
 (var quit false)
 
 (var quit-hook nil)
