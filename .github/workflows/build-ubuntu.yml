@@ -4,12 +4,15 @@ jobs:
   ubuntu-build:
     runs-on: ubuntu-18.04
     steps:
+      - name: apt-update
+        run: sudo apt-get update
       - uses: openrndr/setup-opengl@v1.1
       - run: xvfb-run glxinfo
       - run: ls mesa-18.2.3/usr/local/lib/x86_64-linux-gnu
-      - run: LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
-      - name: apt-update
-        run: sudo apt-get update
+      - run: ls /usr/local/lib/
+      - run: echo $LD_LIBRARY_PATH
+        env:
+          LD_LIBRARY_PATH: "/usr/local/lib/x86_64-linux-gnu"
       - name: Install linux dependencies
         run: sudo apt-get install libglfw3-dev libasound2-dev mesa-common-dev libx11-dev libxrandr-dev libxi-dev xorg-dev libgl1-mesa-dev libglu1-mesa-dev
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
