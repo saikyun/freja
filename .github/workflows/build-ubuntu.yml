@@ -29,9 +29,9 @@ jobs:
         run: jpm build
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: run --help
-        run: ./build/freja --help
+        run: cd ${{ github.workspace }} && ./build/freja --help
       - name: run test
-        run: ./build/freja --dofile test/basic.janet
+        run: cd ${{ github.workspace }} && ./build/freja --dofile test/basic.janet
       - name: Remove release
         run: gh release delete -y ubuntu-dont-use-this
         continue-on-error: true
