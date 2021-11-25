@@ -6,6 +6,8 @@ jobs:
     steps:
       - uses: openrndr/setup-opengl@v1.1
       - run: xvfb-run glxinfo
+      - run: ls mesa-18.2.3/usr/local/lib/x86_64-linux-gnu
+      - run: LD_LIBRARY_PATH=/usr/local/lib/x86_64-linux-gnu
       - name: apt-update
         run: sudo apt-get update
       - name: Install linux dependencies
