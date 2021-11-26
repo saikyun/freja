@@ -53,12 +53,11 @@ jobs:
       - name: Install jpm
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm
         shell: cmd
-#      - run: cd ${{ github.workspace }}/jpm && set JANET_PATH="${{ github.workspace }}/janet/dist" && set JANET_BINPATH=${{ github.workspace }}/janet/dist && set JANET_LIBPATH=${{ github.workspace }}/janet/dist && set JANET_HEADERPATH=${{ github.workspace }}/janet/dist && cd ${{ github.workspace }}/jpm && ${{ github.workspace }}/janet/dist/janet.exe bootstrap.janet
-#        shell: cmd
       - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet\dist&& set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\dist&& set JANET_PATH=${{ github.workspace }}\janet&& janet bootstrap.janet
         shell: cmd
       - name: test
-        run: cd ${{ github.workspace }} && SET FREJA_TEST=true jpm deps && jpm test
+        run: cd ${{ github.workspace }} && set FREJA_TEST=true&& jpm deps && jpm test
+        shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
         shell: cmd
