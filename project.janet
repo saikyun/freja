@@ -20,6 +20,15 @@
                  # {:repo "https://...." :tag "abcdcbdc"}
 ])
 
+
+(def lflags
+  (case (os/which)
+    :windows '[]
+    :macos '["-Wl,-export_dynamic"] # need to test this
+    :linux '["-rdynamic"] # I want this for more OSes, needed to load native modules from freja binary
+    #default
+    '["-lpthread"]))
+
 (def proj-root
   (os/cwd))
 
@@ -32,6 +41,7 @@
 (declare-executable
   :name "freja"
   :entry (string src-root "/main.janet")
+  :lflags lflags
   :install true)
 
 (phony "judge" ["build"]

@@ -73,7 +73,7 @@
 # to be included in the binary when
 # running `jpm build`
 
-(def extra-path (or (when-let [a (tracev (dyn :executable))]
+(def extra-path (or (when-let [a (dyn :executable)]
                       ### running as script
                       (when (string/has-suffix? "freja/main.janet" a)
                         (string (path/dirname a) ".." path/sep)))

@@ -311,7 +311,7 @@
 
     (try
       (do
-        (freja-dofile* path :evaluator flycheck-evaluator)
+        #(freja-dofile* path :evaluator flycheck-evaluator)
 
         #        (print "second step")
 

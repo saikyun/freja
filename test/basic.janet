@@ -1,8 +1,9 @@
-(import freja/frp)
-(import freja/events :as e)
-(import freja/default-hotkeys :as dh)
-(import freja/state)
-(import freja/new_gap_buffer :as gb)
+(import ../freja/main)
+(import ../freja/frp)
+(import ../freja/events :as e)
+(import ../freja/default-hotkeys :as dh)
+(import ../freja/state)
+(import ../freja/new_gap_buffer :as gb)
 
 (var commands
   @[@[:key-down :left-control]
@@ -27,9 +28,11 @@
     (with-dyns [:out stdout]
       (if (deep= @"a" (tracev (gb/content (get-in state/editor-state [:stack 0 1 :editor :gb]))))
         (do
-          (print "test successful")
+          (print "test successful\n------------------------------")
           (os/exit 0))
-        (do (print "!!! test failed !!!")
+        (do (print "!!! test failed !!!\n------------------------------")
           (os/exit 1))))))
+
+(main/main)
 
 (run-commands)
