@@ -1,3 +1,8 @@
+(def freja-jaylib-dep
+  (if (tracev (os/getenv "FREJA_TEST"))
+    (string "file://" (os/cwd) "/freja-jaylib")
+    "https://github.com/saikyun/freja-jaylib"))
+
 (declare-project
   :name "freja"
   :author "Jona Ekenberg <saikyun@gmail.com>"
@@ -14,7 +19,7 @@
                  {:repo "https://github.com/Saikyun/janet-profiling" :tag "main"}
 
                  ## using my own fork due to additions to jaylib
-                 "https://github.com/saikyun/freja-jaylib"
+                 freja-jaylib-dep
 
                  # example of how to use `:tag`
                  # {:repo "https://...." :tag "abcdcbdc"}
