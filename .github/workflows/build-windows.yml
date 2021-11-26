@@ -57,6 +57,8 @@ jobs:
 #        shell: cmd
       - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet\dist&& set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\dist&& set JANET_PATH=${{ github.workspace }}\janet&& janet bootstrap.janet
         shell: cmd
+      - name: test
+        run: cd ${{ github.workspace }} && FREJA_TEST=true jpm deps && jpm test
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
         shell: cmd
