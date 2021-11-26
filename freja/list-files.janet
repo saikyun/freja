@@ -145,7 +145,7 @@
      [:block {:weight 0.5}]]
     [:block {:weight 1}]]])
 
-(dh/global-set-key [:control :r]
+(dh/global-set-key [:control :p]
                    (fn [_]
                      (h/new-layer :list-files
                                   list-files-component
