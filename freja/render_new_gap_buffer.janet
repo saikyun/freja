@@ -1441,7 +1441,7 @@ Render lines doesn't modify anything in gb."
   (let [mag (- (gb :scroll) (gb :render-scroll))]
     (when (> (math/abs mag) 10)
 
-      (put gb :text/color 0xff00ff00)
+      (put gb :text/color 0x00ff00ff)
 
       #(rl-translatef (* 0.003 (math/abs mag) (dec (* 2 (math/random))))
       #               (* 0 mag (math/random)) 0)
@@ -1477,7 +1477,7 @@ Render lines doesn't modify anything in gb."
 ]
           [0 0]
           0
-          0x559999999
+          0x999999955
           #(colors :background)
 )
 
@@ -1493,7 +1493,7 @@ Render lines doesn't modify anything in gb."
 ]
           [0 0]
           0
-          0x22999999
+          0x99999922
           #(colors :background)
 ))
 
@@ -1607,7 +1607,7 @@ Render lines doesn't modify anything in gb."
           (min 3 (inc (if (zero? extra-y)
                         (math/abs extra-x)
                         (math/abs extra-y))))
-          (or 0xff999999 (gb :caret/color) (get-in gb [:colors :caret])))
+          (or 0x999999ff (gb :caret/color) (get-in gb [:colors :caret])))
 
         (draw-line-ex
           [(+ cx extra-x) cy]
