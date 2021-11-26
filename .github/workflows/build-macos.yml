@@ -5,7 +5,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Install homebrew
-        run: ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+        run: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       - name: Install glfw
         run: brew install glfw
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
