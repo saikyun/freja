@@ -86,7 +86,7 @@
 (defn default-textarea-state
   [&keys {:gap-buffer gap-buffer
           :binds binds
-          :extra-binds extra-binds}]
+          :on-change on-change}]
   (default gap-buffer (gb/new-gap-buffer))
 
   (default binds (table/setproto @{} dh/gb-binds))
@@ -95,11 +95,6 @@
               {:binds binds
                :colors theme/colors})
 
-  (when extra-binds
-    (put gap-buffer :binds
-         (-> (merge-into @{} extra-binds)
-             (table/setproto dh/gb-binds))))
-
   (update gap-buffer :blink |(or $ 0))
 
   @{:gb gap-buffer
@@ -107,7 +102,11 @@
     # call like this so varfn works
     :draw (fn [self] (draw-textarea self))
 
-    :on-event (fn [self ev] (text-area-on-event self ev))})
+    :on-event (fn [self ev]
+                (text-area-on-event self ev)
+                (when (and on-change
+                           (get-in self [:gb :changed]))
+                  (on-change (gb/content (self :gb)))))})
 
 (defn textarea
   [props & _]
@@ -120,14 +119,23 @@
         :text/spacing text/spacing
         :binds binds #replaces binds
         :extra-binds extra-binds #adds onto default binds
-        :show-line-numbers show-line-numbers} props)
+        :show-line-numbers show-line-numbers
+        :on-change on-change} props)
 
   (default state (get (dyn :element) :state @{}))
 
   (unless (get state :gb)
     (merge-into state (default-textarea-state
+                        :on-change on-change
                         :binds binds
                         :extra-binds extra-binds)))
+
+  (when extra-binds
+    (print "extra binds!")
+    (put (state :gb)
+         :binds
+         (-> (merge-into @{} extra-binds)
+             (table/setproto dh/gb-binds))))
 
   (default offset (if show-line-numbers
                     [12 0]
@@ -203,6 +211,10 @@
 
                       #(text-area-on-event state new-ev)
                       (:on-event state new-ev)
+
+                      (when (and on-change
+                                 (get-in state [:gb :changed]))
+                        (on-change (gb/content (state :gb))))
 
                       (def pos (new-ev
                                  (if (= :scroll (first new-ev))
