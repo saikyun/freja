@@ -1,6 +1,6 @@
 (def freja-jaylib-dep
   (if (tracev (os/getenv "FREJA_TEST"))
-    (string "file://" (os/cwd) "/freja-jaylib")
+    "https://github.com/saikyun/freja-jaylib-shim"
     "https://github.com/saikyun/freja-jaylib"))
 
 (declare-project
