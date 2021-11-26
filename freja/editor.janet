@@ -71,22 +71,6 @@
             (put :selection (gb/gb-find-forward! gb search-term))
             (put :changed-selection true))))))
 
-
-(varfn search-backwards123
-  [props]
-  (let [search-term (string (gb/content props))
-        gb (props :search-target)]
-    (gb/put-caret gb (if (gb :selection)
-                       (min (gb :selection)
-                            (gb :caret))
-                       (gb :caret)))
-    (when-let [i (gb/gb-find-backward! gb search-term)]
-      (-> gb
-          (gb/put-caret i)
-          (put :selection (gb/gb-find-forward! gb search-term))
-          (put :changed-selection true)))))
-
-
 (def file-open-binds
   (-> @{}
       (table/setproto dh/file-open-binds)))
