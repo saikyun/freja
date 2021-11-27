@@ -4,6 +4,7 @@
 (import ../freja/default-hotkeys :as dh)
 (import ../freja/state)
 (import ../freja/new_gap_buffer :as gb)
+(import spork/path)
 
 (defn press
   [k & body]
@@ -38,7 +39,7 @@
         (e/push! frp/keyboard @[;c])))
     (ev/sleep 0.00001)
     (with-dyns [:out stdout]
-      (if (= "fonts/Poppins-Regular_LICENSE"
+      (if (= (tracev (string "fonts" path/sep "Poppins-Regular_LICENSE"))
              (tracev (((last (state/editor-state :stack)) 1) :freja/label)))
         (do
           (print "test successful\n------------------------------")
