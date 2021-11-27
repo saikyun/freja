@@ -175,6 +175,9 @@
                            :enter eval-it}
                 :enter (comp reset-blink |(gb/insert-char! $ (chr "\n")))})
 
+# might want to solve this differently...
+(set state/gb-binds gb-binds)
+
 (table/setproto gb-binds global-keys)
 
 (def file-open-binds

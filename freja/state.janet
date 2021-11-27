@@ -7,6 +7,8 @@
 
 (var quit false)
 
+(var gb-binds nil)
+
 (var quit-hook nil)
 
 (def freja-dir @"")

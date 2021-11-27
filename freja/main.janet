@@ -84,6 +84,10 @@
 (import ./open-file)
 (put module/cache "freja/open-file" open-file)
 
+(def textarea (require "./textarea"))
+(import ./textarea)
+(put module/cache "freja/textarea" textarea)
+
 (def find-file (require "./find-file"))
 (import ./find-file)
 (put module/cache "freja/find-file" find-file)
@@ -91,10 +95,6 @@
 (def default-hotkeys (require "./default-hotkeys"))
 (import ./default-hotkeys)
 (put module/cache "freja/default-hotkeys" default-hotkeys)
-
-(def textarea (require "./textarea"))
-(import ./textarea)
-(put module/cache "freja/textarea" textarea)
 
 (def editor (require "./editor"))
 (import ./editor)

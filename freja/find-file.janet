@@ -8,6 +8,12 @@
 
 (import spork/path)
 (import freja/theme)
+(import freja/hiccup :as h)
+(import freja/textarea :as t)
+(import freja/events :as e)
+(import freja/open-file)
+(import freja/file-handling :as fh)
+(import freja/state)
 
 (defn get-files
   [root]
@@ -65,14 +71,6 @@
 
   #
 )
-
-(import freja/hiccup :as h)
-(import freja/textarea :as t :fresh true)
-(import freja/events :as e)
-(import freja/open-file)
-(import freja/file-handling :as fh)
-(import freja/state)
-(import freja/default-hotkeys :as dh)
 
 (defn case-insensitive-peg
   [s]
@@ -174,8 +172,16 @@
             @{:escape (fn [_]
                         (h/remove-layer :list-files props)
                         (:freja/focus (in (last (state/editor-state :stack)) 1)))
-              :down (fn [_] (e/put! props :offset (inc offset)))
-              :up (fn [_] (e/put! props :offset (dec offset)))
+              :down (fn [_] (let [new (inc offset)
+                                  new (if (>= new (length filtered-files))
+                                        0
+                                        new)]
+                              (e/put! props :offset new)))
+              :up (fn [_] (let [new (dec offset)
+                                new (if (< new 0)
+                                      (dec (length filtered-files))
+                                      new)]
+                            (e/put! props :offset new)))
               :enter
               (fn [_]
                 (open-file/open-file
@@ -204,3 +210,11 @@
   (h/new-layer :list-files
                list-files-component
                state))
+
+(comment
+  #
+  (do
+    (find-file-dialog nil)
+    :ok)
+  #
+)
