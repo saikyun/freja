@@ -74,13 +74,6 @@
 (import freja/state)
 (import freja/default-hotkeys :as dh)
 
-(setdyn :pretty-format "%P")
-
-(def state @{:files (get-files-relative (os/cwd))})
-
-
-(setdyn :pretty-format "%P")
-
 (defn case-insensitive-peg
   [s]
   ~(* ,;(map (fn [c]
@@ -180,17 +173,17 @@
             :height 22
             :extra-binds
             @{:escape (fn [_]
-                        (h/remove-layer :list-files state)
+                        (h/remove-layer :list-files props)
                         (:freja/focus (in (last (state/editor-state :stack)) 1)))
-              :down (fn [_] (e/put! state :offset (inc offset)))
-              :up (fn [_] (e/put! state :offset (dec offset)))
+              :down (fn [_] (e/put! props :offset (inc offset)))
+              :up (fn [_] (e/put! props :offset (dec offset)))
               :enter
               (fn [_]
                 (open-file/open-file
                   ;(fh/string->path-line-column
                      (tracev selected-file)))
-                (h/remove-layer :list-files state))}
-            :on-change |(e/put! state :search $)}]]
+                (h/remove-layer :list-files props))}
+            :on-change |(e/put! props :search $)}]]
         [:background {:color (theme/comp-cols :bar-bg)}
          ;(seq [f :in filtered-files
                 :let [selected (= f selected-file)]]
@@ -205,8 +198,10 @@
      [:block {:weight 0.5}]]
     [:block {:weight 1}]]])
 
-(dh/global-set-key [:control :p]
-                   (fn [_]
-                     (h/new-layer :list-files
-                                  list-files-component
-                                  state)))
+(defn find-file-dialog
+  [_]
+  (def state @{:files (get-files-relative (os/cwd))})
+
+  (h/new-layer :list-files
+               list-files-component
+               state))

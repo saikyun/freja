@@ -8,6 +8,7 @@
 (import freja/events :as e)
 (import ./evaling)
 (import ./open-file)
+(import ./find-file)
 
 (varfn reset-blink
   [props]
@@ -69,6 +70,8 @@
                :left backward-word
                :right forward-word
 
+               :p find-file/find-file-dialog
+
                :a gb/select-all
                :x cut!
                :c gb/copy
@@ -102,6 +105,8 @@
     :delete delete-after-caret!
     :backspace delete-before-caret!
 
+   
+
     #
 })
 
@@ -109,11 +114,10 @@
   [props]
   (set state/quit true))
 
-(defn open-file-dialogue
-  [props]
+(defn open-file-dialog [props]
   (:open-file props))
 
-(defn goto-line-dialogue
+(defn goto-line-dialog
   [props]
   (:goto-line props))
 
@@ -121,7 +125,7 @@
   [props &opt note]
   (checkpoint/save-file-with-checkpoint props note))
 
-(defn search-dialogue
+(defn search-dialog
   [props]
   (:search props))
 
@@ -130,7 +134,7 @@
   (evaling/eval-it state/user-env
                    (evaling/gb-get-last-sexp props)))
 
-(defn eval-expr-dialogue
+(defn eval-expr-dialog
   [props]
   (:eval-expr props))
 
@@ -155,16 +159,16 @@
           (:freja/focus top-state))))))
 
 (var gb-binds @{:control @{:shift @{:f format!
-                                    :e eval-expr-dialogue
+                                    :e eval-expr-dialog
                                     #
 }
 
                            :w close-buffer
                            :tab swap-top-two-buffers
 
-                           :f search-dialogue
-                           :g goto-line-dialogue
-                           :o open-file-dialogue
+                           :f search-dialog
+                           :g goto-line-dialog
+                           :o open-file-dialog
                            :l fh/save-and-dofile
                            :s save-file
                            :q quit

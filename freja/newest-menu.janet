@@ -78,7 +78,7 @@
   (print "file menu")
   [:shrink {}
    [menu-row
-    {:f dh/open-file-dialogue
+    {:f dh/open-file-dialog
      :label "Open"}]
    [menu-row
     {:f dh/save-file
@@ -114,7 +114,7 @@
       :props {}}]
 
    [menu-row
-    {:f dh/search-dialogue
+    {:f dh/search-dialog
      :label "Search"}]])
 
 (defn hiccup
