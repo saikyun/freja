@@ -20,7 +20,7 @@
   @[;(press
        :left-control
        ;(press :p))
-    ;(chars "fo po")
+    ;(chars "popp li")
     ;(press :down)
     ;(press :enter)])
 
