@@ -159,48 +159,50 @@
     [:row {}
      [:block {:weight 0.5}]
      [:block {:weight 1}
-      [:background {:color (theme/comp-cols :background)}
-       [:padding {:all 4}
-        [:block {} [:text {:size 24
-                           :color (theme/comp-cols :text/color)
-                           :text "Find file"}]]
-        [:padding {:top 6 :bottom 6}
-         [t/textarea
-          @{:text/color :white
-            :init
-            (fn [self _]
-              (e/put! state/focus :focus (self :state)))
+      [:clickable {:on-click (fn [_] # only done to stop clicks from passing through
+)}
+       [:background {:color (theme/comp-cols :background)}
+        [:padding {:all 4}
+         [:block {} [:text {:size 24
+                            :color (theme/comp-cols :text/color)
+                            :text "Find file"}]]
+         [:padding {:top 6 :bottom 6}
+          [t/textarea
+           @{:text/color :white
+             :init
+             (fn [self _]
+               (e/put! state/focus :focus (self :state)))
 
-            :text/size 20
-            :height 22
-            :extra-binds
-            @{:escape (fn [_]
-                        (h/remove-layer :list-files props)
-                        (:freja/focus (in (last (state/editor-state :stack)) 1)))
-              :down (fn [_] (let [new (inc offset)
-                                  new (if (>= new (length filtered-files))
-                                        0
-                                        new)]
-                              (e/put! props :offset new)))
-              :up (fn [_] (let [new (dec offset)
-                                new (if (< new 0)
-                                      (dec (length filtered-files))
-                                      new)]
-                            (e/put! props :offset new)))
-              :enter (fn [_] (open selected-file))}
-            :on-change |(e/put! props :search $)}]]
-        [:background {:color (theme/comp-cols :bar-bg)}
-         ;(seq [f :in filtered-files
-                :let [selected (= f selected-file)]]
-            [:clickable {:on-click (fn [_] (open f))}
-             (if selected
-               [:background {:color 0xffffff99}
+             :text/size 20
+             :height 22
+             :extra-binds
+             @{:escape (fn [_]
+                         (h/remove-layer :list-files props)
+                         (:freja/focus (in (last (state/editor-state :stack)) 1)))
+               :down (fn [_] (let [new (inc offset)
+                                   new (if (>= new (length filtered-files))
+                                         0
+                                         new)]
+                               (e/put! props :offset new)))
+               :up (fn [_] (let [new (dec offset)
+                                 new (if (< new 0)
+                                       (dec (length filtered-files))
+                                       new)]
+                             (e/put! props :offset new)))
+               :enter (fn [_] (open selected-file))}
+             :on-change |(e/put! props :search $)}]]
+         [:background {:color (theme/comp-cols :bar-bg)}
+          ;(seq [f :in filtered-files
+                 :let [selected (= f selected-file)]]
+             [:clickable {:on-click (fn [_] (open f))}
+              (if selected
+                [:background {:color 0xffffff99}
+                 [:block {}
+                  [:padding {:all 2}
+                   [:text {:color 0x111111ff :size 16 :text (or selected-file "")}]]]]
                 [:block {}
                  [:padding {:all 2}
-                  [:text {:color 0x111111ff :size 16 :text (or selected-file "")}]]]]
-               [:block {}
-                [:padding {:all 2}
-                 [:text {:text f :size 16 :color :white}]]])])]]]]
+                  [:text {:text f :size 16 :color :white}]]])])]]]]]
      [:block {:weight 0.5}]]
     [:block {:weight 1}]]])
 
