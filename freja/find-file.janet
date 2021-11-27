@@ -166,7 +166,6 @@
           @{:text/color :white
             :init
             (fn [self _]
-              (print "huh")
               (e/put! state/focus :focus (self :state)))
 
             :text/size 20
