@@ -9,6 +9,7 @@
 (import freja/default-hotkeys :as dh)
 (import freja/new_gap_buffer :as gb)
 (import freja/theme)
+(import ./find-file)
 
 (use freja/defonce)
 (use freja-jaylib)
@@ -77,6 +78,9 @@
   [props]
   (print "file menu")
   [:shrink {}
+   [menu-row
+    {:f find-file/find-file-dialog
+     :label "Find file"}]
    [menu-row
     {:f dh/open-file-dialog
      :label "Open"}]
