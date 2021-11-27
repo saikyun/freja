@@ -44,6 +44,7 @@
 
 
 ## delay before first repetition of held keys
+# TODO: if these delays are set to super low, frp bugs and wont release keys
 (var initial-delay 0.2)
 
 ## delay of each repetition thereafter

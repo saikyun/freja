@@ -19,10 +19,7 @@
 (var commands
   @[;(press
        :left-control
-       ;(press :p))
-    ;(chars "fo po")
-    ;(press :down)
-    ;(press :enter)])
+       ;(press :p))])
 
 (defn run-commands
   [& _]
@@ -38,16 +35,17 @@
         (e/push! frp/keyboard @[;c])))
     (ev/sleep 0.00001)
     (with-dyns [:out stdout]
-      (if (= "fonts/Poppins-Regular_LICENSE"
-             (tracev (((last (state/editor-state :stack)) 1) :freja/label)))
-        (do
-          (print "test successful\n------------------------------")
-          (os/exit 0))
-        (do (print "!!! test failed !!!\n------------------------------")
-          (os/exit 1))))))
-
-#(frp/subscribe! frp/keyboard pp)
+      (print "just checks if not crashing")
+      (print "test successful\n------------------------------")
+      (os/exit 0))))
 
 (main/main)
+
+(frp/subscribe!
+  frp/keyboard
+  (fn [v]
+    (with-dyns [:out stdout]
+      (print "frp key: ")
+      (pp v))))
 
 (run-commands)
