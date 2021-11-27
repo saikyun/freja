@@ -131,7 +131,6 @@
                         :extra-binds extra-binds)))
 
   (when extra-binds
-    (print "extra binds!")
     (put (state :gb)
          :binds
          (-> (merge-into @{} extra-binds)

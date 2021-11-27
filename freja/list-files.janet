@@ -7,6 +7,7 @@
 # - search through those
 
 (import spork/path)
+(import freja/theme)
 
 (defn get-files
   [root]
@@ -93,13 +94,12 @@
                            (map (fn [p] (unless (empty? (peg/match peg p)) p)))
                            (filter (comp not nil?))
                            (take 10)))
-  
 
   (def offset (-> offset
                   (max 0)
                   (min (dec (length filtered-files)))))
 
-  (def selected-file (tracev (get filtered-files offset)))
+  (def selected-file (get filtered-files offset))
 
   [:padding {:all 0}
    [:column {}
@@ -107,9 +107,11 @@
     [:row {}
      [:block {:weight 0.5}]
      [:block {:weight 1}
-      [:background {:color 0x555555ff}
-       [:padding {:all 6}
-        [:block {} [:text {:size 24 :text "Open file"}]]
+      [:background {:color (theme/comp-cols :background)}
+       [:padding {:all 4}
+        [:block {} [:text {:size 24
+                           :color (theme/comp-cols :text/color)
+                           :text "Find file"}]]
         [:padding {:top 6 :bottom 6}
          [t/textarea
           @{:text/color :white
@@ -119,12 +121,11 @@
               (e/put! state/focus :focus (self :state)))
 
             :text/size 20
-            :height 20
+            :height 22
             :extra-binds
             @{:escape (fn [_]
                         (h/remove-layer :list-files state)
-                        (:freja/focus (get-in state/editor-state
-                                              [:stack 0 1])))
+                        (:freja/focus (in (last (state/editor-state :stack)) 1)))
               :down (fn [_] (e/put! state :offset (inc offset)))
               :up (fn [_] (e/put! state :offset (dec offset)))
               :enter
@@ -134,14 +135,17 @@
                      (tracev selected-file)))
                 (h/remove-layer :list-files state))}
             :on-change |(e/put! state :search $)}]]
-        ;(seq [f :in filtered-files
-               :let [selected (= f selected-file)]]
-           (if selected
-             [:background {:color 0xffffff99}
-              [:text {:color 0x111111ff :size 16 :text (or selected-file "")}]]
-             [:block {}
-              [:padding {:top 2}
-               [:text {:text f :size 16 :color :white}]]]))]]]
+        [:background {:color (theme/comp-cols :bar-bg)}
+         ;(seq [f :in filtered-files
+                :let [selected (= f selected-file)]]
+            (if selected
+              [:background {:color 0xffffff99}
+               [:block {}
+                [:padding {:all 2}
+                 [:text {:color 0x111111ff :size 16 :text (or selected-file "")}]]]]
+              [:block {}
+               [:padding {:all 2}
+                [:text {:text f :size 16 :color :white}]]]))]]]]
      [:block {:weight 0.5}]]
     [:block {:weight 1}]]])
 

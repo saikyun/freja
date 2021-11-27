@@ -8,6 +8,7 @@
 (import freja/input :as i)
 (import freja/default-hotkeys :as dh)
 (import freja/new_gap_buffer :as gb)
+(import freja/theme)
 
 (use freja/defonce)
 (use freja-jaylib)
@@ -21,12 +22,13 @@
                        (when (get (f :gb) :open-file)
                          (put self :focused-text-area (f :gb)))))
 
-(def label-color 0xffffffee)
-(def hotkey-color 0xffffffbb)
-(def damp-color 0xffffff88)
-(def highlight-color 0xffffffee)
-(def bar-bg 0x2D2D2Dff)
-(def dropdown-bg 0x3E3E3Eff)
+(def {:label-color label-color
+      :hotkey-color hotkey-color
+      :damp-color damp-color
+      :highlight-color highlight-color
+      :bar-bg bar-bg
+      :dropdown-bg dropdown-bg}
+  theme/comp-cols)
 
 (def kws {:control "Ctrl"})
 
@@ -50,7 +52,7 @@
 
   (default hotkey (or
                     (-?> (i/get-hotkey ((state :focused-text-area) :binds) f)
-                        hotkey->string)
+                         hotkey->string)
                     ""))
   (unless hotkey (string "no hotkey for " f))
 

@@ -45,4 +45,10 @@
 
 (def comp-cols {:background 0x882491ff
                 :text/color 0xffffffee
-                :caret/color 0xffffff80})
+                :caret/color 0xffffff80
+                :label-color 0xffffffee
+                :hotkey-color 0xffffffbb
+                :damp-color 0xffffff88
+                :highlight-color 0xffffffee
+                :bar-bg 0x2D2D2Dff
+                :dropdown-bg 0x3E3E3Eff})
