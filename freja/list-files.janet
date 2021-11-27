@@ -78,6 +78,59 @@
 
 (def state @{:files (get-files-relative (os/cwd))})
 
+
+(setdyn :pretty-format "%P")
+
+(defn case-insensitive-peg
+  [s]
+  ~(* ,;(map (fn [c]
+               ~(+ ,(string/ascii-upper (string/from-bytes c))
+                   ,(string/ascii-lower (string/from-bytes c)))) s)))
+
+(comment
+  #
+  (peg/match (case-insensitive-peg "cat") "CAT")
+  #=> @[]
+
+  (peg/match (case-insensitive-peg "cAT") "Cat")
+  #=> @[]
+  #
+)
+
+(defn search-peg
+  ``
+  Takes a string, returns a peg finding start positions of that string.
+  Matches by splitting the string by spaces, and where each space was,
+  anything matches.
+  
+  (peg/match (search-peg "fi do") "fine dog")
+  #=> @[0]
+  ``
+  [search]
+  (let [parts (string/split " " search)]
+    (var parts-peg @[])
+    (loop [i :range [0 (length parts)]
+           :let [p (in parts i)
+                 p-peg (case-insensitive-peg p)
+                 p2 (get parts (inc i))
+                 p2-peg (when p2
+                          (case-insensitive-peg p2))]]
+      (array/push parts-peg p-peg)
+      (array/push parts-peg
+                  (if p2-peg
+                    ~(any (if-not ,p2-peg 1))
+                    ~(any 1))))
+    ~{:parts (* ($) ,;parts-peg)
+      :main (any (+ :parts
+                    1))}))
+
+(comment
+  #
+  (peg/match (search-peg "fi do") "fine dog")
+  #=> @[0]
+  #
+)
+
 (defn list-files-component
   [props]
   (def {:search search
@@ -87,8 +140,11 @@
 
   (default offset 0)
 
-  (def peg ~{:main (any (+ (* ($) ,(or (-?> search string) 1))
-                           1))})
+  (def peg
+    (if (or (nil? search)
+            (empty? search))
+      ~'(any 1)
+      (search-peg search)))
 
   (def filtered-files (->> files
                            (map (fn [p] (unless (empty? (peg/match peg p)) p)))
