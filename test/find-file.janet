@@ -19,10 +19,9 @@
 (var commands
   @[;(press
        :left-control
-       ;(press :r))
+       ;(press :p))
     ;(chars "fo po")
-    ;(press :enter
-            ;(press :r))])
+    ;(press :enter)])
 
 (defn run-commands
   [& _]
