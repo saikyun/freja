@@ -17,18 +17,23 @@
 
 (varfn path->checkpoint-dir
   [path]
-  (let [
-  path (path/abspath path)
-  # need to do this on windows for e.g. `C:`
-  path (string/replace-all ":" "_COLON_" path)
+  (let [path (path/abspath path)
+        # need to do this on windows for e.g. `C:`
+        path (string/replace-all ":" "_COLON_" path)
         _ (print "path: " path)
         parts (path/parts path)
-        freja-data-dir (file-handling/data-path "")
-        checkpoint-dir (string
-                         freja-data-dir
-                         (string/join [;(array/slice parts 0 -2)
-                                       (string ".freja-checkpoint-" (last parts))] path/sep))]
+        root-checkpoints-dir (file-handling/data-path "checkpoints")
+        checkpoint-dir
+        (path/join root-checkpoints-dir
+                   ;(array/slice parts 0 -2)
+                   (string ".freja-checkpoint-" (last parts)))]
     checkpoint-dir))
+
+(comment
+  #
+  (path->checkpoint-dir "aoeu")
+  #
+)
 
 (varfn save-checkpoint
   [path note]
@@ -74,7 +79,7 @@
 
   (use freja/state)
   (->
-    (get-in editor-state [:left-state :editor :gb :path])
+    (get-in editor-state [:stack 0 1 :editor :gb :path])
     list-checkpoints)
   #
 )
@@ -155,7 +160,7 @@
           [:padding {:bottom 12}
            [:text {:text (string
                            "Click on checkpoints below to restore earlier versions of:\n"
-                           (path/abspath path))
+                           (path/abspath (tracev path)))
                    :size 18}]]]
          ;(seq [[day times] :in (reverse (sort-by first checkpoints))]
             [:padding {:bottom 12}
@@ -181,6 +186,7 @@
                                      (theme/colors :background))
                             :text (format-filename (path/basename fullpath))}]]]])]])])
       ([err fib]
+        (debug/stacktrace fib err)
         (if (and (string? err)
                  (peg/find "cannot open directory" err))
           (string err "\n\nthis might be due to no checkpoints existing")
@@ -190,9 +196,10 @@
   [props]
   (unless (props :checkpoint-props)
     (print "new checkpoint props")
-    (let [checkpoint-props
-          @{:path (get-in editor-state [:left-state :editor :gb :path])
-            :textarea (get-in editor-state [:left-state :editor])
+    (let [left-state (get-in editor-state [:stack 0 1])
+          checkpoint-props
+          @{:path (get-in left-state [:editor :gb :path])
+            :textarea (left-state :editor)
             :needs-save true
             :close (fn []
                      (put props :checkpoint-props nil)
@@ -214,6 +221,13 @@
       (e/put! editor-state :right nil))))
 
 #(save-checkpoint "checkpoint.janet")
-#(list-checkpoints "checkpoint.janet")
+(comment
+  #
+  (do
+    (show-checkpoints)
+    :ok)
+  (list-checkpoints "freja/checkpoint.janet")
+  #
+)
 #(overwrite-checkpoint "checkpoint.janet")
 
