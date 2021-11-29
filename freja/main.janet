@@ -289,7 +289,7 @@
   (run-file (string state/freja-dir "init.janet")))
 
 (defn start
-  [file]
+  [file &keys {:no-init-file? no-init-file?}]
   (try
     (do
       (set-config-flags :vsync-hint)
@@ -328,7 +328,8 @@
 
         (set-target-fps 60)
 
-        (run-init-file)
+        (unless no-init-file?
+          (run-init-file))
 
         (default-layout/init)
         (menu/init)
@@ -389,6 +390,9 @@
 
 (defn main [& args]
   (set state/freja-script-path (first args))
+
+  # TODO: parse args in better way
+  (def no-init-file? (= (get args 2) "--no-init"))
 
   (when (dyn :executable)
     (fonts/init-fonts))
@@ -503,6 +507,7 @@ flags:
            (when-let [file (if (= "--dofile" (get args 1))
                              (get args 2)
                              (get args 1))]
-             file)))
+             file))
+         :no-init-file? no-init-file?)
 
   (print "JANET_PATH is: " (dyn :syspath)))
