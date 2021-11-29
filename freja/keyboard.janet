@@ -1,5 +1,20 @@
 (def possible-keys
-  [(keyword "'")
+  [# I put modifiers first, since they need to be noticed
+   # before other keys
+   # this might not be the cleanest way to do this
+   :right-alt
+   :right-bracket
+   :right-control
+   :right-shift
+   :right-super
+   :left-alt
+   :left-bracket
+   :left-control
+   :left-shift
+   :left-super
+   :caps-lock
+
+   (keyword "'")
    (keyword ",")
    :-
    :.
@@ -21,7 +36,6 @@
    :backslash
    :backspace
    :c
-   :caps-lock
    :d
    :delete
    :down
@@ -70,11 +84,6 @@
    :kp-enter
    :l
    :left
-   :left-alt
-   :left-bracket
-   :left-control
-   :left-shift
-   :left-super
    :m
    :n
    :num-lock
@@ -87,11 +96,6 @@
    :q
    :r
    :right
-   :right-alt
-   :right-bracket
-   :right-control
-   :right-shift
-   :right-super
    :s
    :scroll-lock
    :space
