@@ -389,8 +389,6 @@
 )))
 
 (defn main [& args]
-  (set state/freja-script-path (first args))
-
   # TODO: parse args in better way
   (def no-init-file? (= (get args 2) "--no-init"))
 
@@ -447,7 +445,6 @@ flags:
     (print "init.janet: " (string state/freja-dir "init.janet"))
     (print "data (e.g. checkpoints/backups): " (file-handling/data-path ""))
     (print "scratch: " file-handling/scratch-path)
-    (print "freja script path: " state/freja-script-path)
     (os/exit 0))
 
   (put module/cache "freja-jaylib" freja-jaylib)

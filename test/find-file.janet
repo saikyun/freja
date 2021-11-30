@@ -39,7 +39,7 @@
         (e/push! frp/keyboard @[;c])))
     (ev/sleep 0.00001)
     (with-dyns [:out stdout]
-      (if (= (tracev (string "fonts" path/sep "Poppins-Regular_LICENSE"))
+      (if (= (tracev (path/join "freja" "fonts" "Poppins-Regular_LICENSE"))
              (tracev (((last (state/editor-state :stack)) 1) :freja/label)))
         (do
           (print "test successful\n------------------------------")
@@ -49,6 +49,6 @@
 
 #(frp/subscribe! frp/keyboard pp)
 
-(main/main)
+(main/main nil nil "--no-init")
 
 (run-commands)

@@ -73,11 +73,7 @@
 # to be included in the binary when
 # running `jpm build`
 
-(def extra-path (or (when-let [a (dyn :executable)]
-                      ### running as script
-                      (when (string/has-suffix? "freja/main.janet" a)
-                        (string (path/dirname a) ".." path/sep)))
-                    ""))
+(def extra-path (dyn :current-file))
 
 (var mplus nil)
 (var poppins nil)
@@ -85,19 +81,23 @@
 
 (defn init-fonts
   []
-  (def extra-path
+  (def extra-path2
     (or
-      (-?> state/freja-script-path
+      (-?> extra-path
            path/dirname
            path/parts
-           (slice 0 -3))
+           (slice 0 -2))
       []))
-  (set mplus (slurp (path/join ;extra-path
-                               "fonts" "MplusCodeLatin60-Medium.otf")))
-  (set poppins (slurp (path/join ;extra-path
-                                 "fonts" "Poppins-Regular.otf")))
-  (set ebgaramond (slurp (path/join ;extra-path
-                                    "fonts" "EBGaramond12-Regular.otf"))))
+
+  (set mplus (slurp (path/join ;extra-path2
+                               "fonts"
+                               "MplusCodeLatin60-Medium.otf")))
+  (set poppins (slurp (path/join ;extra-path2
+                                 "fonts"
+                                 "Poppins-Regular.otf")))
+  (set ebgaramond (slurp (path/join ;extra-path2
+                                    "fonts"
+                                    "EBGaramond12-Regular.otf"))))
 
 
 (try (init-fonts)
