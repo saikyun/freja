@@ -23,6 +23,7 @@ jobs:
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet && make && make test && sudo make install && sudo make install-jpm-git
       - name: test
         run: cd ${{ github.workspace }} && sudo FREJA_TEST=true jpm deps && jpm test
+      - run: sudo jpm clear-cache
       - name: jpm deps
         run: cd ${{ github.workspace }} && sudo FREJA_TEST=false jpm deps
       - name: jpm build
