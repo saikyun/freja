@@ -1,5 +1,5 @@
 (def freja-jaylib-dep
-  (if (tracev (os/getenv "FREJA_TEST"))
+  (if (= "true" (tracev (os/getenv "FREJA_TEST")))
     "https://github.com/saikyun/freja-jaylib-shim"
     "https://github.com/saikyun/freja-jaylib"))
 
