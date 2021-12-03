@@ -1,7 +1,7 @@
 name: macOS Build
 on: [push]
 jobs:
-  macos-test:
+  test:
     runs-on: macos-latest
     steps:
       - name: Install homebrew
@@ -23,7 +23,8 @@ jobs:
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet && make && make test && sudo make install && sudo make install-jpm-git
       - name: test
         run: cd ${{ github.workspace }} && sudo FREJA_TEST=true jpm deps && jpm test
-  macos-build:
+  build:
+    needs: test
     runs-on: macos-latest
     steps:
       - name: Install homebrew

@@ -1,7 +1,7 @@
 name: Windows Build
 on: [push]
 jobs:
-  windows-test:
+  test:
     runs-on: windows-latest
     steps:
       - name: Setup MSVC
@@ -57,7 +57,8 @@ jobs:
         shell: cmd
       - name: test
         run: cd ${{ github.workspace }} && set FREJA_TEST=true&& jpm deps && jpm test
-  windows-build:
+  build:
+    needs: test
     runs-on: windows-latest
     steps:
       - name: Setup MSVC
