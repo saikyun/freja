@@ -26,7 +26,7 @@ jobs:
       - name: jpm deps
         run: cd ${{ github.workspace }} && sudo jpm deps
       - name: jpm build
-        run: jpm build
+        run: cd ${{ github.workspace }} && jpm build
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Remove release
         run: gh release delete -y macos-dont-use-this
