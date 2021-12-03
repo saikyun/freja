@@ -24,7 +24,7 @@ jobs:
       - name: test
         run: cd ${{ github.workspace }} && sudo FREJA_TEST=true jpm deps && jpm test
       - name: jpm deps
-        run: cd ${{ github.workspace }} && sudo jpm deps
+        run: cd ${{ github.workspace }} && sudo FREJA_TEST=false jpm deps
       - name: jpm build
         run: cd ${{ github.workspace }} && jpm build
       - run: echo "🍏 This job's status is ${{ job.status }}."
