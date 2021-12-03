@@ -1,7 +1,7 @@
 name: Windows Build
 on: [push]
 jobs:
-  windows-build:
+  windows-test:
     runs-on: windows-latest
     steps:
       - name: Setup MSVC
@@ -57,6 +57,59 @@ jobs:
         shell: cmd
       - name: test
         run: cd ${{ github.workspace }} && set FREJA_TEST=true&& jpm deps && jpm test
+  windows-build:
+    runs-on: windows-latest
+    steps:
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - run: cd ${{ github.workspace }}
+      - name: Check out repository code
+        uses: actions/checkout@v2
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
+        run: |
+          ls ${{ github.workspace }}
+      - name: Clone janet
+        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet
+      #- run: cd ${{ github.workspace }}/janet && build_win all
+      #  shell: cmd
+      - run: cd ${{ github.workspace }}/janet && build_win all
+        shell: cmd
+      #- run: cd ${{ github.workspace }}/janet && build_win test
+      #  shell: cmd
+      - name: List files in janet build
+        run: |
+          ls ${{ github.workspace }}/janet/build
+      - run: mkdir ${{ github.workspace }}\janet\bin
+      - run: mv ${{ github.workspace }}\janet\janet.exe ${{ github.workspace }}\janet\bin
+      - run: "echo \"${{ github.workspace }}\\janet\\bin\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append"
+      # might be we could use this instead...
+      #- run: "echo \"$env:USERPROFILE\\janet\\bin\" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append"
+      - run: echo %PATH%
+        shell: cmd
+      - run: echo %PATH%
+        shell: cmd
+      - run: dir ${{ github.workspace }}\janet\dist
+        continue-on-error: true
+        shell: cmd
+      - run: dir ${{ github.workspace }}\janet\build
+        continue-on-error: true
+        shell: cmd
+      - run: dir ${{ github.workspace }}\janet
+        continue-on-error: true
+        shell: cmd
+      - run: echo %PATH%
+        shell: cmd
+      - run: janet -v
+        continue-on-error: true
+      - name: Install jpm
+        run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/jpm
+        shell: cmd
+      - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet\dist&& set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\dist&& set JANET_PATH=${{ github.workspace }}\janet&& janet bootstrap.janet
         shell: cmd
       - name: jpm deps
         run: cd ${{ github.workspace }} && jpm deps
