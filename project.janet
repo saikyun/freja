@@ -19,7 +19,7 @@
                  {:repo "https://github.com/Saikyun/janet-profiling" :tag "main"}
 
                  ## using my own fork due to additions to jaylib
-                 freja-jaylib-dep
+                 (tracev freja-jaylib-dep)
 
                  # example of how to use `:tag`
                  # {:repo "https://...." :tag "abcdcbdc"}
