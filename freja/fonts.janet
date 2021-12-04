@@ -73,9 +73,12 @@
 # to be included in the binary when
 # running `jpm build`
 
-# abspath is needed to convert "/" to "\\" on windows
+# convert "/" to "\\" on windows
 # current-file always uses "/"
-(def extra-path (path/abspath (dyn :current-file)))
+(def extra-path
+  (if (= (os/which) :windows)
+    (string/replace-all "/" "\\" (dyn :current-file))
+    (dyn :current-file)))
 
 (var mplus nil)
 (var poppins nil)
@@ -91,9 +94,12 @@
            (slice 0 -2))
       []))
 
-  (set mplus (slurp (path/join ;extra-path2
-                               "fonts"
-                               "MplusCodeLatin60-Medium.otf")))
+  (tracev extra-path)
+  (tracev extra-path2)
+
+  (set mplus (slurp (tracev (path/join ;extra-path2
+                                       "fonts"
+                                       "MplusCodeLatin60-Medium.otf"))))
   (set poppins (slurp (path/join ;extra-path2
                                  "fonts"
                                  "Poppins-Regular.otf")))
