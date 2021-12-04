@@ -73,7 +73,9 @@
 # to be included in the binary when
 # running `jpm build`
 
-(def extra-path (dyn :current-file))
+# abspath is needed to convert "/" to "\\" on windows
+# current-file always uses "/"
+(def extra-path (path/abspath (dyn :current-file)))
 
 (var mplus nil)
 (var poppins nil)
