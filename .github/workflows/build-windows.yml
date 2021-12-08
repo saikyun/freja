@@ -120,7 +120,7 @@ jobs:
         shell: cmd
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Remove release
-        run: gh release delete -y windows-prerelase
+        run: gh release delete -y windows-prerelease
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
