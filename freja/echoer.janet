@@ -25,10 +25,13 @@
 (def text-size 20)
 
 (defn bottom
-  [_ & _]
+  [props & _]
   [:background {:color 0x444444ff}
    [:padding {:all 2}
-    [ta/textarea {:min-height 55
+    [ta/textarea {#:height (min 120 (get props :bottom-size 200)) # 55
+                  :min-height (min (+ 12 (* text-size 5))
+                                   (+ 6 (get props :bottom-size 55)))
+                  #:height 300
                   :state state
                   :text/spacing 0.5
                   :text/size text-size
@@ -40,7 +43,6 @@
   [:background {:color 0x444444ff}
    [:padding {:all 2}
     [ta/textarea {:state state-big
-
                   :text/spacing 0.5
                   :text/size text-size
                   :text/font "MplusCode"
@@ -55,14 +57,20 @@
 
 (defn replace
   [state s]
+  (e/put! state/editor-state
+          :bottom-size
+          (* (inc (length (string/find-all "\n" s)))
+             text-size))
   (-> (state :gb)
       (gb/replace-content (string/trim s))
-      (gb/end-of-buffer)))
+      (gb/beginning-of-buffer)
+      (put :scroll 0)))
 
 (varfn handle-eval-results
   [res]
   (when-let [code (res :code)]
     (print "=> " (string/trim code)))
+  
   (if (res :error)
     (if-let [fib (res :fiber)]
       (debug/stacktrace fib
