@@ -48,7 +48,7 @@
   @{:alt @{:shift @{:left select-backward-word
                     :right select-forward-word
                     #
-}
+                   }
 
            :backspace delete-word-backward!
            :delete delete-word-forward!
@@ -56,13 +56,13 @@
            :left backward-word
            :right forward-word
            #
-}
+          }
 
     :control @{:shift @{:left select-backward-word
                         :right select-forward-word
                         :c show-checkpoints
                         #
-}
+                       }
 
                :backspace delete-word-backward!
                :delete delete-word-forward!
@@ -89,7 +89,7 @@
              :down render-gb/select-move-down!
 
              #
-}
+            }
 
     :left backward-char
     :right forward-char
@@ -106,7 +106,7 @@
     :backspace delete-before-caret!
 
     #
-})
+   })
 
 (defn quit
   [props]
@@ -156,10 +156,11 @@
         (when (:freja/focus top-state)
           (:freja/focus top-state))))))
 
+# if you want to add more binds, it's preferable to use `set-key`, see at the end of this file
 (var gb-binds @{:control @{:shift @{:f format!
                                     :e eval-expr-dialog
                                     #
-}
+                                   }
 
                            :w close-buffer
                            :tab swap-top-two-buffers
@@ -205,4 +206,13 @@
 (def global-set-key (partial input/set-key global-keys))
 
 # re-exporting
+
+# sets keys without being dependend on having the modifiers in the right order
+# if you were to do `put-in gb-binds` you'd need to be aware of the order
+# modifiers are sorted, i.e. [:control :shift] is not the same as [:shift :control]
 (def set-key input/set-key)
+
+(comment
+  # example usage
+  (set-key gb-binds [:control :shift :f] format!)
+  ) 
