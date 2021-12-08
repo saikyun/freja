@@ -16,7 +16,7 @@
           (state/editor-state :last-right))
 
   #
-)
+  )
 
 (defonce state (ta/default-textarea-state))
 
@@ -66,7 +66,8 @@
   (if (res :error)
     (if-let [fib (res :fiber)]
       (debug/stacktrace fib
-                        (or (res :msg) (res :error)))
+                        (or (res :msg) (res :error))
+                        "")
       (do (print "no fiber")
         (pp (res :error))))
     (pp (res :value))))
@@ -102,3 +103,4 @@
 
 (dh/global-set-key [:control :alt :l] toggle-console)
 (dh/global-set-key [:control :alt :c] clear-console)
+ 
