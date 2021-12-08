@@ -37,15 +37,17 @@
 (def proj-root
   (os/cwd))
 
+(def sep (if (= (os/which) :windows) "\\" "/"))
+
 (def src-root
-  (string proj-root "/freja"))
+  (string proj-root sep "freja"))
 
 (declare-source
   :source @["freja"])
 
 (declare-executable
   :name "freja"
-  :entry (string src-root "/main.janet")
+  :entry (tracev (string src-root sep "main.janet"))
   :lflags lflags
   :install true)
 
