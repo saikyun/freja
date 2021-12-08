@@ -465,6 +465,7 @@ flags:
   (put module/cache "freja/textarea" textarea)
   (put module/cache "freja/editor" editor)
   (put module/cache "freja/default-hotkeys" default-hotkeys)
+  (put module/cache "freja/flow" flow)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
