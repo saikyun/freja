@@ -105,8 +105,6 @@
     :delete delete-after-caret!
     :backspace delete-before-caret!
 
-   
-
     #
 })
 
@@ -205,3 +203,6 @@
 (table/setproto search-binds global-keys)
 
 (def global-set-key (partial input/set-key global-keys))
+
+# re-exporting
+(def set-key input/set-key)
