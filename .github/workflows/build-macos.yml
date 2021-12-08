@@ -55,6 +55,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
-        run: gh release create macos-dont-use-this freja.zip
+        run: gh release create macos-prerelease freja.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

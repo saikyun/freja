@@ -52,6 +52,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
-        run: gh release create ubuntu-dont-use-this build/freja
+        run: gh release create ubuntu-prerelease build/freja
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
