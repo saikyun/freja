@@ -50,7 +50,7 @@ jobs:
       - run: cd ${{ github.workspace }} && ./build-macos/build
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Remove release
-        run: gh release delete -y macos-dont-use-this
+        run: gh release delete -y macos-prerelease
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
