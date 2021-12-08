@@ -46,7 +46,8 @@ jobs:
         run: cd ${{ github.workspace }} && git clone https://github.com/janet-lang/janet && cd janet && make && make test && sudo make install && sudo make install-jpm-git
       - run: cd ${{ github.workspace }} && sudo FREJA_TEST=false jpm deps
       - name: jpm build
-        run: cd ${{ github.workspace }} && jpm build
+        run: cd ${{ github.workspace }} && jpm build 
+      - run: cd ${{ github.workspace }} && ./build-macos/build
       - run: echo "🍏 This job's status is ${{ job.status }}."
       - name: Remove release
         run: gh release delete -y macos-dont-use-this
@@ -54,6 +55,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
-        run: gh release create macos-dont-use-this build/freja
+        run: gh release create macos-prerelease freja.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

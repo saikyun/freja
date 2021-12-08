@@ -1,0 +1,8 @@
+#!/bin/sh
+mkdir Freja.app
+mkdir Freja.app/Contents
+mkdir Freja.app/Contents/MacOS
+cp build/freja Freja.app/Contents/MacOS
+chmod 755 Freja.app/Contents/MacOS/freja
+cp build-macos/Info.plist Freja.app/Contents/
+ditto -c -k --keepParent Freja.app freja.zip

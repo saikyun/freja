@@ -125,6 +125,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Create release
-        run: gh release create windows-dont-use-this build/freja.exe
+        run: gh release create windows-prerelease build/freja.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
