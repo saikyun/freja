@@ -36,7 +36,7 @@
     "aoeu.exe:123:5")
   #=> ["aoeu.exe" 123 5]
   #
-)
+  )
 
 
 #(setdyn :freja/ns "freja/file-handling")
@@ -201,7 +201,7 @@
 (comment
   (freja-dofile* "dumb.janet")
   #
-)
+  )
 
 (defn- no-side-effects
   `Check if form may have side effects. If returns true, then the src
@@ -262,7 +262,7 @@
       #(let [[l c] (tuple/sourcemap source)
       #      newtup (tuple/setmap (tuple ;source :evaluator flycheck-evaluator) l c)]
       #  ((compile newtup env where)))
-)))
+      )))
 
 #GOHERE
 (varfn freja-dofile
@@ -287,7 +287,7 @@
     (def ns-path (or (first (module/find (path/abspath module-path)))
                      (first (module/find module-path))))
 
-    (def existing-env (when ns-path (module/cache path)))
+    (def existing-env (when ns-path (module/cache ns-path)))
 
     (def defonced-symbols
       (if-not existing-env
@@ -297,7 +297,8 @@
                          (v :defonce))]
           [k v])))
 
-    (def env (or existing-env (make-env top-env)))
+    (def env (or # existing-env
+                 (make-env top-env)))
 
     (put env :freja/loading-file true)
     (put env :out state/out)
@@ -305,18 +306,21 @@
 
     (def before-keys (keys env))
 
-    (comment
-      (loop [[k v] :in defonced-symbols]
-        (put env k v)))
+    # this is done to make defonce work
+    # the only problem is that old symbols might come along for the ride
+    # flychecking will stop people from using old symbols
+    # but they will still be kept in the environment
+    (loop [[k v] :in defonced-symbols]
+      (put env k v))
 
     (try
       (do
-        #(freja-dofile* path :evaluator flycheck-evaluator)
+        # flychecking
+        (freja-dofile* path :evaluator flycheck-evaluator)
 
         #        (print "second step")
 
-        (freja-dofile* path
-                       :env env))
+        (freja-dofile* path :env env))
       ([err fib]
         (if (dictionary? err)
           (let [{:error-msg msg
@@ -340,7 +344,7 @@
                         :cause "freja-dofile"}
                        fib)
             #            (propagate err fib)
-)
+            )
           (do
             #            (e/push! state/eval-results {:error err
             #                                       :code (string `(freja-dofile "` path `")`)
@@ -354,16 +358,16 @@
                                    (get-in env [k :ref]))]
                     k))
 
-    (def ns-name (or (get env :freja/ns)
-                     (first (module/find (path/abspath module-path)))
-                     (first (module/find module-path))))
+    (def ns-name (get env :freja/ns))
+
+    (def mod-name (or (first (module/find (path/abspath module-path)))
+                      (first (module/find module-path))))
 
     (set state/user-env env)
 
     # TODO: fix this and ensure it works with any .janet-file afterwards
-    (cond (and false
-               ns-name)
-      (let [ns (require ns-name)]
+    (cond existing-env
+      (let [ns existing-env]
         (loop [k :keys env
                :let [existing-sym (ns k)
                      existing-var (get-in ns [k :ref])
@@ -376,13 +380,14 @@
 
             (and existing-var new-var)
             (do
-              (put ns k (in env k))
+              (print "new var " k " in ns " ns-name " replaces var " (string/format "%P" existing-sym))
+              #(put ns k (in env k))
               # we want to keep existing var and update it
               # since this is what existing functions will have as reference
               (put-in ns [k :ref] existing-var)
               (put existing-var 0 (in new-var 0)))
 
-            new-var
+             new-var
             (do
               (put ns k (in env k))
               (print "new var " k " in ns " ns-name " replaces non-var " existing-sym))
@@ -420,7 +425,7 @@
   (comment
     (freja-dofile state/user-env "test-env2.janet")
     #
-)
+    )
   #  (lul2)
   #
 
@@ -457,3 +462,4 @@
 
   (dofile "/Users/test/programmering/janet/textfield/freja/main.janet"
           {:env (get-in text-data [:context :top-env])}))
+ 
