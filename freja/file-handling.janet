@@ -378,7 +378,10 @@
                      (not new-var)))
             (put ns k (in env k))
 
-            (and existing-var new-var)
+            (and
+              # doesn't make much sense to keep track of private vars, since they're local to a file (hopefully)
+              (not (existing-sym :private))
+              existing-var new-var)
             (do
               (print "new var " k " in ns " ns-name " replaces var " (string/format "%P" existing-sym))
               #(put ns k (in env k))
@@ -387,15 +390,17 @@
               (put-in ns [k :ref] existing-var)
               (put existing-var 0 (in new-var 0)))
 
-             new-var
+            new-var
             (do
               (put ns k (in env k))
-              (print "new var " k " in ns " ns-name " replaces non-var " existing-sym))
+              #(print "new var " k " in ns " ns-name " replaces non-var " existing-sym)
+              )
 
             # else only existing-var
             (do
               (put ns k (in env k))
-              (print "new non-var " k " in ns " ns-name " replaces var " existing-sym))))
+              #(print "new non-var " k " in ns " ns-name " replaces var " existing-sym)
+              )))
 
         (set state/user-env ns))
 
