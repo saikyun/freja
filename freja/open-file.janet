@@ -11,18 +11,23 @@
 
 (defn open-file*
   [compo-state]
-  (state/push-buffer-stack compo-state))
+  (def [_ state] compo-state)
+  (state/push-buffer-stack compo-state)
+  (when (state :freja/focus)
+    (:freja/focus state)))
 
 (defn open-file
   [path &opt line column]
 
-  (if-let [comp-state (open-files path)]
+  (def abspath (path/abspath path))
+
+  (if-let [comp-state (open-files abspath)]
     (open-file* comp-state)
     (let [new-state (state/ext->editor (path/ext path) {:path path})]
-      (put open-files path new-state)
+      (put open-files abspath new-state)
       (open-file* new-state)))
 
-  (let [gb (get-in open-files [path :editor :gb])]
+  (let [gb (get-in open-files [abspath :editor :gb])]
     (when line
       (rgb/goto-line-number gb line))
 
@@ -32,4 +37,5 @@
 (comment
   (open-file "freja/main.janet")
   #
-)
+  )
+ 
