@@ -6,9 +6,6 @@
 (import freja/checkpoint)
 (import spork/path)
 
-(def open-files
-  @{})
-
 (defn open-file*
   [compo-state]
   (def [_ state] compo-state)
@@ -21,13 +18,13 @@
 
   (def abspath (path/abspath path))
 
-  (if-let [comp-state (open-files abspath)]
+  (if-let [comp-state (state/open-files abspath)]
     (open-file* comp-state)
     (let [new-state (state/ext->editor (path/ext path) {:path path})]
-      (put open-files abspath new-state)
+      (put state/open-files abspath new-state)
       (open-file* new-state)))
 
-  (let [gb (get-in open-files [abspath :editor :gb])]
+  (let [gb (get-in state/open-files [abspath :editor :gb])]
     (when line
       (rgb/goto-line-number gb line))
 

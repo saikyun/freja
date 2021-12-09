@@ -13,6 +13,9 @@
 
 (var initial-file nil)
 
+(def open-files
+  @{})
+
 (var eval-results nil)
 
 (def focus @{})
