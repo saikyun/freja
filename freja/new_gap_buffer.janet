@@ -348,7 +348,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-forward (string->gb "12|34 67") word-delimiter? 7)
   #=> 7
-)
+  )
 
 (varfn search-backward
   "Gets the position of the start of the word before start.
@@ -384,7 +384,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-backward (string->gb "12|34 67") word-delimiter? 0)
   #=> 0
-)
+  )
 
 (varfn word-at-index
   [gb i]
@@ -401,7 +401,7 @@ Doesn't skip delimiters in the beginning."
   (word-at-index (string->gb "12|34 67") 5) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 6) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 7) #=> [5 7]
-)
+  )
 
 (varfn end-of-next-word
   "Gets the position of the end of the word after the caret."
@@ -1175,7 +1175,7 @@ Otherwise moves the caret backward one character."
 
   (find-paragraphs "aoe\n\n")
   #=> @[(0 3)]
-)
+  )
 
 (varfn find-surrounding-paragraph!
   [gb index]
@@ -1226,7 +1226,7 @@ Otherwise moves the caret backward one character."
   (def gbb (get-in state/editor-state [:left-state :editor :gb]))
   (pp (gb-find2! gbb "finder"))
   #
-)
+  )
 
 (varfn gb-find-backward!
   [gb peg]
@@ -1249,8 +1249,8 @@ Otherwise moves the caret backward one character."
 
 (defn column
   ``
-Returns column (nof characters from left newline) for caret position `i`.
-``
+  Returns column (nof characters from left newline) for caret position `i`.
+  ``
   [s i]
   (let [pos (min (length s) i)]
     (if-let [[n] (peg/match column-peg s pos)]
@@ -1259,8 +1259,8 @@ Returns column (nof characters from left newline) for caret position `i`.
 
 (defn column!
   ``
-Wrapper for `column` for gap buffers.
-``
+  Wrapper for `column` for gap buffers.
+  ``
   [gb i]
   (column (content gb) i))
 
@@ -1277,7 +1277,7 @@ Wrapper for `column` for gap buffers.
 ``
           9)
   #=> 3
-)
+  )
 
 (defn comment-line
   ``
@@ -1297,6 +1297,24 @@ Wrapper for `column` for gap buffers.
       (do
         (insert-string-at-pos! gb start-of-line "#")
         (move-n gb 1)))))
+
+(defn index-of-line
+  ``
+  Takes 0-indexed line number and returns caret position of the beginning of that line.
+  Returns `nil` if the line isn't found. (E.g. `line` is greater than total nof lines)
+  ``
+  [gb line]
+  (var ix nil)
+  (var nof-lines 0)
+  (gb-iterate gb
+              0 (gb-length gb)
+              i c
+              (when (= c (chr "\n"))
+                (++ nof-lines))
+              (when (= nof-lines line)
+                (set ix (inc i)) # right after the \n character
+                (return stop-gb-iterate)))
+  ix)
 
 (defn line-number
   ``
@@ -1382,7 +1400,7 @@ to the type hook-name in gb
 
   (array/push hs [k hook])
   #
-)
+  )
 
 
 ### render for debugging
@@ -1413,3 +1431,4 @@ Should probably be in new_gap_buffer_util, but it depends on functions in this f
     (buffer/push-byte b (chr "*")))
 
   (string b))
+ 
