@@ -157,7 +157,7 @@
   [dt]
   (clear-background :blank)
   #  (draw-text* (conf :text) (string (data :latest-res)) [605 660] :blue)
-)
+  )
 
 (defn styling-worker
   [parent]
@@ -186,7 +186,7 @@
 
   (clear-background :white
                     # (theme/colors :background)
-)
+                    )
 
   (frp/trigger dt)
 
@@ -248,26 +248,32 @@
                              :err state/out]
                    (internal-frame)
 
+                   # this is done so we remember that we should quit
+                   # window-should-close only returns true once
+                   (when (window-should-close)
+                     (set state/quit true))
+
                    # if we're gonna quit, let's print what's in state/out
                    # before quitting
-                   (when (or state/quit
-                             (window-should-close))
+                   (when state/quit
                      (with-dyns [:out stdout]
                        (print state/out)))
 
                    (unless (empty? state/out)
                      (events/push! frp/out (string state/out))
                      (buffer/clear state/out))
-                   (ev/sleep 0.0001)))
+                   (ev/sleep 0.0001)
+                   ))
                ([err fib]
                  (let [path "text_experiment_dump"]
                    (debug/stacktrace fib err)
                    ## TODO:  Dump-state
                    #(dump-state path gb-data)
                    #(print "Dumped state to " path)
-)
+                   )
                  (print (debug/stacktrace fib err))
-                 (ev/sleep 1))))))))
+                 (ev/sleep 1)
+                 )))))))
 
 (defn run-file
   [path]
@@ -279,7 +285,7 @@
         path
         # :env (fiber/getenv (fiber/current))
         #:env env
-))
+        ))
     ([err fib]
       (print "nope")
       (print (debug/stacktrace fib err)))))
@@ -386,7 +392,7 @@
        ([err]
          (eprintf "failed to determine commit: %p" err)
          #(os/exit 1)
-)))
+         )))
 
 (defn main [& args]
   # TODO: parse args in better way
@@ -478,7 +484,7 @@ flags:
   (file-handling/ensure-dir (file-handling/data-path ""))
 
   (when (= "--dofile" (get args 1))
-    (if-let [path (tracev (get args 2))]
+    (if-let [path (get args 2)]
       (do
         (defn initial-dofile [_]
 
@@ -491,7 +497,7 @@ flags:
 
           (frp/unsubscribe-finally! frp/frame-chan initial-dofile)
           #(set state/quit true)
-)
+          )
 
         (print "subscribing!")
 
@@ -509,3 +515,4 @@ flags:
          :no-init-file? no-init-file?)
 
   (print "JANET_PATH is: " (dyn :syspath)))
+ 
