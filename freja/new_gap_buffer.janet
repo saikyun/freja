@@ -1306,7 +1306,6 @@ Otherwise moves the caret backward one character."
   [gb line]
   (var ix nil)
   (var nof-lines 0)
-  (tracev gb)
   (gb-iterate gb
               0 (gb-length gb)
               i c
