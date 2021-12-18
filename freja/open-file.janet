@@ -20,15 +20,12 @@
 
   (if-let [comp-state (state/open-files abspath)]
     (open-file* comp-state)
-    (let [new-state (tracev (state/ext->editor (path/ext path) {:path path}))]
+    (let [new-state (state/ext->editor (path/ext path) {:path path})]
       (put state/open-files abspath new-state)
       (open-file* new-state)))
 
-  (tracev (keys state/open-files))
-
   (let [gb (get-in state/open-files [abspath 1 :editor :gb])]
     #                                        ^ state
-    (tracev gb)
     (when line
       (gb/put-caret
         gb
