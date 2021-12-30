@@ -9,6 +9,8 @@
 (import ./render_new_gap_buffer :as rgb)
 (use freja-jaylib)
 
+(pp (get (require "./render_new_gap_buffer") 'move-up!))
+
 (use profiling/profile)
 
 # just doing this as inlining

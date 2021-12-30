@@ -52,7 +52,7 @@
 
 (def colors {:symbol :green})
 
-(varfn gb->styling
+(defn gb->styling
   [gb]
   (peg/match styling-grammar (content gb)))
 

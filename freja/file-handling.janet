@@ -267,157 +267,171 @@
 #GOHERE
 (varfn freja-dofile
   [top-env path]
-  (def path (if (path/abspath? path)
-              path
-              (string "./" path)))
 
-  (unless (= path last-path)
-    (set state/user-env (make-env top-env))
-    (set last-path path))
+  (print (string `=> (freja-dofile "` path `")`))
+  
+  (def env (make-env))
+  (put env :out state/out)
+  (put env :err state/out)
+  (put env :freja/loading-file true)
+  (dofile path :env env)
 
-  (with-dyns [:out state/out
-              :err state/out]
-    (print (string `=> (freja-dofile "` path `")`))
+  (set state/user-env env)
+  
+  (comment
+    (def path (if (path/abspath? path)
+                path
+                (string "./" path)))
 
-    (def module-path
-      (if (path/ext path)
-        (string/slice path 0 (-> (path/ext path) length - dec))
-        path))
+    (unless (= path last-path)
+      (set state/user-env (make-env top-env))
+      (set last-path path))
 
-    (def ns-path (or (first (module/find (path/abspath module-path)))
-                     (first (module/find module-path))))
+    (with-dyns [:out state/out
+                :err state/out]
+      (print (string `=> (freja-dofile "` path `")`))
 
-    (def existing-env (when ns-path (module/cache ns-path)))
+      (def module-path
+        (if (path/ext path)
+          (string/slice path 0 (-> (path/ext path) length - dec))
+          path))
 
-    (def defonced-symbols
-      (if-not existing-env
-        []
-        (seq [[k v] :pairs existing-env
-              :when (and (table? v)
-                         (v :defonce))]
-          [k v])))
+      (def ns-path (or (first (module/find (path/abspath module-path)))
+                       (first (module/find module-path))))
 
-    (def env (or # existing-env
-                 (make-env top-env)))
+      (def existing-env (when ns-path (module/cache ns-path)))
 
-    (put env :freja/loading-file true)
-    (put env :out state/out)
-    (put env :err state/out)
+      (def defonced-symbols
+        (if-not existing-env
+          []
+          (seq [[k v] :pairs existing-env
+                :when (and (table? v)
+                           (v :defonce))]
+            [k v])))
 
-    (def before-keys (keys env))
+      (def env (or # existing-env
+                   (make-env top-env)))
 
-    # this is done to make defonce work
-    # the only problem is that old symbols might come along for the ride
-    # flychecking will stop people from using old symbols
-    # but they will still be kept in the environment
-    (loop [[k v] :in defonced-symbols]
-      (put env k v))
+      (put env :freja/loading-file true)
+      (put env :out state/out)
+      (put env :err state/out)
 
-    (try
-      (do
-        # flychecking
-        (freja-dofile* path :evaluator flycheck-evaluator)
+      (def before-keys (keys env))
 
-        #        (print "second step")
+      # this is done to make defonce work
+      # the only problem is that old symbols might come along for the ride
+      # flychecking will stop people from using old symbols
+      # but they will still be kept in the environment
+      (loop [[k v] :in defonced-symbols]
+        (put env k v))
 
-        (freja-dofile* path :env env))
-      ([err fib]
-        (if (dictionary? err)
-          (let [{:error-msg msg
-                 :source source
-                 :source-line source-line
-                 :code code} err]
-            (comment
-              (e/push! state/eval-results {:error msg
-                                           :source source
-                                           :source-line source-line
-                                           :fiber fib
+      (try
+        (do
+          # flychecking
+          (freja-dofile* path :evaluator flycheck-evaluator)
 
-                                           :code (or code (string `(freja-dofile "` path `")`))
-                                           :cause "freja-dofile"}))
-            (propagate {:error msg
-                        :source source
-                        :source-line source-line
-                        :fiber fib
+          #        (print "second step")
 
-                        #:code (or code (string `(freja-dofile "` path `")`))
-                        :cause "freja-dofile"}
-                       fib)
-            #            (propagate err fib)
-            )
-          (do
-            #            (e/push! state/eval-results {:error err
-            #                                       :code (string `(freja-dofile "` path `")`)
-            #                                       :fiber fib
-            #                                       :cause "freja-dofile"})
-            (propagate err fib)))))
+          (freja-dofile* path :env env))
+        ([err fib]
+          (if (dictionary? err)
+            (let [{:error-msg msg
+                   :source source
+                   :source-line source-line
+                   :code code} err]
+              (comment
+                (e/push! state/eval-results {:error msg
+                                             :source source
+                                             :source-line source-line
+                                             :fiber fib
 
-    # here we find all `var` / `varfn` defined during `dofile`
-    (def new-vars (seq [k :keys env
-                        :when (and (not (find |(= $ k) before-keys))
-                                   (get-in env [k :ref]))]
-                    k))
+                                             :code (or code (string `(freja-dofile "` path `")`))
+                                             :cause "freja-dofile"}))
+              (propagate {:error msg
+                          :source source
+                          :source-line source-line
+                          :fiber fib
 
-    (def ns-name (get env :freja/ns))
-
-    (def mod-name (or (first (module/find (path/abspath module-path)))
-                      (first (module/find module-path))))
-
-    (set state/user-env env)
-
-    # TODO: fix this and ensure it works with any .janet-file afterwards
-    (cond existing-env
-      (let [ns existing-env]
-        (loop [k :keys env
-               :let [existing-sym (ns k)
-                     existing-var (get-in ns [k :ref])
-                     new-var (get-in env [k :ref])]]
-          (cond
-            (or (not existing-sym)
-                (and (not existing-var)
-                     (not new-var)))
-            (put ns k (in env k))
-
-            (and
-              # doesn't make much sense to keep track of private vars, since they're local to a file (hopefully)
-              (not (existing-sym :private))
-              existing-var new-var)
-            (do
-              (print "new var " k " in ns " ns-name " replaces var " (string/format "%P" existing-sym))
-              #(put ns k (in env k))
-              # we want to keep existing var and update it
-              # since this is what existing functions will have as reference
-              (put-in ns [k :ref] existing-var)
-              (put existing-var 0 (in new-var 0)))
-
-            new-var
-            (do
-              (put ns k (in env k))
-              #(print "new var " k " in ns " ns-name " replaces non-var " existing-sym)
+                          #:code (or code (string `(freja-dofile "` path `")`))
+                          :cause "freja-dofile"}
+                         fib)
+              #            (propagate err fib)
               )
-
-            # else only existing-var
             (do
+              #            (e/push! state/eval-results {:error err
+              #                                       :code (string `(freja-dofile "` path `")`)
+              #                                       :fiber fib
+              #                                       :cause "freja-dofile"})
+              (propagate err fib)))))
+
+      # here we find all `var` / `varfn` defined during `dofile`
+      (def new-vars (seq [k :keys env
+                          :when (and (not (find |(= $ k) before-keys))
+                                     (get-in env [k :ref]))]
+                      k))
+
+      (def ns-name (get env :freja/ns))
+
+      (def mod-name (or (first (module/find (path/abspath module-path)))
+                        (first (module/find module-path))))
+
+      (set state/user-env env)
+
+      # TODO: fix this and ensure it works with any .janet-file afterwards
+      (cond existing-env
+        (let [ns existing-env]
+          (loop [k :keys env
+                 :let [existing-sym (ns k)
+                       existing-var (get-in ns [k :ref])
+                       new-var (get-in env [k :ref])]]
+            (cond
+              (or (not existing-sym)
+                  (and (not existing-var)
+                       (not new-var)))
               (put ns k (in env k))
-              #(print "new non-var " k " in ns " ns-name " replaces var " existing-sym)
-              )))
 
-        (set state/user-env ns))
+              (and
+                # doesn't make much sense to keep track of private vars, since they're local to a file (hopefully)
+                (not (existing-sym :private))
+                existing-var new-var)
+              (do
+                (print "new var " k " in ns " ns-name " replaces var " (string/format "%P" existing-sym))
+                #(put ns k (in env k))
+                # we want to keep existing var and update it
+                # since this is what existing functions will have as reference
+                (put-in ns [k :ref] existing-var)
+                (put existing-var 0 (in new-var 0)))
 
-      ns-name
-      (do
-        (put module/cache path env)
-        (set state/user-env env))
+              new-var
+              (do
+                (put ns k (in env k))
+                #(print "new var " k " in ns " ns-name " replaces non-var " existing-sym)
+                )
 
-      #else
-      (do
-        (print "Module " path " did not exist, adding to module/cache...")
-        (put module/cache path env)
-        (set state/user-env env)))
+              # else only existing-var
+              (do
+                (put ns k (in env k))
+                #(print "new non-var " k " in ns " ns-name " replaces var " existing-sym)
+                )))
 
-    (e/push! state/eval-results {:value (string "Loaded module: " (or ns-name path))
-                                 #:code (string `(freja-dofile "` path `")`)
-                                 :fiber (fiber/current)})))
+          (set state/user-env ns))
+
+        ns-name
+        (do
+          (put module/cache path env)
+          (set state/user-env env))
+
+        #else
+        (do
+          (print "Module " path " did not exist, adding to module/cache...")
+          (put module/cache path env)
+          (set state/user-env env)))
+
+      (e/push! state/eval-results {:value (string "Loaded module: " (or ns-name path))
+                                   #:code (string `(freja-dofile "` path `")`)
+                                   :fiber (fiber/current)})))
+  #
+  )
 
 
 (comment

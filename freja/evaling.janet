@@ -1,3 +1,6 @@
+(import ./ns)
+(ns/start "freja/evaling")
+
 (import freja/state)
 (import freja/events :as e)
 
@@ -114,8 +117,10 @@ ouae
 )
     ([err fib]
       (fiber/setenv (fiber/current) last-env)
-      (debug/stacktrace fib err)
+      #(debug/stacktrace fib err)
 
       (e/push! state/eval-results {:error err
                                  #:code code
                                  :fiber fib}))))
+
+(ns/stop)

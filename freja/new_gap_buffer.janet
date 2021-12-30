@@ -808,12 +808,28 @@ Used e.g. when loading a file."
       (update :y-poses array/clear)
       (update :line-flags array/clear)
       (update :line-numbers array/clear)
+      (put :caret 0)
       (put :redo-queue @[])
       (put :changed true)
       (put :gap-start 0)
       (put :gap-stop 0)))
 
 ### insertion
+
+(varfn insert-char-at-pos*
+  "Inserts char `c` at the index of `pos`. Won't push undo stack."
+  [gb pos c]
+  (let [{:gap-start gap-start
+         :gap gap} (move-gap-to-pos! gb pos)
+        gap-i (- pos gap-start)]
+    (-> gb
+        (update :lowest-changed-to min* pos)
+        (update :gap
+                (fn [gap]
+                  (let [to-the-right (buffer/slice gap gap-i)]
+                    (buffer/popn gap (- (length gap) gap-i))
+                    (buffer/push-byte gap c)
+                    (buffer/push-string gap to-the-right)))))))
 
 (varfn insert-char-at-caret
   "Inserts char `c` at the index of the caret."
@@ -883,6 +899,11 @@ You should probably use `insert-string-at-caret!` instead."
            :caret-after caret
            :start pos
            :stop (+ pos (length s))}))))
+
+(defn append-char*
+  "Inserts char `c` at the end of `gb`. Won't push undo stack."
+  [gb c]
+  (insert-char-at-pos* gb (gb-length gb) c))
 
 (defn append-string!
   "Inserts string `s` at the end of `gb`."

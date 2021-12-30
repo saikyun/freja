@@ -42,22 +42,95 @@
                  :set-open |(do (print "opening: " $)
                               (e/put! props :right-open $))}]]]])
 
-(defn stack-row
-  [{:hiccup hiccup
-    :cant-close cant-close}]
+(defn other-row
+  [{:hiccup hiccup}]
   (def [_ state] hiccup)
   [:block {}
    [:row {}
     [:clickable
      {:weight 1
       :on-click (fn [_]
-                  (state/push-buffer-stack hiccup)
                   (when (state :freja/focus)
                     (:freja/focus state)))}
      [:padding {:all 4}
       [:text {:size 16
               :color :white
               :text (state :freja/label)}]]]
+    
+    [:clickable
+     {:on-click (fn [_]
+                  (state/push-buffer-stack hiccup)
+                  (e/put! state/editor-state :other nil)
+                  (when (state :freja/focus)
+                    (:freja/focus state)))}
+     [:padding {:all 4}
+      [:text {:size 16
+              :color :white
+              :text "O"}]]]
+    
+    [:clickable
+     {:on-click (fn [_]
+                  (e/put! state/editor-state :other nil)
+                  (when-let [[_ top-state] (last (state/editor-state :stack))]
+                    (when (:freja/focus top-state)
+                      (:freja/focus top-state))))}
+     [:padding {:all 4}
+      [:text {:size 16
+              :color :white
+              :text "X"}]]]
+    #
+    ]])
+
+(defn stack-row
+  [{:hiccup hiccup
+    :put-in-other put-in-other
+    :cant-close cant-close}]
+  (def [_ state] hiccup)
+  
+  [:block {}
+   [:row {}
+    [:clickable
+     {:weight 1
+      :on-click (fn [_]
+                  (if put-in-other
+                    (do
+                      (when-let [o (state/editor-state :other)]
+                        (state/push-buffer-stack o))
+                      (state/remove-buffer-stack hiccup)
+                      (e/put! state/editor-state :other hiccup))
+                    (state/push-buffer-stack hiccup))
+                  (when (state :freja/focus)
+                    (:freja/focus state)))}
+     [:padding {:all 4}
+      [:text {:size 16
+              :color :white
+              :text (state :freja/label)}]]]
+    
+    [:clickable
+     {:on-click (fn [_]
+                  (when-let [o (state/editor-state :other)]
+                    (state/push-buffer-stack o))
+                  (state/remove-buffer-stack hiccup)
+                  (e/put! state/editor-state :other hiccup))}
+     [:padding {:all 4}
+      [:text {:size 16
+              :color :white
+              :text "->"}]]]
+    
+    (when-let [o (state/editor-state :other)]
+      [:clickable
+       {:on-click (fn [_]
+                    (state/remove-buffer-stack hiccup)
+                    (state/push-buffer-stack o)
+                    (state/push-buffer-stack hiccup)
+                    (e/put! state/editor-state :other nil)
+                    (when (state :freja/focus)
+                      (:freja/focus state)))}
+       [:padding {:all 4}
+        [:text {:size 16
+                :color :white
+                :text "O"}]]])
+    
     (unless cant-close
       [:clickable
        {:on-click (fn [_]
@@ -70,7 +143,7 @@
                 :color :white
                 :text "X"}]]])
     #
-]])
+    ]])
 
 (defn text-area-hc
   [props & _]
@@ -92,12 +165,19 @@
               rest (take 3 (drop 1 s))]
           [:column {:weight 1}
            [stack-row {:hiccup top
+                       :put-in-other true
                        :cant-close (empty? rest)}]
            [:block {:weight 1}
             top]
            ;(seq [hiccup :in rest
                   :let [[compo state] hiccup]]
               [stack-row {:hiccup hiccup}])]))
+      
+      (when-let [o (props :other)]
+        [:column {:weight 1}
+         [other-row {:hiccup o}]
+         [:block {:weight 1} o]])
+      
       #[:block {:width 2}]
 
       (when (or (props :right)
@@ -115,14 +195,14 @@
             [(props :bottom-right) props])]])
 
       #
-]
+      ]
 
      (when bottom
        [:block {}
         [bottom props]])]
 
     #
-]])
+    ]])
 
 (comment
   (e/put! state/editor-state :right
@@ -130,7 +210,7 @@
             "hej"))
 
   #
-)
+  )
 
 # exposing the hiccup layer for debugging purposes
 (var hiccup-layer nil)
@@ -143,12 +223,12 @@
   (-> (get-in c [:root])
       print-tree)
   #
-)
+  )
 
 (comment
   (print (string/format "%P" (keys (get-in state/editor-state [:left-state :editor :gb]))))
   #
-)
+  )
 
 (defn init
   []
@@ -169,13 +249,13 @@
           :right
           nil
           #default-right-editor
-)
+          )
 
   (comment
     (keys (get-in state/editor-state [:old-left 1 :freja/label]))
     (get state/editor-state :last-left)
     #
-)
+    )
 
   (frp/subscribe!
     state/focus
@@ -201,3 +281,4 @@
 (when ((curenv) :freja/loading-file)
   (print "reiniting :)")
   (init))
+ 

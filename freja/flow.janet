@@ -84,6 +84,11 @@ font must either be:
                  spacing
                  color))
 
+(defn fill
+  [el color]
+  (draw-rectangle 0 0 (el :width) (el :height) color)
+  )
+
 (defn custom
   [props]
   (def {:render render
@@ -99,9 +104,9 @@ font must either be:
             (when state
               (put state :element self))
 
-            (print "focus game")
-            (e/put! state/focus :focus self)
-            (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)
+            #(print "focus game")
+            #(e/put! state/focus :focus self)
+            #(e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)
 
             (global-set-key
               [:alt :u]
@@ -128,7 +133,10 @@ font must either be:
                     (put self :render-x parent-x)
                     (put self :render-y parent-y)
 
-                    (render self))
+                    (defer (rl-pop-matrix)
+                      (rl-push-matrix)
+                      (render self)
+                      ))
 
           :on-event (fn [self ev]
 
@@ -151,7 +159,7 @@ font must either be:
 
                         [(_ (or (= (ev 0) :press)
                                 # (= (ev 0) :mouse-move)
-)) _]
+                                )) _]
                         (do
                           (e/put! state/focus :focus self)
                           (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)))
@@ -167,17 +175,26 @@ props allows following keys:
 :change -- zero args function that is called at the beginning of every frame, if the game is focused. meant to be used to handle input
 :on-event -- function that takes a single argument `event`. if present it is called every time an event occurs, e.g. `:key-down`
 :state -- table that will be populated with information about the component, e.g. `:element` will be inserted, containing a reference to the element
+
+  Optionally, props can be a function. In this case, that function will be used as `:render` above.
 ``
   [props]
+  (def props
+    (if (function? props)
+      {:render props}
+      props))
+  
   (assert (props :render) "start-game needs :render")
 
-  (e/put! state/editor-state (if (props :left) :left :right)
-          (fn [outer-props]
-            [:background {:color (if (outer-props :right-focus)
-                                   (theme/comp-cols :background)
-                                   :blank)}
-             [:padding {:all 2}
-              [custom props]]])))
+  (e/put! state/editor-state :other
+          [(fn [outer-props]
+             [:background {:color (if (outer-props :right-focus)
+                                    (theme/comp-cols :background)
+                                    :blank)}
+              [:padding {:all 2}
+               [custom props]]])
+           @{:freja/label "Game"}])
+  )
 
 (when (dyn :freja/loading-file)
   (start-game {:render (fn render [{:width width :height height}]
@@ -186,4 +203,5 @@ props allows following keys:
                :change (fn [] (print "such change"))
                :state @{}})
   #
-)
+  )
+ 

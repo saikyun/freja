@@ -1,6 +1,10 @@
 (def freja-jaylib (require "freja-jaylib"))
 (use freja-jaylib)
 
+(def ns (require "./ns"))
+(import ./ns :as ns)
+(put module/cache "freja/ns" ns)
+
 (def state (require "./state"))
 (import ./state :as state)
 (put module/cache "freja/state" state)
@@ -25,6 +29,10 @@
 (def events (require "./events"))
 (import ./events :as events)
 (put module/cache "freja/events" events)
+
+(def evaling (require "./evaling"))
+(import ./evaling :as evaling)
+(put module/cache "freja/evaling" evaling)
 
 (def text_rendering (require "./text_rendering"))
 (import ./text_rendering :as text_rendering)
@@ -57,6 +65,10 @@
 (def new_gap_buffer (require "./new_gap_buffer"))
 (import ./new_gap_buffer :as new_gap_buffer)
 (put module/cache "freja/new_gap_buffer" new_gap_buffer)
+
+(def rainbow (require "./rainbow"))
+(import ./rainbow :as rainbow)
+(put module/cache "freja/rainbow" rainbow)
 
 (def render_new_gap_buffer (require "./render_new_gap_buffer"))
 (import ./render_new_gap_buffer :as render_new_gap_buffer)
@@ -454,14 +466,17 @@ flags:
     (os/exit 0))
 
   (put module/cache "freja-jaylib" freja-jaylib)
+  (put module/cache "freja/ns" ns)
   (put module/cache "freja/state" state)
   (put module/cache "freja/defonce" defonce)
 
   (put module/cache "freja/fonts" fonts)
   (put module/cache "freja/events" events)
+  (put module/cache "freja/evaling" evaling)
   (put module/cache "freja/collision" collision)
   (put module/cache "freja/frp" frp)
   (put module/cache "freja/theme" theme)
+  (put module/cache "freja/find-file" find-file)
   (put module/cache "freja/input" input)
   (put module/cache "freja/assets" assets)
   (put module/cache "freja/hiccup" hiccup)
@@ -472,6 +487,9 @@ flags:
   (put module/cache "freja/editor" editor)
   (put module/cache "freja/default-hotkeys" default-hotkeys)
   (put module/cache "freja/flow" flow)
+  (put module/cache "freja/rainbow" rainbow)
+  (put module/cache "freja/echoer" echoer)
+  (put module/cache "freja/vector-math" vector-math)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")

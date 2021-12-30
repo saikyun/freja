@@ -1,4 +1,16 @@
-(import ./state)
+(import ./ns)
+(ns/start "freja/echoer")
+
+(import freja-jaylib)
+
+(defmacro curry
+  [f-sym curried-arg]
+  ~(let [v ,curried-arg]
+     (fn ,(symbol (string "curried-" f-sym))
+       [& args]
+       (,f-sym v ;args))))
+
+(import freja/state)
 (import freja/events :as e)
 (import freja/textarea :as ta)
 (use freja/defonce)
@@ -48,23 +60,61 @@
                   :text/font "MplusCode"
                   :text/color (t/colors :text)}]]])
 
-(defn append
+(varfn append
   [state s]
   (-> (state :gb)
       (gb/append-string! "\n")
       (gb/append-string! s)
       (gb/end-of-buffer)))
 
-(defn replace
+(varfn replace
   [state s]
+  (def s (string/trim s))
+
+  (def nof-rows (inc (length (string/find-all "\n" s))))
+  
   (e/put! state/editor-state
           :bottom-size
-          (* (inc (length (string/find-all "\n" s)))
+          (* nof-rows
              text-size))
-  (-> (state :gb)
-      (gb/replace-content (string/trim s))
-      (gb/beginning-of-buffer)
-      (put :scroll 0)))
+
+  (def gb (state :gb))
+
+  (update gb :printing-delay
+          (fn [fib]
+            (when fib
+              (try
+                (when (fiber/can-resume? fib)
+                  (cancel fib :print/canceled))
+                ([err fib]
+                  (xprint stdout "canceled fib")
+                  )))
+            
+            (ev/spawn
+                (do
+                  (gb/replace-content gb "")
+                  
+                  (gb/beginning-of-buffer gb)
+                  (put gb :scroll 0)
+                  
+                  (var wait 0)
+                  (loop [c :in s]
+                    (gb/append-char* gb c)
+                    (put gb :changed true)
+                    (+= wait (/ 0.002 nof-rows))
+                    (when (> wait 0.01)
+                      (try (ev/sleep wait)
+                        ([err fib]
+                          (unless (= err :print/canceled)
+                            (propagate err fib))))
+                      (set wait 0)))))))
+  
+  (comment
+    -> (state :gb)
+    (gb/replace-content s)
+    (gb/beginning-of-buffer)
+    (put :scroll 0))
+  )
 
 (varfn handle-eval-results
   [res]
@@ -96,8 +146,8 @@
                (e/put! :right big)))))
 
   (frp/subscribe! state/eval-results (fn [res] (handle-eval-results res)))
-  (frp/subscribe! frp/out (partial replace state))
-  (frp/subscribe! frp/out (partial append state-big)))
+  (frp/subscribe! frp/out (curry replace state))
+  (frp/subscribe! frp/out (curry append state-big)))
 
 (import freja/default-hotkeys :as dh)
 
@@ -111,4 +161,5 @@
 
 (dh/global-set-key [:control :alt :l] toggle-console)
 (dh/global-set-key [:control :alt :c] clear-console)
- 
+
+(ns/stop)

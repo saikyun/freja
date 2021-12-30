@@ -33,7 +33,7 @@
 (def move-to-end-of-line (comp reset-blink render-gb/move-to-end-of-line))
 (def delete-after-caret! (comp reset-blink gb/delete-after-caret!))
 (def delete-before-caret! (comp reset-blink gb/delete-before-caret!))
-(def move-up! (comp reset-blink render-gb/move-up!))
+(def move-up! (comp reset-blink |(render-gb/move-up! $)))
 (def move-down! (comp reset-blink render-gb/move-down!))
 (def page-up! render-gb/page-up!)
 (def page-down! render-gb/page-down!)

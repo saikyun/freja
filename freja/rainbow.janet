@@ -1,3 +1,6 @@
+(import ./ns)
+(ns/start "freja/rainbow")
+
 (use ./new_gap_buffer)
 
 (defn rgba->f
@@ -345,8 +348,13 @@
   #
 )
 
-(varfn gb->delim-ps
+(defn gb->delim-ps
   [gb]
+  #(print "HAHA")
   (set depth 0)
   (peg/match jg # delims-pos-grammar
              (content gb)))
+
+(print "huhu")
+
+(ns/stop)
