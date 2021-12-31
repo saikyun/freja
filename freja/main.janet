@@ -324,7 +324,7 @@
                                   fonts/poppins
                                   theme/font-size))
 
-      (set-exit-key :f12) ### doing this because I don't have KEY_NULL
+      (set-exit-key :f11) ### doing this because I don't have KEY_NULL
 
       (fonts/init-default-font)
       (assets/register-default-fonts)
