@@ -1,3 +1,6 @@
+#(setdyn :dynamic-defs true)
+(print "dyn defs? " (dyn :dynamic-defs))
+
 (import ./ns)
 
 (ns/start "freja/render_new_gap_buffer")
@@ -619,8 +622,9 @@ new-line-hook call, so don't save this
          (+ (* y y-scale) (offset 1))
          (- stop-x start-x)
          (* y-scale line-h)]
-        color
+        #color
         #:blue
+        :red
         ))))
 
 (defn render-selection-box
@@ -1336,6 +1340,8 @@ new-line-hook call, so don't save this
 
 (defn gb-pre-render
   [gb]
+  #(print "lul")
+  
   (def {:position position
         :offset offset
         :size size

@@ -1,5 +1,5 @@
-(import ./ns)
-(ns/start "freja/echoer")
+#(import ./ns)
+#(ns/start "freja/echoer")
 
 (import freja-jaylib)
 
@@ -162,4 +162,4 @@
 (dh/global-set-key [:control :alt :l] toggle-console)
 (dh/global-set-key [:control :alt :c] clear-console)
 
-(ns/stop)
+#(ns/stop)

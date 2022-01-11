@@ -267,10 +267,25 @@
 #GOHERE
 (varfn freja-dofile
   [top-env path]
-
   (print (string `=> (freja-dofile "` path `")`))
   
-  (def env (make-env))
+  (def module-path
+    (if (path/ext path)
+      (string/slice path 0 (-> (path/ext path) length - dec))
+      path))
+
+  (def ns-path (or (first (module/find (path/abspath module-path)))
+                   (first (module/find module-path))
+                   path))
+
+  (def env
+    #(get module/cache path)
+    (when ns-path (module/cache ns-path))
+    )
+  
+  (default env (make-env))
+  
+  (put env :dynamic-defs true)
   (put env :out state/out)
   (put env :err state/out)
   (put env :freja/loading-file true)

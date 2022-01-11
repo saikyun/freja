@@ -1,3 +1,25 @@
+(put module/loaders :source
+     (fn source-loader
+       [path args]
+       (put module/loading path true)
+       (defer (put module/loading path nil)
+         (def env (get module/cache path))
+         (default env (make-env))
+         (if (string/find "spork/path" path)
+           (put env :dynamic-defs false)
+           (put env :dynamic-defs true)
+           )
+         (print path)
+         (dofile path :env env ;args))))
+
+
+
+(import spork/path)
+#(put-in module/cache [(first (module/find "spork/path")) :dynamic-defs] false)
+#(import spork/path :fresh true)
+
+(setdyn :dynamic-defs true)
+
 (def freja-jaylib (require "freja-jaylib"))
 (use freja-jaylib)
 
@@ -406,7 +428,25 @@
          #(os/exit 1)
          )))
 
-(defn main [& args]
+(setdyn :dynamic-defs false)
+
+(defn main
+  [& args]
+  (setdyn :dynamic-defs true)
+
+  (put module/loaders :source
+     (fn source-loader
+       [path args]
+       (put module/loading path true)
+       (defer (put module/loading path nil)
+         (def env (get module/cache path))
+         (default env (make-env))
+         #(if (string/find "spork/path" path)
+         #  (put env :dynamic-defs false)
+         #  (put env :dynamic-defs123 true))
+         #(print "second loady thing: " path)
+         (dofile path :env env ;args))))
+  
   # TODO: parse args in better way
   (def no-init-file? (= (get args 2) "--no-init"))
 
@@ -533,4 +573,6 @@ flags:
          :no-init-file? no-init-file?)
 
   (print "JANET_PATH is: " (dyn :syspath)))
- 
+
+
+(setdyn :dynamic-defs true)
