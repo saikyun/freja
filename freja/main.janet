@@ -6,8 +6,8 @@
          (def env (get module/cache path))
          (default env (make-env))
          (if (string/find "spork/path" path)
-           (put env :dynamic-defs false)
-           (put env :dynamic-defs true)
+           (put env :redef false)
+           (put env :redef true)
            )
          (print path)
          (dofile path :env env ;args))))
@@ -18,7 +18,7 @@
 #(put-in module/cache [(first (module/find "spork/path")) :dynamic-defs] false)
 #(import spork/path :fresh true)
 
-(setdyn :dynamic-defs true)
+(setdyn :redef true)
 
 (def freja-jaylib (require "freja-jaylib"))
 (use freja-jaylib)
@@ -117,6 +117,10 @@
 (def open-file (require "./open-file"))
 (import ./open-file)
 (put module/cache "freja/open-file" open-file)
+
+(def introspection (require "./introspection"))
+(import ./introspection)
+(put module/cache "freja/introspection" introspection)
 
 (def textarea (require "./textarea"))
 (import ./textarea)
@@ -251,7 +255,7 @@
                    ([err fib]
                      (set any-quit-failed true)
                      (with-dyns [:out stdout]
-                       (debug/stacktrace fib err)
+                       (debug/stacktrace fib err "")
                        (let [string-rep (string/format "%.40m" s)
                              dump-path (file-handling/data-path (string "dump-" (os/time) "-" (math/floor (* 100000 (math/random)))))]
                          (print "couldn't save. here's the state in text form:")
@@ -276,7 +280,8 @@
                  # prints might have happened between renders
                  (unless (empty? state/out)
                    (events/push! frp/out (string state/out))
-                   (buffer/clear state/out))
+                   (buffer/clear state/out)
+		   )
 
                  (with-dyns [:out state/out
                              :err state/out]
@@ -295,17 +300,18 @@
 
                    (unless (empty? state/out)
                      (events/push! frp/out (string state/out))
-                     (buffer/clear state/out))
+                     (buffer/clear state/out)
+		     )
                    (ev/sleep 0.0001)
                    ))
                ([err fib]
                  (let [path "text_experiment_dump"]
-                   (debug/stacktrace fib err)
+                   (debug/stacktrace fib err "")
                    ## TODO:  Dump-state
                    #(dump-state path gb-data)
                    #(print "Dumped state to " path)
                    )
-                 (print (debug/stacktrace fib err))
+                 (print (debug/stacktrace fib err ""))
                  (ev/sleep 1)
                  )))))))
 
@@ -322,7 +328,7 @@
         ))
     ([err fib]
       (print "nope")
-      (print (debug/stacktrace fib err)))))
+      (print (debug/stacktrace fib err "")))))
 
 (defn run-init-file
   []
@@ -391,7 +397,7 @@
         (loop-it)))
     ([err fib]
       (print "error! " err)
-      (debug/stacktrace fib err)
+      (debug/stacktrace fib err "")
 
       (let [path "text_experiment_dump"]
         ## TODO:  Dump-state
@@ -428,11 +434,11 @@
          #(os/exit 1)
          )))
 
-(setdyn :dynamic-defs false)
+(setdyn :redef false)
 
 (defn main
   [& args]
-  (setdyn :dynamic-defs true)
+  (setdyn :redef true)
 
   (put module/loaders :source
      (fn source-loader
@@ -442,7 +448,7 @@
          (def env (get module/cache path))
          (default env (make-env))
          #(if (string/find "spork/path" path)
-         #  (put env :dynamic-defs false)
+         #  (put env :redef false)
          #  (put env :dynamic-defs123 true))
          #(print "second loady thing: " path)
          (dofile path :env env ;args))))
@@ -512,6 +518,7 @@ flags:
 
   (put module/cache "freja/fonts" fonts)
   (put module/cache "freja/events" events)
+  (put module/cache "freja/checkpoint" checkpoint)
   (put module/cache "freja/evaling" evaling)
   (put module/cache "freja/collision" collision)
   (put module/cache "freja/frp" frp)
@@ -521,6 +528,8 @@ flags:
   (put module/cache "freja/assets" assets)
   (put module/cache "freja/hiccup" hiccup)
   (put module/cache "freja/file-handling" file-handling)
+  (put module/cache "freja/open-file" open-file)
+  (put module/cache "freja/introspection" introspection)
   (put module/cache "freja/new_gap_buffer" new_gap_buffer)
   (put module/cache "freja/render_new_gap_buffer" render_new_gap_buffer)
   (put module/cache "freja/textarea" textarea)
@@ -551,7 +560,7 @@ flags:
               (run-file path))
             ([err fib]
               (print "nope")
-              (print (debug/stacktrace fib err))))
+              (print (debug/stacktrace fib err ""))))
 
           (frp/unsubscribe-finally! frp/frame-chan initial-dofile)
           #(set state/quit true)
@@ -575,4 +584,4 @@ flags:
   (print "JANET_PATH is: " (dyn :syspath)))
 
 
-(setdyn :dynamic-defs true)
+(setdyn :redef true)

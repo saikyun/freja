@@ -30,7 +30,7 @@
       res)
 
     ([err fib]
-      (debug/stacktrace fib err))))
+      (debug/stacktrace fib err ""))))
 
 (defn get-files-relative
   [full-root &opt root]
@@ -51,7 +51,7 @@
       res)
 
     ([err fib]
-      (debug/stacktrace fib err))))
+      (debug/stacktrace fib err ""))))
 
 (comment
   #

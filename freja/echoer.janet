@@ -70,27 +70,27 @@
 (varfn replace
   [state s]
   (def s (string/trim s))
-
   (def nof-rows (inc (length (string/find-all "\n" s))))
   
-  (e/put! state/editor-state
-          :bottom-size
-          (* nof-rows
-             text-size))
+  (comment   
+    (e/put! state/editor-state
+            :bottom-size
+            (* nof-rows
+               text-size))
 
-  (def gb (state :gb))
+    (def gb (state :gb))
 
-  (update gb :printing-delay
-          (fn [fib]
-            (when fib
-              (try
-                (when (fiber/can-resume? fib)
-                  (cancel fib :print/canceled))
-                ([err fib]
-                  (xprint stdout "canceled fib")
-                  )))
-            
-            (ev/spawn
+    (update gb :printing-delay
+            (fn [fib]
+              (when fib
+                (try
+                  (when (fiber/can-resume? fib)
+                    (cancel fib :print/canceled))
+                  ([err fib]
+                    (xprint stdout "canceled fib")
+                    )))
+              
+              (ev/spawn
                 (do
                   (gb/replace-content gb "")
                   
@@ -108,12 +108,12 @@
                           (unless (= err :print/canceled)
                             (propagate err fib))))
                       (set wait 0)))))))
-  
-  (comment
-    -> (state :gb)
-    (gb/replace-content s)
-    (gb/beginning-of-buffer)
-    (put :scroll 0))
+    )
+  (#comment
+   -> (state :gb)
+   (gb/replace-content s)
+   (gb/beginning-of-buffer)
+   (put :scroll 0))
   )
 
 (varfn handle-eval-results

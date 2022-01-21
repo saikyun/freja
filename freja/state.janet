@@ -22,8 +22,10 @@
 
 (def keys-down @{})
 
-(def out @"")
-(def err @"")
+(def out @""
+  )
+(def err @""
+  )
 
 (def editor-state @{})
 

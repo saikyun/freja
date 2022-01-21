@@ -1370,6 +1370,8 @@ Otherwise moves the caret backward one character."
     :actions @[]
     :redo-queue @[]
 
+    :styling @[]
+
     :selection nil
 
     :size [100 100]

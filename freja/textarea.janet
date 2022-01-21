@@ -9,26 +9,28 @@
 (import ./render_new_gap_buffer :as rgb)
 (use freja-jaylib)
 
-(pp (get (require "./render_new_gap_buffer") 'move-up!))
-
 (use profiling/profile)
 
 # just doing this as inlining
 (defmacro press
-  []
+  [kind]
   ~(do (i/handle-keyboard2
          (self :gb)
-         k)
+         k
+         ,kind)
      (put self :event/changed true)))
 
 (varfn text-area-on-event
   [self ev]
   (match ev
     [:key-down k]
-    (press)
+    (press :key-down)
 
     [:key-repeat k]
-    (press)
+    (press :key-repeat)
+
+    [:key-release k]
+    (press :key-release)
 
     [:char k]
     (do

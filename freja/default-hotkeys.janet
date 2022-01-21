@@ -1,6 +1,6 @@
 (import freja/new_gap_buffer :as gb)
 (import freja/render_new_gap_buffer :as render-gb)
-(import freja/code_api)
+(import ./code_api)
 (import freja/state)
 (import freja/file-handling :as fh)
 (import freja/input)
@@ -57,6 +57,9 @@
            :right forward-word
            #
           }
+
+    :left-control @{:key-down (fn [_] (print "hello"))
+                    :key-up (fn [_] (print "up"))}
 
     :control @{:shift @{:left select-backward-word
                         :right select-forward-word

@@ -179,6 +179,7 @@
                                (when (not= (fiber/status f) :dead)
                                  (when exit
                                    (eprint x)
+                                   (print "run-context stacktrace thing:")
                                    (debug/stacktrace f)
                                    (eflush)
                                    (os/exit 1))
@@ -285,7 +286,7 @@
   
   (default env (make-env))
   
-  (put env :dynamic-defs true)
+  (put env :redef true)
   (put env :out state/out)
   (put env :err state/out)
   (put env :freja/loading-file true)

@@ -42,7 +42,6 @@
     (or (key-down? :left-control)
         (key-down? :right-control))))
 
-
 ## delay before first repetition of held keys
 # TODO: if these delays are set to super low, frp bugs and wont release keys
 (var initial-delay 0.2)
@@ -75,14 +74,21 @@
 ])
 
 (def check-modifiers
-  {:caps-lock |(key-down? :caps-lock)
-   :control |(or (key-down? :left-control)
-                 (key-down? :right-control))
-   :shift |(or (key-down? :left-shift)
-               (key-down? :right-shift))
+  {:caps-lock |(and (not= $ :caps-lock)
+                    (key-down? :caps-lock))
+   :control |(and (not= $ :left-control)
+                  (not= $ :right-control)
+                  (or (key-down? :left-control)
+                      (key-down? :right-control)))
+   :shift |(and (not= $ :left-shift)
+                (not= $ :right-shift)
+                (or (key-down? :left-shift)
+                    (key-down? :right-shift)))
    # :meta meta-down?
-   :alt |(or (key-down? :left-alt)
-             (key-down? :right-alt))})
+   :alt |(and (not= $ :left-alt)
+              (not= $ :right-alt)
+              (or (key-down? :left-alt)
+                  (key-down? :right-alt)))})
 
 (defn set-key
   [kmap ks f]
@@ -100,21 +106,32 @@
   (put-in kmap mods f))
 
 (defn hotkey-triggered
-  [kmap k-down]
+  [kmap key-code kind]
   (def mods (seq [m :in modifiers
-                  :when ((check-modifiers m))]
+                  :when ((in check-modifiers m) key-code)]
               m))
+
   (var ret-f nil)
   (loop [[k f] :pairs (or (get-in kmap mods) [])
-         :when (function? f) # on partial mod-combination, f will be a table
-         :when (= k-down k)]
-    (set ret-f f)
-    (break))
+         # :when (function? f) # on partial mod-combination, f will be a table
+         :when (= k key-code)]
+    (if-let [specific-f (and (table? f)
+                             (in f kind))]
+      (do
+        (set ret-f specific-f)
+        (break))
 
-  (if ret-f ret-f
+      (when (and (or (= kind :key-down)
+                     (= kind :key-repeat))
+                 (function? f))
+        (set ret-f f)
+        (break))))
+
+  (if ret-f
+    ret-f
     (when-let [p (and (not ret-f)
                       (table/getproto kmap))]
-      (hotkey-triggered p k-down))))
+      (hotkey-triggered p key-code kind))))
 
 (defn get-hotkey
   [kmap f &opt keys]
@@ -146,12 +163,12 @@
 
 
 (varfn handle-keyboard2
-  [props k]
+  [props k kind]
   (def {:binds binds} props)
 
   # TODO: Need to add get-char-pressed
 
-  (when-let [f (hotkey-triggered (props :binds) k)]
+  (when-let [f (hotkey-triggered (props :binds) k kind)]
     (f props))
 
   (comment
@@ -379,20 +396,22 @@
       (handle-shift-mouse-down props event cb)
 
       (= kind :press)
-      (cb kind |(let [[line cur-index] (get-mouse-pos-line props mouse-pos)
-                      #              # if true, this means cur-index is at the start of the line
-                      stickiness (if (= cur-index (lines line))
-                                   :down
-                                   :right)]
-                  (-> props
-                      reset-blink
-                      (put :down-index cur-index)
-                      (put :selection nil)
-                      (put :changed-selection true)
-                      (put :caret cur-index)
-                      (put :changed-x-pos true)
-                      (put :stickiness stickiness)
-                      (put :changed-nav true))))
+      (if-let [f (get-in props [:binds :press])]
+        (cb kind |(f (get-mouse-pos-line props mouse-pos)))
+        (cb kind |(let [[line cur-index] (get-mouse-pos-line props mouse-pos)
+                        #              # if true, this means cur-index is at the start of the line
+                        stickiness (if (= cur-index (lines line))
+                                     :down
+                                     :right)]
+                    (-> props
+                        reset-blink
+                        (put :down-index cur-index)
+                        (put :selection nil)
+                        (put :changed-selection true)
+                        (put :caret cur-index)
+                        (put :changed-x-pos true)
+                        (put :stickiness stickiness)
+                        (put :changed-nav true)))))
 
       (and (= kind :drag)
            # if this is nil, the press happened outside the textarea

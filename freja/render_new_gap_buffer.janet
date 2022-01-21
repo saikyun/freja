@@ -1,12 +1,6 @@
-#(setdyn :dynamic-defs true)
-(print "dyn defs? " (dyn :dynamic-defs))
-
-(import ./ns)
-
-(ns/start "freja/render_new_gap_buffer")
-
 (import spork/test)
 (use freja-jaylib)
+
 (import ./dumb :prefix "")
 (import ./new_gap_buffer :as gb)
 (import ./textfield_api :prefix "")
@@ -98,25 +92,18 @@ hej
             [:block {}
              (safe-slice (string/format "%p" (keys rs)) 0 1000)]]]
           ([err fib]
-            (debug/stacktrace fib err)
+            (debug/stacktrace fib err "")
             "err"))))
     # (e/put! state/editor-state :bottom-right nil)
-    )
+)
   (import freja/default-hotkeys :as dh)
 
   ## END OF DEBUGGING STUFF
 
   #
-  )
+)
 
 #
-
-
-#(setdyn :freja/ns "freja/render_new_gap_buffer")
-
-(use profiling/profile)
-
-(pp (dyn 'defn))
 
 (defn reset-blink
   [props]
@@ -175,7 +162,7 @@ hej
         (unless (warned-chars c)
           (print "no size for char " c ", using first sizes instead." sz)
           (put warned-chars c true))
-        #(debug/stacktrace (fiber/current))
+        #(debug/stacktrace (fiber/current) "")
         sz)
       sz)))
 
@@ -311,7 +298,7 @@ new-line-hook call, so don't save this
 
   (when (gb :id)
     #(print (gb :id))
-    )
+)
 
   (def {:lines lines
         :y-poses y-poses
@@ -348,13 +335,13 @@ new-line-hook call, so don't save this
   (def start-i (get lines start-line-i 0))
 
   (comment when (gb :id)
-    (print "word wrap " (gb :id))
-    (print "start-i: " start-i)
-    (print "last lines: " (last lines))
-    (print "length lines: " (length lines))
-    (print "start-line-i: " start-line-i)
-    (print "stop: " stop)
-    (print "last line-numbers: " (last line-numbers)))
+           (print "word wrap " (gb :id))
+           (print "start-i: " start-i)
+           (print "last lines: " (last lines))
+           (print "length lines: " (length lines))
+           (print "start-line-i: " start-line-i)
+           (print "stop: " stop)
+           (print "last line-numbers: " (last line-numbers)))
 
   #(def line-limit 999999999999999)
   #(def y-limit 999999999999999)
@@ -414,7 +401,7 @@ new-line-hook call, so don't save this
     (buffer/clear current-line)
 
     (comment when (gb :id)
-      (print "new line: " line-i)))
+             (print "new line: " line-i)))
 
   (defn check-if-word-is-too-wide
     [old-w i c]
@@ -467,9 +454,9 @@ new-line-hook call, so don't save this
     (buffer/push current-line c)
 
     (comment when (gb :id)
-      (def lul @"")
-      (buffer/push lul c)
-      (print "char: " lul))
+             (def lul @"")
+             (buffer/push lul c)
+             (print "char: " lul))
 
     (case c gb/newline
       (do (check-if-word-is-too-wide w i c)
@@ -500,9 +487,9 @@ new-line-hook call, so don't save this
   (put-in gb [:checked-word :too-far :is-it?] (not (> (+ y y-offset) y-limit)))
 
   (comment when (gb :id)
-    (tracev stop)
-    (tracev (gb-length gb))
-    (tracev (not (> (tracev (+ y y-offset)) (tracev y-limit)))))
+           (tracev stop)
+           (tracev (gb-length gb))
+           (tracev (not (> (tracev (+ y y-offset)) (tracev y-limit)))))
 
   # this should only be run if bottom of buffer is not visible
   (when (not (> (+ y y-offset) y-limit))
@@ -519,7 +506,7 @@ new-line-hook call, so don't save this
         (put-in gb [:checked-word :too-far :beg-wo]
                 beginning-of-word-i)
         #
-        )
+)
 
       (if (> (+ x old-w) treshold) ## we went outside the max width
 
@@ -556,8 +543,8 @@ new-line-hook call, so don't save this
     (new-line stop line-number :regular h))
 
   (comment when (gb :id)
-    (print "last line-numbers: " (last line-numbers))
-    (debug/stacktrace (fiber/current)))
+           (print "last line-numbers: " (last line-numbers))
+           (debug/stacktrace (fiber/current) "" ""))
 
   lines)
 
@@ -584,10 +571,10 @@ new-line-hook call, so don't save this
         :offset offset
         :width-of-last-line-number width-of-last-line-number
         :highlight highlight} gb)
-  
+
   (def sizes (a/glyph-sizes (gb :text/font) (gb :text/size)))
   (def [x-scale y-scale] screen-scale)
-  
+
   (when (and (< line-start stop)
              (>= line-stop start))
 
@@ -613,6 +600,11 @@ new-line-hook call, so don't save this
 
         (set line-h (max line-h h))))
 
+    # when selection moves past end of line
+    # render the newline as a space
+    (when (and stop-x (< stop line-stop))
+      (+= stop-x (first (sizes (chr " ")))))
+
     (when (and start-x
                stop-x)
       (draw-rectangle-rec
@@ -622,10 +614,10 @@ new-line-hook call, so don't save this
          (+ (* y y-scale) (offset 1))
          (- stop-x start-x)
          (* y-scale line-h)]
-        #color
+        color
         #:blue
-        :red
-        ))))
+        #:red
+))))
 
 (defn render-selection-box
   [gb start stop y]
@@ -635,7 +627,7 @@ new-line-hook call, so don't save this
         :offset offset
         :width-of-last-line-number width-of-last-line-number
         :highlight highlight} gb)
-  
+
   (def {:selection selection
         :colors colors
         :caret caret
@@ -693,7 +685,7 @@ new-line-hook call, so don't save this
                      (math/floor (* (tc :mult) (tc :size)))
                      (* (tc :mult) (tc :spacing))))
   #
-  )
+)
 
 (defn gb-draw-text
   [gb text pos color]
@@ -715,6 +707,35 @@ new-line-hook call, so don't save this
                      (gb :text/spacing)
                      (screen-scale 0)))
 
+(defn render-styling
+  [[start stop styling] gb line-start line-stop y]
+  (def {:colors colors} gb)
+
+  (when-let [{:background bg} styling]
+    (render-line-bg
+      gb
+      y
+      start stop
+      line-start
+      line-stop
+      bg)))
+
+(defmacro next-styling
+  [start stop]
+  ~(do
+     (def active-stylings @[])
+
+     (while (and (< current-styling-i (length styling))
+                 (> ,stop (first (in styling current-styling-i))))
+       (def cs (in styling current-styling-i))
+       (when (and (< ,start (in cs 1))
+                  (>= ,stop (in cs 0)))
+         (array/push active-stylings cs))
+
+       (if (> ,stop (in cs 1))
+         (++ current-styling-i)
+         (break)))
+     active-stylings))
 
 (defn render-lines
   ``
@@ -729,7 +750,8 @@ new-line-hook call, so don't save this
         :highlighting highlighting
         :offset offset
         :colors colors
-        :debug debug} gb)
+        :debug debug
+        :styling styling} gb)
   (def [x-scale y-scale] screen-scale)
   (def [x-offset y-offset] offset)
 
@@ -749,6 +771,12 @@ new-line-hook call, so don't save this
 
   (var x 0)
 
+  (def styling (gb :styling))
+
+  (var current-styling-i (if (empty? styling)
+                           nil
+                           0))
+
   # position relative to local top
   # local top = y offset
   # if we scrolled 30px, and y offset is 5px
@@ -756,7 +784,7 @@ new-line-hook call, so don't save this
   (def line-start-y (+ (+ #(offset 1)
                           # we do max here to avoid lines popping in during animation
                           (- (max (gb :render-scroll) # (gb :scroll)
-                                  )))))
+)))))
 
   # current line
   (var line-i nil)
@@ -777,6 +805,8 @@ new-line-hook call, so don't save this
   # just used for debugging
   (var nof-lines 0)
 
+  #(def debug2 (-?>> (gb :path) (string/find "lul")))
+
   (if (= line-i nil)
     :do-nothing
     (loop [i :range [line-i (length lines)]
@@ -787,6 +817,9 @@ new-line-hook call, so don't save this
 
       (++ nof-lines)
       (set x 0)
+
+      (loop [s :in (or (next-styling last-gb-index l) [])]
+        (render-styling s gb last-gb-index l (- line-y line-start-y)))
 
       (render-selection-box gb last-gb-index l (- line-y line-start-y))
 
@@ -812,7 +845,7 @@ new-line-hook call, so don't save this
             (prin s)
             (print (length s))
             #(print "x: " x " - y: " y)
-            )
+)
 
           (do
             (while (and delim-ps
@@ -854,7 +887,7 @@ new-line-hook call, so don't save this
       (set last-gb-index l)))
 
   #  (print "rendered " nof-lines " lines")
-  )
+)
 
 (defn current-line
   [gb]
@@ -1017,7 +1050,7 @@ new-line-hook call, so don't save this
                           (min 0))
 
                       1 #mult
-                      ))
+))
       (put :changed-scroll true)))
 
 (defn focus-caret
@@ -1027,7 +1060,7 @@ new-line-hook call, so don't save this
         #  (- ((gb :y-poses) (line-of-i (gb :caret)))
         #     (get (gb :y-poses) (max (length (gb :y-poses))
         #                             (inc (line-of-i (gb :caret)))))))
-        ]
+]
     (focus-pos gb [x y])))
 
 (defn move-up!
@@ -1341,7 +1374,7 @@ new-line-hook call, so don't save this
 (defn gb-pre-render
   [gb]
   #(print "lul")
-  
+
   (def {:position position
         :offset offset
         :size size
@@ -1516,33 +1549,33 @@ new-line-hook call, so don't save this
           (get-render-texture (gb :texture))
           [0 0 (* x-scale w)
            (* y-scale (- h)) # (- h) #screen-w (- screen-h)
-           ]
+]
 
           [x
            (- y (* 0.7 y-diff))
            w (* h stretch-y) #(/ screen-w x-scale) (/ screen-h y-scale)
-           ]
+]
           [0 0]
           0
           0x999999955
           #(colors :background)
-          )
+)
 
         (draw-texture-pro
           (get-render-texture (gb :texture))
           [0 0 (* x-scale w)
            (* y-scale (- h)) # (- h) #screen-w (- screen-h)
-           ]
+]
 
           [x
            (- y (* 1.1 y-diff))
            w (* h stretch-y) #(/ screen-w x-scale) (/ screen-h y-scale)
-           ]
+]
           [0 0]
           0
           0x99999922
           #(colors :background)
-          ))
+))
 
       (rl-pop-matrix))
 
@@ -1569,19 +1602,19 @@ new-line-hook call, so don't save this
         (get-render-texture (gb :texture))
         [0 0 (* x-scale w)
          (* y-scale (- (* ratio h))) # (- h) #screen-w (- screen-h)
-         ]
+]
 
         [x
          (+ y extra-y)
          w (* ratio h) #(/ screen-w x-scale) (/ screen-h y-scale)
-         ]
+]
         [0 0]
         0
         :white
         #(colors :background)
-        ))
+))
     #
-    )
+)
 
   (rl-pop-matrix)
 
@@ -1679,6 +1712,3 @@ new-line-hook call, so don't save this
                              (buffer/push-byte c))))
     (print)
     (set last-i l)))
-
-(ns/stop)
- 
