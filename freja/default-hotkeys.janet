@@ -58,9 +58,6 @@
            #
           }
 
-    :left-control @{:key-down (fn [_] (print "hello"))
-                    :key-up (fn [_] (print "up"))}
-
     :control @{:shift @{:left select-backward-word
                         :right select-forward-word
                         :c show-checkpoints
