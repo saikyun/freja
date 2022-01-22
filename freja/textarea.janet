@@ -120,10 +120,12 @@
         :text/font text/font
         :text/line-height text/line-height
         :text/spacing text/spacing
+        :background bg
         :binds binds #replaces binds
         :extra-binds extra-binds #adds onto default binds
         :show-line-numbers show-line-numbers
-        :on-change on-change} props)
+        :on-change on-change
+        :text text} props)
 
   (default state (get (dyn :element) :state @{}))
 
@@ -132,6 +134,17 @@
                         :on-change on-change
                         :binds binds
                         :extra-binds extra-binds)))
+
+(when (table? props)
+  (put props :internal-gb (get state :gb)))
+  
+  (when text
+    (-> (state :gb)
+        (gb/replace-content text)
+        (gb/end-of-buffer)))
+
+  (when bg
+    (put-in state [:gb :background] bg))
 
   (when extra-binds
     (put (state :gb)
