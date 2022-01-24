@@ -1,12 +1,6 @@
-(import ./ns)
-(ns/start "freja/evaling")
-
 (import freja/state)
 (import freja/events :as e)
-
 (use ./new_gap_buffer)
-
-(setdyn :freja/ns "freja/evaling")
 
 (def grammar
   ~{:ws (set " \t\r\f\n\0\v")
@@ -97,7 +91,7 @@ ouae
 #(pp (gb-data :caret))
 #(pp (get-last-sexp text))
 
-(varfn eval-it
+(defn eval-it
   [env code]
   (print "=> " (string/trim code))
 
@@ -108,6 +102,7 @@ ouae
       (fiber/setenv (fiber/current) env)
       (put env :out out)
       (put env :err out)
+      (put env :redef true)
       (def res (eval-string code))
       (fiber/setenv (fiber/current) last-env)
       (e/push! state/eval-results {:value res
@@ -122,5 +117,3 @@ ouae
       (e/push! state/eval-results {:error err
                                  #:code code
                                  :fiber fib}))))
-
-(ns/stop)

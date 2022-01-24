@@ -7,11 +7,9 @@
          (default env (make-env))
          (if (string/find "spork/path" path)
            (put env :redef false)
-           (put env :redef true)
-           )
+           (put env :redef true))
          (print path)
          (dofile path :env env ;args))))
-
 
 
 (import spork/path)
@@ -195,7 +193,7 @@
   [dt]
   (clear-background :blank)
   #  (draw-text* (conf :text) (string (data :latest-res)) [605 660] :blue)
-  )
+)
 
 (defn styling-worker
   [parent]
@@ -224,7 +222,7 @@
 
   (clear-background :white
                     # (theme/colors :background)
-                    )
+)
 
   (frp/trigger dt)
 
@@ -280,8 +278,7 @@
                  # prints might have happened between renders
                  (unless (empty? state/out)
                    (events/push! frp/out (string state/out))
-                   (buffer/clear state/out)
-		   )
+                   (buffer/clear state/out))
 
                  (with-dyns [:out state/out
                              :err state/out]
@@ -300,20 +297,17 @@
 
                    (unless (empty? state/out)
                      (events/push! frp/out (string state/out))
-                     (buffer/clear state/out)
-		     )
-                   (ev/sleep 0.0001)
-                   ))
+                     (buffer/clear state/out))
+                   (ev/sleep 0.0001)))
                ([err fib]
                  (let [path "text_experiment_dump"]
                    (debug/stacktrace fib err "")
                    ## TODO:  Dump-state
                    #(dump-state path gb-data)
                    #(print "Dumped state to " path)
-                   )
+)
                  (print (debug/stacktrace fib err ""))
-                 (ev/sleep 1)
-                 )))))))
+                 (ev/sleep 1))))))))
 
 (defn run-file
   [path]
@@ -325,7 +319,7 @@
         path
         # :env (fiber/getenv (fiber/current))
         #:env env
-        ))
+))
     ([err fib]
       (print "nope")
       (print (debug/stacktrace fib err "")))))
@@ -432,7 +426,7 @@
        ([err]
          (eprintf "failed to determine commit: %p" err)
          #(os/exit 1)
-         )))
+)))
 
 (setdyn :redef false)
 
@@ -441,18 +435,18 @@
   (setdyn :redef true)
 
   (put module/loaders :source
-     (fn source-loader
-       [path args]
-       (put module/loading path true)
-       (defer (put module/loading path nil)
-         (def env (get module/cache path))
-         (default env (make-env))
-         #(if (string/find "spork/path" path)
-         #  (put env :redef false)
-         #  (put env :dynamic-defs123 true))
-         #(print "second loady thing: " path)
-         (dofile path :env env ;args))))
-  
+       (fn source-loader
+         [path args]
+         (put module/loading path true)
+         (defer (put module/loading path nil)
+           (def env (get module/cache path))
+           (default env (make-env))
+           #(if (string/find "spork/path" path)
+           #  (put env :redef false)
+           #  (put env :dynamic-defs123 true))
+           #(print "second loady thing: " path)
+           (dofile path :env env ;args))))
+
   # TODO: parse args in better way
   (def no-init-file? (= (get args 2) "--no-init"))
 
@@ -564,7 +558,7 @@ flags:
 
           (frp/unsubscribe-finally! frp/frame-chan initial-dofile)
           #(set state/quit true)
-          )
+)
 
         (print "subscribing!")
 

@@ -36,7 +36,7 @@
     "aoeu.exe:123:5")
   #=> ["aoeu.exe" 123 5]
   #
-  )
+)
 
 
 #(setdyn :freja/ns "freja/file-handling")
@@ -202,7 +202,7 @@
 (comment
   (freja-dofile* "dumb.janet")
   #
-  )
+)
 
 (defn- no-side-effects
   `Check if form may have side effects. If returns true, then the src
@@ -263,13 +263,13 @@
       #(let [[l c] (tuple/sourcemap source)
       #      newtup (tuple/setmap (tuple ;source :evaluator flycheck-evaluator) l c)]
       #  ((compile newtup env where)))
-      )))
+)))
 
 #GOHERE
 (varfn freja-dofile
   [top-env path]
   (print (string `=> (freja-dofile "` path `")`))
-  
+
   (def module-path
     (if (path/ext path)
       (string/slice path 0 (-> (path/ext path) length - dec))
@@ -281,19 +281,22 @@
 
   (def env
     #(get module/cache path)
-    (when ns-path (module/cache ns-path))
-    )
-  
+    (when ns-path
+      (module/cache ns-path)))
+
   (default env (make-env))
-  
+
   (put env :redef true)
   (put env :out state/out)
   (put env :err state/out)
   (put env :freja/loading-file true)
-  (dofile path :env env)
+
+  (def env (dofile path :env env))
+
+  (put module/cache ns-path env)
 
   (set state/user-env env)
-  
+
   (comment
     (def path (if (path/abspath? path)
                 path
@@ -372,7 +375,7 @@
                           :cause "freja-dofile"}
                          fib)
               #            (propagate err fib)
-              )
+)
             (do
               #            (e/push! state/eval-results {:error err
               #                                       :code (string `(freja-dofile "` path `")`)
@@ -422,13 +425,13 @@
               (do
                 (put ns k (in env k))
                 #(print "new var " k " in ns " ns-name " replaces non-var " existing-sym)
-                )
+)
 
               # else only existing-var
               (do
                 (put ns k (in env k))
                 #(print "new non-var " k " in ns " ns-name " replaces var " existing-sym)
-                )))
+)))
 
           (set state/user-env ns))
 
@@ -447,7 +450,7 @@
                                    #:code (string `(freja-dofile "` path `")`)
                                    :fiber (fiber/current)})))
   #
-  )
+)
 
 
 (comment
@@ -460,7 +463,7 @@
   (comment
     (freja-dofile state/user-env "test-env2.janet")
     #
-    )
+)
   #  (lul2)
   #
 
@@ -497,4 +500,3 @@
 
   (dofile "/Users/test/programmering/janet/textfield/freja/main.janet"
           {:env (get-in text-data [:context :top-env])}))
- 
