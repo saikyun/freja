@@ -1276,7 +1276,8 @@ Otherwise moves the caret backward one character."
   (let [pos (min (length s) i)]
     (if-let [[n] (peg/match column-peg s pos)]
       (- pos n)
-      0)))
+      # no match means we're at first line
+      pos)))
 
 (defn column!
   ``
