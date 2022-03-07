@@ -70,25 +70,32 @@
 
   (scroll-to-focus props))
 
-(def modifiers [:caps-lock :control :alt :shift #:meta
+(def modifiers [:caps-lock :control :right-control :alt :shift
+                :right-alt #:meta
 ])
 
 (def check-modifiers
   {:caps-lock |(and (not= $ :caps-lock)
                     (key-down? :caps-lock))
+   #:control |(and (not= $ :left-control)
+   #               (not= $ :right-control)
+   #               (or (key-down? :left-control)
+   #                   (key-down? :right-control)))
+
    :control |(and (not= $ :left-control)
-                  (not= $ :right-control)
-                  (or (key-down? :left-control)
-                      (key-down? :right-control)))
+                  (key-down? :left-control))
+   :right-control |(and (not= $ :right-control)
+                        (key-down? :right-control))
+
    :shift |(and (not= $ :left-shift)
                 (not= $ :right-shift)
                 (or (key-down? :left-shift)
                     (key-down? :right-shift)))
    # :meta meta-down?
    :alt |(and (not= $ :left-alt)
-              (not= $ :right-alt)
-              (or (key-down? :left-alt)
-                  (key-down? :right-alt)))})
+              (key-down? :left-alt))
+   :right-alt |(and (not= $ :right-alt)
+                    (key-down? :right-alt))})
 
 (defn set-key
   [kmap ks f]

@@ -1314,8 +1314,8 @@ new-line-hook call, so don't save this
 
   (unless (gb :texture)
     (let [[x-scale y-scale] screen-scale
-          w (* x-scale (width gb))
-          h (* y-scale (height gb))
+          w (math/round (* x-scale (width gb)))
+          h (math/round (* y-scale (height gb)))
           rt (load-render-texture w h)]
       (put gb :texture rt))))
 
@@ -1546,7 +1546,7 @@ new-line-hook call, so don't save this
             0))
 
         (draw-texture-pro
-          (get-render-texture (gb :texture))
+          (render-texture->texture (gb :texture))
           [0 0 (* x-scale w)
            (* y-scale (- h)) # (- h) #screen-w (- screen-h)
 ]
@@ -1562,7 +1562,7 @@ new-line-hook call, so don't save this
 )
 
         (draw-texture-pro
-          (get-render-texture (gb :texture))
+          (render-texture->texture (gb :texture))
           [0 0 (* x-scale w)
            (* y-scale (- h)) # (- h) #screen-w (- screen-h)
 ]
@@ -1599,7 +1599,7 @@ new-line-hook call, so don't save this
                        (* (- 1 ratio) h))))
 
       (draw-texture-pro
-        (get-render-texture (gb :texture))
+        (render-texture->texture (gb :texture))
         [0 0 (* x-scale w)
          (* y-scale (- (* ratio h))) # (- h) #screen-w (- screen-h)
 ]

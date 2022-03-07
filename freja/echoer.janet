@@ -1,6 +1,3 @@
-#(import ./ns)
-#(ns/start "freja/echoer")
-
 (import freja-jaylib)
 
 (defmacro curry
@@ -149,8 +146,6 @@
   (frp/subscribe! frp/out (curry replace state))
   (frp/subscribe! frp/out (curry append state-big)))
 
-(import freja/default-hotkeys :as dh)
-
 (defn toggle-console
   [_]
   (:toggle-console state/editor-state))
@@ -158,8 +153,3 @@
 (defn clear-console
   [_]
   (gb/replace-content (state-big :gb) @""))
-
-(dh/global-set-key [:control :alt :l] toggle-console)
-(dh/global-set-key [:control :alt :c] clear-console)
-
-#(ns/stop)

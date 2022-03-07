@@ -309,7 +309,21 @@ Is to `update` what `put-caret` is to `put`.
   "Returns true when char `c` is a word delimiter."
   [c]
   (or (= c space)
-      (= c newline)))
+      (= c newline)
+      (= c (chr "#"))
+      (= c (chr "-"))
+      (= c (chr `"`))
+      (= c (chr "."))
+      (= c (chr "/"))
+      (= c (chr "("))
+      (= c (chr ")"))
+      (= c (chr "["))
+      (= c (chr "]"))
+      (= c (chr "{"))
+      (= c (chr "}"))
+      (= c (chr "<"))
+      (= c (chr ">"))
+      (= c (chr "@"))))
 
 (varfn search-forward
   "Gets the position of the end of the word after the start.
@@ -348,7 +362,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-forward (string->gb "12|34 67") word-delimiter? 7)
   #=> 7
-  )
+)
 
 (varfn search-backward
   "Gets the position of the start of the word before start.
@@ -384,7 +398,7 @@ Doesn't skip delimiters in the beginning."
 
   (search-backward (string->gb "12|34 67") word-delimiter? 0)
   #=> 0
-  )
+)
 
 (varfn word-at-index
   [gb i]
@@ -401,7 +415,7 @@ Doesn't skip delimiters in the beginning."
   (word-at-index (string->gb "12|34 67") 5) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 6) #=> [5 7]
   (word-at-index (string->gb "12|34 67") 7) #=> [5 7]
-  )
+)
 
 (varfn end-of-next-word
   "Gets the position of the end of the word after the caret."
@@ -1196,7 +1210,7 @@ Otherwise moves the caret backward one character."
 
   (find-paragraphs "aoe\n\n")
   #=> @[(0 3)]
-  )
+)
 
 (varfn find-surrounding-paragraph!
   [gb index]
@@ -1247,7 +1261,7 @@ Otherwise moves the caret backward one character."
   (def gbb (get-in state/editor-state [:left-state :editor :gb]))
   (pp (gb-find2! gbb "finder"))
   #
-  )
+)
 
 (varfn gb-find-backward!
   [gb peg]
@@ -1293,13 +1307,13 @@ Otherwise moves the caret backward one character."
   (column! gb 13)
 
   (column ``
-1
+a1
 2
 322
 ``
-          9)
-  #=> 3
-  )
+          6)
+  #=> 1
+)
 
 (defn comment-line
   ``
@@ -1424,7 +1438,7 @@ to the type hook-name in gb
 
   (array/push hs [k hook])
   #
-  )
+)
 
 
 ### render for debugging
@@ -1455,4 +1469,3 @@ Should probably be in new_gap_buffer_util, but it depends on functions in this f
     (buffer/push-byte b (chr "*")))
 
   (string b))
- 

@@ -15,6 +15,8 @@
   (put state :freja/label path)
   (put state :freja/focus (fn [{:editor editor}]
                             (state/focus! editor)))
+  (put state :freja/focus? (fn [{:editor editor}]
+                               (= editor (state/focus :focus))))
   (put state :freja/quit (fn [{:editor editor}]
                            (checkpoint/save-file-with-checkpoint
                              (editor :gb)
@@ -34,6 +36,7 @@
                          :blank)}
    [:padding {:all 2}
     [editor/editor {:state props
+                    :text/size (get state/editor-state :text/size)
                     :id :left
                     :focus-on-init true
                     #:initial-file state/initial-file

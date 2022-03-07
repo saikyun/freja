@@ -70,8 +70,7 @@
                 :offset-y 0
                 :event-max-h (tree :height)]
       (when (elem-on-event tree ev)
-        (frp/push-callback! ev
-                            (fn []))))))
+        (frp/push-callback! ev (fn []))))))
 
 (defn compile-tree
   [hiccup props &keys {:max-width max-width
@@ -80,7 +79,6 @@
                        :text/font text/font
                        :text/size text/size
                        :old-root old-root}]
-
   (let [to-init @[]]
     (put props :compilation/changed true)
 

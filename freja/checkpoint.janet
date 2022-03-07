@@ -149,8 +149,10 @@
      [:padding {:bottom 6}
       [:block {}
        [:clickable {:on-click (fn [_] (close))}
-        "Close"]]
+        [:text {:text "Close"
+                :color (theme/colors :text)}]]]
       [:text {:text "Checkpoints"
+              :color (theme/colors :text)
               :size 28}]]]
 
     (try
@@ -161,11 +163,13 @@
            [:text {:text (string
                            "Click on checkpoints below to restore earlier versions of:\n"
                            (path/abspath (tracev path)))
+                   :color (theme/colors :text)
                    :size 18}]]]
          ;(seq [[day times] :in (reverse (sort-by first checkpoints))]
             [:padding {:bottom 12}
              [:block {}
               [:text {:size 22
+                      :color (theme/colors :text)
                       :text (string day)}]
               ;(seq [fullpath :in (reverse (sort times))]
                  [:clickable {:on-click
@@ -182,8 +186,9 @@
                    [:background {:color (when (= selected fullpath)
                                           (theme/colors :text))}
                     [:text {:size 18
-                            :color (when (= selected fullpath)
-                                     (theme/colors :background))
+                            :color (if (= selected fullpath)
+                                     (theme/colors :background)
+                                     (theme/colors :text))
                             :text (format-filename (path/basename fullpath))}]]]])]])])
       ([err fib]
         (debug/stacktrace fib err "")

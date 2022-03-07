@@ -1,4 +1,4 @@
-(import freja/editor :as e)
+(import freja/editor :as ed)
 (import freja/theme :as t)
 (import freja/hiccup :as h)
 (import freja/events :as e)
@@ -16,7 +16,7 @@
                          (t/comp-cols :background)
                          :blank)}
    [:padding {:all 2}
-    [e/editor {:state props
+    [ed/editor {:state props
                :id :left
                :focus-on-init true
                :initial-file state/initial-file
@@ -36,7 +36,7 @@
                           (t/comp-cols :background)
                           :blank)}
     [:padding {:all 2}
-     [e/editor @{:state (props :right-state)
+     [ed/editor @{:state (props :right-state)
                  :id :right
                  :open (props :right-open)
                  :set-open |(do (print "opening: " $)

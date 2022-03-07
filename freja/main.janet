@@ -247,9 +247,12 @@
                    (print state/out)))
 
                (var any-quit-failed false)
-               (loop [[_ s] :in (state/editor-state :stack)]
+               (loop [[_ s] :in (filter |(not (nil? $))
+                                        [;(state/editor-state :stack)
+                                         (state/editor-state :other)])]
                  (try
-                   (:freja/quit s)
+                   (when (s :freja/quit)
+                     (:freja/quit s))
                    ([err fib]
                      (set any-quit-failed true)
                      (with-dyns [:out stdout]
@@ -352,8 +355,11 @@
       (assets/register-default-fonts)
 
       (let [[xs ys] (get-window-scale-dpi)]
-        (put screen-scale 0 xs)
-        (put screen-scale 1 ys))
+        # on windows this gave 1.25, which seems to be the scale
+        # to render ui elements, not really the scale of pixels
+        # very confused. so rounding for now
+        (put screen-scale 0 (math/round xs))
+        (put screen-scale 1 (math/round ys)))
 
       (let [[x-scale y-scale] screen-scale
             tc @{:font-data fonts/mplus

@@ -35,7 +35,7 @@
   (load-font-from-memory kind
                          font-data
                          (length font-data)
-                         (* x-scale size)
+                         (math/round (* x-scale size))
                          default-glyphs))
 
 (defn load-font

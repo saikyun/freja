@@ -6,6 +6,7 @@
 (import freja/input)
 (import freja/checkpoint)
 (import freja/events :as e)
+(import ./echoer)
 (import ./evaling)
 (import ./open-file)
 (import ./find-file)
@@ -48,7 +49,7 @@
   @{:alt @{:shift @{:left select-backward-word
                     :right select-forward-word
                     #
-                   }
+}
 
            :backspace delete-word-backward!
            :delete delete-word-forward!
@@ -56,13 +57,16 @@
            :left backward-word
            :right forward-word
            #
-          }
+}
 
     :control @{:shift @{:left select-backward-word
                         :right select-forward-word
                         :c show-checkpoints
                         #
-                       }
+
+
+                        :l echoer/toggle-console
+                        :e echoer/clear-console}
 
                :backspace delete-word-backward!
                :delete delete-word-forward!
@@ -89,7 +93,7 @@
              :down render-gb/select-move-down!
 
              #
-            }
+}
 
     :left backward-char
     :right forward-char
@@ -106,7 +110,7 @@
     :backspace delete-before-caret!
 
     #
-   })
+})
 
 (defn quit
   [props]
@@ -148,8 +152,15 @@
 
 (defn swap-top-two-buffers
   [_]
-  (if (>= 1 (length (state/editor-state :stack)))
-    (print "Can't swap, only one buffer open.")
+  (cond (and (get-in state/editor-state [:other 1 :freja/focus])
+             (:freja/focus? (in (last (state/editor-state :stack)) 1)))
+    (:freja/focus ((state/editor-state :other) 1))
+
+    (>= 1 (length (state/editor-state :stack)))
+    (if (get-in state/editor-state [:other 1 :freja/focus])
+      (:freja/focus (in (last (state/editor-state :stack)) 1))
+      (print "Can't swap, only one buffer open."))
+
     (let [s (state/editor-state :stack)]
       (state/push-buffer-stack (s (- (length s) 2)))
       (when-let [[_ top-state] (last (state/editor-state :stack))]
@@ -160,7 +171,7 @@
 (var gb-binds @{:control @{:shift @{:f format!
                                     :e eval-expr-dialog
                                     #
-                                   }
+}
 
                            :w close-buffer
                            :tab swap-top-two-buffers
@@ -214,5 +225,4 @@
 
 (comment
   # example usage
-  (set-key gb-binds [:control :shift :f] format!)
-  ) 
+  (set-key gb-binds [:control :shift :f] format!))

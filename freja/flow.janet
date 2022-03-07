@@ -86,8 +86,7 @@ font must either be:
 
 (defn fill
   [el color]
-  (draw-rectangle 0 0 (el :width) (el :height) color)
-  )
+  (draw-rectangle 0 0 (el :width) (el :height) color))
 
 (defn custom
   [props]
@@ -108,11 +107,11 @@ font must either be:
             #(e/put! state/focus :focus self)
             #(e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)
 
-            (global-set-key
-              [:alt :u]
-              (fn [_]
-                (e/put! state/focus :focus self)
-                (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true))))
+            (comment global-set-key
+                     [:alt :u]
+                     (fn [_]
+                       (e/put! state/focus :focus self)
+                       (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true))))
 
           :children []
 
@@ -135,11 +134,9 @@ font must either be:
 
                     (defer (rl-pop-matrix)
                       (rl-push-matrix)
-                      (render self)
-                      ))
+                      (render self)))
 
           :on-event (fn [self ev]
-
                       (defn unfocus
                         []
                         (show-cursor)
@@ -157,15 +154,31 @@ font must either be:
                         [:key-down :escape]
                         (unfocus)
 
-                        [(_ (or (= (ev 0) :press)
+                        ([kind :tab] ({:key-down 1 :key-repeat 1} kind))
+                        (when (key-down? :right-control)
+                          (swap-top-two-buffers nil))
+
+                        [(_ (or (= (ev 0) :release)
                                 # (= (ev 0) :mouse-move)
-                                )) _]
+)) _]
                         (do
-                          (e/put! state/focus :focus self)
-                          (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)))
+                          (def pos (ev 1))
+
+                          (def in?
+                            (dt/in-rec? pos
+                                        (dyn :offset-x)
+                                        (dyn :offset-y)
+                                        (self :width)
+                                        (self :height)))
+
+                          (when in?
+                            (unless (= self (state/focus :focus))
+                              (e/put! state/focus :focus self)
+                              (e/put! state/editor-state (if (props :left) :left-focus :right-focus)
+                                      true)))))
 
                       (when on-event
-                        (on-event ev)))})))
+                        (on-event self ev)))})))
 
 (defn start-game
   ``
@@ -173,7 +186,7 @@ props allows following keys:
 :render (mandatory) -- called every frame, with &keys :width & :height
                        :width / :height has width / height of the game
 :change -- zero args function that is called at the beginning of every frame, if the game is focused. meant to be used to handle input
-:on-event -- function that takes a single argument `event`. if present it is called every time an event occurs, e.g. `:key-down`
+:on-event -- function that takes arguments `self` and `event`. if present it is called every time an event occurs, e.g. `:key-down`. `self` is the element doing the rendering.
 :state -- table that will be populated with information about the component, e.g. `:element` will be inserted, containing a reference to the element
 
   Optionally, props can be a function. In this case, that function will be used as `:render` above.
@@ -183,8 +196,17 @@ props allows following keys:
     (if (function? props)
       {:render props}
       props))
-  
+
   (assert (props :render) "start-game needs :render")
+
+  (def state (get props :state @{}))
+  (def props (from-pairs (pairs props)))
+  (put props :state state)
+
+  (update state :freja/label |(or $ "Game"))
+  (update state :freja/focus |(or $ (fn [{:element el}]
+                                      (state/focus! el))))
+  (update state :freja/focus? |(or $ (fn [{:element el}] (= el (state/focus :focus)))))
 
   (e/put! state/editor-state :other
           [(fn [outer-props]
@@ -193,15 +215,12 @@ props allows following keys:
                                     :blank)}
               [:padding {:all 2}
                [custom props]]])
-           @{:freja/label "Game"}])
-  )
+           state]))
 
 (when (dyn :freja/loading-file)
   (start-game {:render (fn render [{:width width :height height}]
                          (draw-rectangle 10 10 (- width 20) (- height 20) :blue))
-               :on-event (fn on-event [ev] (pp ev))
-               :change (fn [] (print "such change"))
-               :state @{}})
+               :on-event (fn on-event [self ev] (pp ev))
+               :change (fn [] (print "such change"))})
   #
-  )
- 
+)

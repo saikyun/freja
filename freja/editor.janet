@@ -91,11 +91,14 @@
         :initial-path initial-path
         :initial-file initial-file
         :id id
+        :text/size text/size
         :focus-on-init focus-on-init
         # TODO: remove when :vertical is added
         :space-in-bottom space-in-bottom} props)
 
   (assert state "Must define :state")
+
+  (default text/size (dyn :text/size 20))
 
   (unless (state :file-open)
     (put state :file-open (ta/default-textarea-state :binds file-open-binds)))
@@ -248,7 +251,6 @@
       #
 )
 
-    
     [:background {:weight 1
                   :color (t/colors :background)}
      [:padding {:left 6 :top 6}
@@ -267,7 +269,7 @@
                         (print "focusing!")
                         (e/put! state/focus :focus editor-state)))
                     :text/spacing 0.5
-                    :text/size 20
+                    :text/size text/size
                     :text/font "MplusCode"
                     :text/color (t/colors :text)
                     :state editor-state
