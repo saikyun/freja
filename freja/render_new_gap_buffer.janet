@@ -1546,7 +1546,7 @@ new-line-hook call, so don't save this
             0))
 
         (draw-texture-pro
-          (render-texture->texture (gb :texture))
+          (get-render-texture-texture2d (gb :texture))
           [0 0 (* x-scale w)
            (* y-scale (- h)) # (- h) #screen-w (- screen-h)
 ]
@@ -1562,7 +1562,7 @@ new-line-hook call, so don't save this
 )
 
         (draw-texture-pro
-          (render-texture->texture (gb :texture))
+          (get-render-texture-texture2d (gb :texture))
           [0 0 (* x-scale w)
            (* y-scale (- h)) # (- h) #screen-w (- screen-h)
 ]
@@ -1599,7 +1599,7 @@ new-line-hook call, so don't save this
                        (* (- 1 ratio) h))))
 
       (draw-texture-pro
-        (render-texture->texture (gb :texture))
+        (get-render-texture-texture2d (gb :texture))
         [0 0 (* x-scale w)
          (* y-scale (- (* ratio h))) # (- h) #screen-w (- screen-h)
 ]
