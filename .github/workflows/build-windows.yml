@@ -56,10 +56,10 @@ jobs:
       - run: cd ${{ github.workspace }}\jpm && set JANET_HEADERPATH=${{ github.workspace }}\janet\dist&& set JANET_BINPATH=${{ github.workspace }}\janet\bin&& set JANET_LIBPATH=${{ github.workspace }}\janet\dist&& set JANET_PATH=${{ github.workspace }}\janet&& janet bootstrap.janet
         shell: cmd
       - name: test
-        run: cd ${{ github.workspace }} && set FREJA_TEST=false&& jpm deps && jpm test
+        run: cd ${{ github.workspace }} && set FREJA_TEST=false&& jpm deps && jpm test && if %errorlevel% neq 0 exit /b %errorlevel%
         shell: cmd
-      - name: exit on error
-        run: if %errorlevel% neq 0 exit /b %errorlevel%
+      - name: test print error level
+        run: cd ${{ github.workspace }} && set FREJA_TEST=false&& jpm deps && jpm test && echo %errorlevel%
         shell: cmd
   build:
     needs: test
