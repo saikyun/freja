@@ -242,7 +242,7 @@
   (put render-tree :root (:compile render-tree props))
 
   (frp/subscribe! props render-tree)
-  (frp/subscribe-finally! frp/frame-chan render-tree)
+  (frp/subscribe-finally! frp/frame-queue render-tree)
   (frp/subscribe-first! frp/mouse render-tree)
   (frp/subscribe! frp/screen-size render-tree)
 

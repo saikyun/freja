@@ -1,5 +1,5 @@
 (import freja/state)
-(import freja/events :as e)
+(import bounded-queue :as queue)
 (use ./new_gap_buffer)
 
 (def grammar
@@ -105,15 +105,15 @@ ouae
       (put env :redef true)
       (def res (eval-string code))
       (fiber/setenv (fiber/current) last-env)
-      (e/push! state/eval-results {:value res
-                                 #:code code
-                                 :fiber (fiber/current)})
+      (queue/push state/eval-results {:value res
+                                      #:code code
+                                      :fiber (fiber/current)})
       #      (pp res)
 )
     ([err fib]
       (fiber/setenv (fiber/current) last-env)
       #(debug/stacktrace fib err)
 
-      (e/push! state/eval-results {:error err
-                                 #:code code
-                                 :fiber fib}))))
+      (queue/push state/eval-results {:error err
+                                      #:code code
+                                      :fiber fib}))))

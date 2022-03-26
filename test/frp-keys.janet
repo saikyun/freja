@@ -1,6 +1,6 @@
 (import ../freja/main)
 (import ../freja/frp)
-(import ../freja/events :as e)
+(import bounded-queue :as queue)
 (import ../freja/default-hotkeys :as dh)
 (import ../freja/state)
 (import ../freja/new_gap_buffer :as gb)
@@ -31,8 +31,8 @@
       (print "pushing c: ")
       (pp c)
       (if (= :char (first c))
-        (e/push! frp/chars @[;c])
-        (e/push! frp/keyboard @[;c])))
+        (queue/push frp/chars @[;c])
+        (queue/push frp/keyboard @[;c])))
     (ev/sleep 0.00001)
     (with-dyns [:out stdout]
       (print "just checks if not crashing")

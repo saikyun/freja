@@ -94,12 +94,9 @@
            (slice 0 -2))
       []))
 
-  (tracev extra-path)
-  (tracev extra-path2)
-
-  (set mplus (slurp (tracev (path/join ;extra-path2
-                                       "fonts"
-                                       "MplusCodeLatin60-Medium.otf"))))
+  (set mplus (slurp (path/join ;extra-path2
+                               "fonts"
+                               "MplusCodeLatin60-Medium.otf")))
   (set poppins (slurp (path/join ;extra-path2
                                  "fonts"
                                  "Poppins-Regular.otf")))

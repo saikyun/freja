@@ -8,9 +8,9 @@
          (if (string/find "spork/path" path)
            (put env :redef false)
            (put env :redef true))
-         (print path)
          (dofile path :env env ;args))))
 
+(import bounded-queue :as queue)
 
 (import spork/path)
 #(put-in module/cache [(first (module/find "spork/path")) :dynamic-defs] false)
@@ -280,7 +280,7 @@
                (do
                  # prints might have happened between renders
                  (unless (empty? state/out)
-                   (events/push! frp/out (string state/out))
+                   (queue/push frp/out (string state/out))
                    (buffer/clear state/out))
 
                  (with-dyns [:out state/out
@@ -299,7 +299,7 @@
                        (print state/out)))
 
                    (unless (empty? state/out)
-                     (events/push! frp/out (string state/out))
+                     (queue/push frp/out (string state/out))
                      (buffer/clear state/out))
                    (ev/sleep 0.0001)))
                ([err fib]
@@ -562,13 +562,13 @@ flags:
               (print "nope")
               (print (debug/stacktrace fib err ""))))
 
-          (frp/unsubscribe-finally! frp/frame-chan initial-dofile)
+          (frp/unsubscribe-finally! frp/frame-queue initial-dofile)
           #(set state/quit true)
 )
 
         (print "subscribing!")
 
-        (frp/subscribe-finally! frp/frame-chan initial-dofile))
+        (frp/subscribe-finally! frp/frame-queue initial-dofile))
 
       (do (print "--dofile needs a filepath as a second argument")
         (os/exit 0))))

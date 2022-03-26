@@ -22,10 +22,8 @@
 
 (def keys-down @{})
 
-(def out @""
-  )
-(def err @""
-  )
+(def out @"")
+(def err @"")
 
 (def editor-state @{})
 
@@ -78,21 +76,3 @@
       (put :last-focus (focus :focus))
       (put :focus x)
       (put :event/changed true)))
-
-(defn ev/check
-  [chan]
-  (when (pos? (ev/count chan))
-    (ev/take chan)))
-
-(defn ev/push
-  [chan v]
-  (when (ev/full chan)
-    (ev/take chan)) ## throw away old values
-  (ev/give chan v))
-
-(defn swap!
-  [ref f & vs]
-  (let [new-data (f (ref :data) ;vs)]
-    (ev/push (ref :ch) new-data)
-    (unless (ref :no-history)
-      (put ref :data new-data))))

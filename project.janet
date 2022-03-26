@@ -1,5 +1,7 @@
+# freja-jaylib-shim doesn't need opengl etc
+# which makes it easier to run in CI
 (def freja-jaylib-dep
-  (if (= "true" (tracev (os/getenv "FREJA_TEST")))
+  (if (= "true" (os/getenv "FREJA_TEST"))
     "https://github.com/saikyun/freja-jaylib-shim"
     "https://github.com/saikyun/freja-jaylib"))
 
@@ -12,6 +14,8 @@
   :repo "git+https://github.com/saikyun/freja"
   :dependencies ["https://github.com/janet-lang/spork"
 
+                 {:repo "https://github.com/saikyun/janet-bounded-queue" :tag "main"}
+
                  {:repo "https://github.com/saikyun/janet-whereami" :tag "main"}
 
                  {:repo "https://github.com/saikyun/freja-layout" :tag "main"}
@@ -19,7 +23,7 @@
                  {:repo "https://github.com/Saikyun/janet-profiling" :tag "main"}
 
                  ## using my own fork due to additions to jaylib
-                 (tracev freja-jaylib-dep)
+                 freja-jaylib-dep
 
                  # example of how to use `:tag`
                  # {:repo "https://...." :tag "abcdcbdc"}
@@ -47,7 +51,7 @@
 
 (declare-executable
   :name "freja"
-  :entry (tracev (string src-root sep "main.janet"))
+  :entry (string src-root sep "main.janet")
   :lflags lflags
   :install true)
 

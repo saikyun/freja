@@ -115,7 +115,7 @@ Always in the form of `@[:char char]`
 ### `callbacks`
 A stack of key -> callbacks, which will always only call the last callback for each key.
 
-### `frame-chan`
+### `frame-queue`
 Emits an event each new frame.
 
 ### `rerender`
@@ -135,13 +135,14 @@ Emits events when rerendering is needed.
 (import ./collision :prefix "")
 (import ./render_new_gap_buffer :prefix "")
 (import ./new_gap_buffer :prefix "")
+(import bounded-queue :as queue)
 
 (setdyn :freja/ns "freja/frp")
 
 (var mouse nil)
 (var chars nil)
 (var keyboard nil)
-(var frame-chan nil)
+(var frame-queue nil)
 (var rerender nil)
 (var out nil)
 (var screen-size @{})
@@ -153,13 +154,13 @@ Emits events when rerendering is needed.
   (var k (get-char-pressed))
 
   (while (not= 0 k)
-    (e/push! chars @[:char k])
+    (queue/push chars @[:char k])
     (set k (get-char-pressed)))
 
   # must release keys before...
   (loop [k :in kb/possible-keys]
     (when (key-released? k)
-      (e/push! keyboard @[:key-release k])))
+      (queue/push keyboard @[:key-release k])))
 
   # ...checking for held keys
   (loop [[k dl] :pairs state/keys-down
@@ -167,22 +168,18 @@ Emits events when rerendering is needed.
          :when (not (key-released? k))
          :let [left ((update state/keys-down k - dt) k)]]
     (when (<= left 0)
-      (e/push! keyboard @[:key-repeat k])))
+      (queue/push keyboard @[:key-repeat k])))
 
   (loop [k :in kb/possible-keys]
     (when (key-pressed? k)
-      (e/push! keyboard @[:key-down k]))))
+      (queue/push keyboard @[:key-down k]))))
 
 (varfn handle-scroll
   []
   (let [move (get-mouse-wheel-move)]
     (when (not= move 0)
-      (e/push! mouse @[:scroll (* move 30) (get-mouse-position)]))))
+      (queue/push mouse @[:scroll (* move 30) (get-mouse-position)]))))
 
-# table of callbacks, eg @{@[:down [10 10]  [|(print "hello") |(print "other")]}
-#                          ^ a mouse event  ^ queued callbacks
-#                                           ^ is actually a ev/chan
-#                                           ^ but using struct to visualise
 (def callbacks @{:event/changed false})
 
 (varfn handle-resize
@@ -195,8 +192,8 @@ Emits events when rerendering is needed.
 (defn push-callback!
   [ev cb]
   (e/update! callbacks ev (fn [chan]
-                            (default chan (ev/chan 1))
-                            (e/push! chan cb)
+                            (default chan (queue/new 1))
+                            (queue/push chan cb)
                             chan)))
 
 (defn handle-callbacks
@@ -224,7 +221,7 @@ Emits events when rerendering is needed.
     (put mouse-data :recently-triple-clicked nil)
     (put mouse-data :up-pos [x y])
 
-    (e/push! mouse @[:release (get-mouse-position)]))
+    (queue/push mouse @[:release (get-mouse-position)]))
 
   (when (mouse-button-pressed? 0)
     (when (and (mouse-data :down-time2)
@@ -245,12 +242,12 @@ Emits events when rerendering is needed.
       (put mouse-data :down-time2 (get-time))))
 
   (cond (mouse-data :just-triple-clicked)
-    (e/push! mouse @[:triple-click (get-mouse-position)])
+    (queue/push mouse @[:triple-click (get-mouse-position)])
 
     (and (mouse-data :just-double-clicked)
          (not (key-down? :left-shift))
          (not (key-down? :right-shift)))
-    (e/push! mouse @[:double-click (get-mouse-position)])
+    (queue/push mouse @[:double-click (get-mouse-position)])
 
     (or (mouse-data :recently-double-clicked)
         (mouse-data :recently-triple-clicked))
@@ -264,16 +261,16 @@ Emits events when rerendering is needed.
         (do (put mouse-data :just-down true)
           (put mouse-data :last-pos pos)
           (put mouse-data :down-pos pos)
-          (e/push! mouse @[:press (get-mouse-position)]))
+          (queue/push mouse @[:press (get-mouse-position)]))
         (do (put mouse-data :just-down false)
           (unless (= pos (mouse-data :last-pos))
             (put mouse-data :last-pos pos)
-            (e/push! mouse @[:drag (get-mouse-position)])))))
+            (queue/push mouse @[:drag (get-mouse-position)])))))
 
     # no mouse button down
     (not= pos (mouse-data :last-pos))
     (do (put mouse-data :last-pos pos)
-      (e/push! mouse @[:mouse-move (get-mouse-position)]))))
+      (queue/push mouse @[:mouse-move (get-mouse-position)]))))
 
 (def deps @{})
 
@@ -283,7 +280,7 @@ Emits events when rerendering is needed.
     (d)))
 
 (def finally
-  @{frame-chan [render-deps]})
+  @{frame-queue [render-deps]})
 
 (defn handle-key-events
   [ev]
@@ -300,14 +297,14 @@ Emits events when rerendering is needed.
 (varfn init-chans
   []
   (print "initing chans")
-  (set mouse (ev/chan 100))
+  (set mouse (queue/new 100))
 
-  (set chars (ev/chan 100))
-  (set keyboard (ev/chan 100))
-  (set frame-chan (ev/chan 1))
-  (set rerender (ev/chan 1))
-  (set out (ev/chan 100))
-  (set state/eval-results (ev/chan 100))
+  (set chars (queue/new 100))
+  (set keyboard (queue/new 100))
+  (set frame-queue (queue/new 1))
+  (set rerender (queue/new 1))
+  (set out (queue/new 100))
+  (set state/eval-results (queue/new 100))
 
   (def dependencies
     @{mouse @[]
@@ -330,23 +327,14 @@ Emits events when rerendering is needed.
   (handle-scroll)
   (handle-resize)
 
-  (e/push! frame-chan @[:dt dt])
+  (queue/push frame-queue @[:dt dt])
 
   (handle-mouse mouse-data)
 
-  (comment
-    (when (mouse-button-pressed? 0)
-      # uses arrays in order to have reference identity rather than value identity
-      # relevant for callback handling
-      (e/push! mouse @[:press (get-mouse-position)])))
-
   (e/pull-deps (deps :deps) (deps :finally)))
 
-(comment
-  (e/push! mouse [:down [10 10]]))
-
 (defn subscribe-first!
-  "Take an event emitter (e.g. a ev/channel)
+  "Take an event emitter (e.g. a queue)
 and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
@@ -355,7 +343,7 @@ Creates a regular subscription."
 
 
 (defn subscribe!
-  "Take an event emitter (e.g. a ev/channel)
+  "Take an event emitter (e.g. a queue)
 and a callback (e.g. single arity function).
 Creates a regular subscription."
   [emitter cb]
@@ -364,7 +352,7 @@ Creates a regular subscription."
     :ok))
 
 (defn unsubscribe!
-  "Take an event emitter (e.g. a ev/channel)
+  "Take an event emitter (e.g. a queue)
 and a callback (e.g. single arity function).
 Removes a regular subscription."
   [emitter cb]
@@ -373,7 +361,7 @@ Removes a regular subscription."
   :ok)
 
 (defn subscribe-finally!
-  "Take an event emitter (e.g. a ev/channel)
+  "Take an event emitter (e.g. a queue)
 and a callback (e.g. single arity function).
 Creates a finally subscription."
   [emitter cb]
@@ -383,7 +371,7 @@ Creates a finally subscription."
 
 
 (defn unsubscribe-finally!
-  "Take an event emitter (e.g. a ev/channel)
+  "Take an event emitter (e.g. a queue)
 and a callback (e.g. single arity function).
 Removes a finFally subscription."
   [emitter cb]
