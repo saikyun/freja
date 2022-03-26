@@ -58,6 +58,9 @@ jobs:
       - name: test
         run: cd ${{ github.workspace }} && set FREJA_TEST=false&& jpm deps && jpm test
         shell: cmd
+      - name: exit on error
+        run: if %errorlevel% neq 0 exit /b %errorlevel%
+        shell: cmd
   build:
     needs: test
     runs-on: windows-latest
