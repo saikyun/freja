@@ -1,9 +1,9 @@
 # freja-jaylib-shim doesn't need opengl etc
 # which makes it easier to run in CI
 (def freja-jaylib-dep
-  (if (= "true" (os/getenv "FREJA_TEST"))
-    "https://github.com/saikyun/freja-jaylib-shim"
-    "https://github.com/saikyun/freja-jaylib"))
+  (tracev (if (= "true" (tracev (os/getenv "FREJA_TEST")))
+            "https://github.com/saikyun/freja-jaylib-shim"
+            "https://github.com/saikyun/freja-jaylib")))
 
 (declare-project
   :name "freja"
