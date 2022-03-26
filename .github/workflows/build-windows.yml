@@ -57,6 +57,7 @@ jobs:
         shell: cmd
       - name: test
         run: cd ${{ github.workspace }} && set FREJA_TEST=true&& jpm deps && jpm test
+        shell: cmd
   build:
     needs: test
     runs-on: windows-latest
