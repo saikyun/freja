@@ -8,7 +8,8 @@
   [props & _]
   [:padding {:left 600
              :top 30}
-   "hello"])
+   [:background {:color :white}
+    "hello"]])
 
 (setdyn :pretty-format "%.40M")
 

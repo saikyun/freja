@@ -9,13 +9,12 @@
   [props & _]
   [:padding {:left 600
              :top 30}
-   [:clickable
-    {:on-click (fn [_]
-                 (e/put! props :label
-                         (string "Different label " (math/random))))}
-    (props :label)]])
-
-(setdyn :pretty-format "%.40M")
+   [:background {:color :white}
+    [:clickable
+     {:on-click (fn [_]
+                  (e/put! props :label
+                          (string "Different label " (math/random))))}
+     (props :label)]]])
 
 (h/new-layer :pixel-editor
              hiccup
