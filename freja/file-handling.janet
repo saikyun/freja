@@ -1,8 +1,6 @@
 (import ./new_gap_buffer :prefix "")
 (import ./text_api :as old)
 (import ./state)
-(import ./frp)
-(import ./events :as e)
 (import spork/path)
 
 (defn string->path-line-column

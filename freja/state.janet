@@ -1,5 +1,6 @@
 (import ./new_gap_buffer :prefix "")
 (import ./theme :prefix "")
+(import bounded-queue :as queue)
 
 (setdyn :freja/ns "freja/state")
 
@@ -16,8 +17,6 @@
 (def open-files
   @{})
 
-(var eval-results nil)
-
 (def focus @{})
 
 (def keys-down @{})
@@ -28,6 +27,22 @@
 (def editor-state @{})
 
 (var user-env (make-env))
+
+##### event queues
+
+(def mouse (queue/new 100))
+(def chars (queue/new 100))
+(def keyboard (queue/new 100))
+(def frame-events (queue/new 1))
+(def rerender (queue/new 1))
+(def out-events (queue/new 100))
+(def eval-results (queue/new 100))
+(def callbacks @{:event/changed false})
+(def screen-size @{})
+
+(def subscriptions @{})
+
+##### handle different extenions
 
 (def editor-components
   @{})

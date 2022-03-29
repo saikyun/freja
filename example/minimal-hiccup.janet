@@ -1,4 +1,3 @@
-(import freja/frp)
 (import freja/hiccup :as h)
 (use freja/defonce)
 

@@ -1,9 +1,10 @@
+(import bounded-queue :as queue)
+(import ../state)
+(import ./jaylib-to-events :as jaylib->events)
+
 # a push-pull system
 # events are pushed to queues
 # then things can pull from the queues
-
-(import ./state)
-(import bounded-queue :as queue)
 
 # we want to be able to pull.
 # multiple things should be able to pull from it,
@@ -85,15 +86,70 @@ subscriber:
     (pullable :items) (not (queue/empty? pullable))
     :else (pullable :event/changed)))
 
-(defn pull-deps
-  [deps &opt finally]
+(defn call-subscribers
+  ``
+  Loops through all subscriptions, pulls from the emitters.
+  When events are pulled, they are pushed onto the subscribers.
+  ``
+  [subscriptions &opt finally]
   # as long as dependencies have changed (are `fresh?`)
   # keep looping through them and tell dependees
   # that changes have happened (`pull-all`)
-  (while (some fresh? (keys deps))
-    (loop [[pullable pullers] :pairs deps]
+  # this is important since laters subscriptions might add
+  # events to earlier emitters
+  (while (some fresh? (keys subscriptions))
+    (loop [[pullable pullers] :pairs subscriptions]
       (pull-all pullable pullers)))
 
   # then when all is done, run the things in `finally`
   (loop [[pullable pullers] :pairs (or finally {})]
     (pull-all pullable pullers)))
+
+
+### functions used to add / remove subscriptions after init-subscriptions has been called
+
+(defn subscribe-first!
+  "Take an event emitter (e.g. a queue)
+and a callback (e.g. single arity function).
+Creates a regular subscription."
+  [emitter cb]
+  (unless (find |(= $ cb) (get-in state/subscriptions [:regular emitter] []))
+    (update-in state/subscriptions [:regular emitter] (fn [$] @[cb ;(or $ [])]))))
+
+
+(defn subscribe!
+  "Take an event emitter (e.g. a queue)
+and a callback (e.g. single arity function).
+Creates a regular subscription."
+  [emitter cb]
+  (unless (find |(= $ cb) (get-in state/subscriptions [:regular emitter] []))
+    (update-in state/subscriptions [:regular emitter] |(array/push (or $ @[]) cb))
+    :ok))
+
+(defn unsubscribe!
+  "Take an event emitter (e.g. a queue)
+and a callback (e.g. single arity function).
+Removes a regular subscription."
+  [emitter cb]
+  (update-in state/subscriptions [:regular emitter]
+             (fn [subs] (filter |(not= $ cb) subs)))
+  :ok)
+
+(defn subscribe-finally!
+  "Take an event emitter (e.g. a queue)
+and a callback (e.g. single arity function).
+Creates a finally subscription."
+  [emitter cb]
+  (unless (find |(= $ cb) (get-in state/subscriptions [:finally emitter] []))
+    (update-in state/subscriptions [:finally emitter] |(array/push (or $ @[]) cb))
+    :ok))
+
+
+(defn unsubscribe-finally!
+  "Take an event emitter (e.g. a queue)
+and a callback (e.g. single arity function).
+Removes a finFally subscription."
+  [emitter cb]
+  (update-in state/subscriptions [:finally emitter]
+             (fn [subs] (filter |(not= $ cb) subs)))
+  :ok)

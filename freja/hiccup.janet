@@ -1,14 +1,14 @@
-(import ./defonce :prefix "")
-(import freja/frp)
+(use ./defonce)
 
-(import freja/assets :as a)
+(import ./state)
+(import ./event/subscribe :as s)
+(import ./event/callback)
+(import ./assets :as a)
 
 (import freja-layout/sizing/definite :as def-siz)
 (import freja-layout/sizing/relative :as rel-siz)
 (import freja-layout/compile-hiccup :as ch)
 (import freja-layout/jaylib-tags :as jt)
-
-(import spork/test)
 
 (defonce render-tree @{})
 
@@ -65,12 +65,12 @@
 (defn handle-ev
   [tree ev name]
   # only run events if no one else has already taken the event
-  (unless (frp/callbacks ev)
+  (unless (state/callbacks ev)
     (with-dyns [:offset-x 0
                 :offset-y 0
                 :event-max-h (tree :height)]
       (when (elem-on-event tree ev)
-        (frp/push-callback! ev (fn []))))))
+        (callback/put! ev (fn []))))))
 
 (defn compile-tree
   [hiccup props &keys {:max-width max-width
@@ -221,10 +221,10 @@
                               #  (print "rendering hiccup"))
                               (render $ 0 0)))
 
-  (default max-width (frp/screen-size :screen/width))
+  (default max-width (state/screen-size :screen/width))
   (put render-tree :max-width max-width)
 
-  (default max-height (frp/screen-size :screen/height))
+  (default max-height (state/screen-size :screen/height))
   (put render-tree :max-height max-height)
 
   (default tags jt/tags)
@@ -241,9 +241,9 @@
 
   (put render-tree :root (:compile render-tree props))
 
-  (frp/subscribe! props render-tree)
-  (frp/subscribe-finally! frp/frame-queue render-tree)
-  (frp/subscribe-first! frp/mouse render-tree)
-  (frp/subscribe! frp/screen-size render-tree)
+  (s/subscribe! props render-tree)
+  (s/subscribe-finally! state/frame-events render-tree)
+  (s/subscribe-first! state/mouse render-tree)
+  (s/subscribe! state/screen-size render-tree)
 
   render-tree)

@@ -2,8 +2,7 @@
 (use freja-layout/put-many)
 
 (import freja/hiccup :as h)
-(import freja/events :as e)
-(import freja/frp)
+(import freja/event/subscribe :as s)
 (import freja/state)
 (import freja/input :as i)
 (import freja/default-hotkeys :as dh)
@@ -58,7 +57,7 @@
   (unless hotkey (string "no hotkey for " f))
 
   [:clickable {:on-click (fn [_]
-                           (e/put! my-props :open-menu nil)
+                           (s/put! my-props :open-menu nil)
                            (f (state :focused-text-area)))}
    [:row {}
     [:align {:horizontal :left
@@ -128,7 +127,7 @@
                      (when (my-props :open-menu)
                        (when (= ev-kind :release)
                          (print "release close menu")
-                         (e/put! my-props :open-menu nil))))}
+                         (s/put! my-props :open-menu nil))))}
 
    [:padding {:left 0 :top 0}
     [:background {:color bar-bg}
@@ -137,7 +136,7 @@
        [:row {}
         [:padding {:right 8}
          [:clickable {:on-click (fn [_]
-                                  (e/put! props :open-menu :file))}
+                                  (s/put! props :open-menu :file))}
           [:text {:color (if (= (props :open-menu) :file)
                            highlight-color
                            damp-color)
@@ -145,7 +144,7 @@
                   :text "File"}]]]
 
         [:clickable {:on-click (fn [_]
-                                 (e/put! props :open-menu :edit))}
+                                 (s/put! props :open-menu :edit))}
          [:text {:color (if (= (props :open-menu) :edit)
                           highlight-color
                           damp-color)
@@ -174,7 +173,7 @@
                my-props
                :remove-layer-on-error true)
 
-  (frp/subscribe! state/focus state))
+  (s/subscribe! state/focus state))
 
 #
 # this will only be true when running load-file inside freja

@@ -42,13 +42,12 @@
 (import ./assets :as assets)
 (put module/cache "freja/assets" assets)
 
-(def frp (require "./frp"))
-(import ./frp :as frp)
-(put module/cache "freja/frp" frp)
+(import ./event/jaylib-to-events :as jaylib->events)
+(import ./event/default-subscriptions)
 
-(def events (require "./events"))
-(import ./events :as events)
-(put module/cache "freja/events" events)
+(def subscribe (require "./event/subscribe"))
+(import ./event/subscribe :as subscribe)
+(put module/cache "freja/event/subscribe" subscribe)
 
 (def evaling (require "./evaling"))
 (import ./evaling :as evaling)
@@ -224,7 +223,12 @@
                     # (theme/colors :background)
 )
 
-  (frp/trigger dt)
+  (jaylib->events/convert dt)
+
+  (let [{:regular regular
+         :finally finally}
+        state/subscriptions]
+    (subscribe/call-subscribers regular finally))
 
   (end-drawing))
 
@@ -280,7 +284,7 @@
                (do
                  # prints might have happened between renders
                  (unless (empty? state/out)
-                   (queue/push frp/out (string state/out))
+                   (queue/push state/out-events (string state/out))
                    (buffer/clear state/out))
 
                  (with-dyns [:out state/out
@@ -299,7 +303,7 @@
                        (print state/out)))
 
                    (unless (empty? state/out)
-                     (queue/push frp/out (string state/out))
+                     (queue/push state/out-events (string state/out))
                      (buffer/clear state/out))
                    (ev/sleep 0.0001)))
                ([err fib]
@@ -341,8 +345,8 @@
 
       (init-window 800 600 "Freja")
 
-      (put frp/screen-size :screen/width (get-screen-width))
-      (put frp/screen-size :screen/height (get-screen-height))
+      (put state/screen-size :screen/width (get-screen-width))
+      (put state/screen-size :screen/height (get-screen-height))
 
       (put fonts/fonts :default (fonts/default-load-font-from-memory
                                   ".otf"
@@ -517,11 +521,10 @@ flags:
   (put module/cache "freja/defonce" defonce)
 
   (put module/cache "freja/fonts" fonts)
-  (put module/cache "freja/events" events)
   (put module/cache "freja/checkpoint" checkpoint)
   (put module/cache "freja/evaling" evaling)
   (put module/cache "freja/collision" collision)
-  (put module/cache "freja/frp" frp)
+  (put module/cache "freja/event/subscribe" subscribe)
   (put module/cache "freja/theme" theme)
   (put module/cache "freja/find-file" find-file)
   (put module/cache "freja/input" input)
@@ -542,9 +545,8 @@ flags:
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
-  (pp args)
 
-  (frp/init-chans)
+  (default-subscriptions/init)
 
   (pp state/editor-components)
 
@@ -562,13 +564,13 @@ flags:
               (print "nope")
               (print (debug/stacktrace fib err ""))))
 
-          (frp/unsubscribe-finally! frp/frame-queue initial-dofile)
+          (subscribe/unsubscribe-finally! state/frame-events initial-dofile)
           #(set state/quit true)
 )
 
         (print "subscribing!")
 
-        (frp/subscribe-finally! frp/frame-queue initial-dofile))
+        (subscribe/subscribe-finally! state/frame-events initial-dofile))
 
       (do (print "--dofile needs a filepath as a second argument")
         (os/exit 0))))
