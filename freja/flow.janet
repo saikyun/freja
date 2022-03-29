@@ -132,9 +132,13 @@ font must either be:
                     (put self :render-x parent-x)
                     (put self :render-y parent-y)
 
-                    (defer (rl-pop-matrix)
-                      (rl-push-matrix)
-                      (render self)))
+                    (unless (props :render-anywhere)
+                      (begin-scissor-mode parent-x parent-y (self :width) (self :height)))
+
+                    (render self)
+
+                    (unless (props :render-anywhere)
+                      (end-scissor-mode)))
 
           :on-event (fn [self ev]
                       (defn unfocus
@@ -182,12 +186,21 @@ font must either be:
 
 (defn start-game
   ``
-props allows following keys:
-:render (mandatory) -- called every frame, with &keys :width & :height
-                       :width / :height has width / height of the game
-:change -- zero args function that is called at the beginning of every frame, if the game is focused. meant to be used to handle input
-:on-event -- function that takes arguments `self` and `event`. if present it is called every time an event occurs, e.g. `:key-down`. `self` is the element doing the rendering.
-:state -- table that will be populated with information about the component, e.g. `:element` will be inserted, containing a reference to the element
+  props allows following keys:
+  :render (mandatory) -- called every frame, with &keys :width & :height
+                         :width / :height has width / height of the game
+  :change -- zero args function that is called at the
+             beginning of every frame, if the game
+             is focused. meant to be used to handle input
+  :on-event -- function that takes arguments `self` and `event`.
+               if present it is called every time an event occurs,
+               e.g. `:key-down`.
+               `self` is the element doing the rendering.
+  :state -- table that will be populated with information about
+            the component, e.g. `:element` will be inserted,
+            containing a reference to the element
+  :render-anywhere -- set to true to disable scissor-mode,
+                      i.e. render outside element bounds
 
   Optionally, props can be a function. In this case, that function will be used as `:render` above.
 ``
@@ -200,6 +213,7 @@ props allows following keys:
   (assert (props :render) "start-game needs :render")
 
   (def state (get props :state @{}))
+  # copy the props
   (def props (from-pairs (pairs props)))
   (put props :state state)
 
@@ -219,7 +233,7 @@ props allows following keys:
 
 (when (dyn :freja/loading-file)
   (start-game {:render (fn render [{:width width :height height}]
-                         (draw-rectangle 10 10 (- width 20) (- height 20) :blue))
+                         (draw-rectangle -20 0 (- width 20) (- height 20) :blue))
                :on-event (fn on-event [self ev] (pp ev))
                :change (fn [] (print "such change"))})
   #
