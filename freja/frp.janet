@@ -1,130 +1,6 @@
-(setdyn
-  :doc
-  ````
-## Overview
+# docs: https://github.com/saikyun/freja/wiki/%22frp%22
 
-frp4 is used to:
-
-* display things on screen
-* react to input from keyboard and mouse
-* prioritize which ui elements get inputs
-
-frp4 works by going through a table of
-"things that can happen"
-and
-"things that want to know what happened"
-e.g.
-
-```
-@{mouse [flash-cursor-position]
-```
-This means
-"whenever something mouse related happens,
-tell flash-cursor-position what happened".
-
-In this context, mouse is an "emitter"
-as in "mouse emits things that happen".
-flash-cursor-position is a "subscriber"
-as in "flash-cursor-position subscribes to things that happens".
-
-## Example usage
-
-The easiest way to figure out what "things that can happen" actually are, is to call:
-```
-(use ./misc/frp4)
-(subscribe! mouse pp)
-```
-If you are reading this in Freja, you can put the cursor after each ) and hit Ctrl+Enter. Then try clicking somewhere and look in your terminal.
-
-This means "the subscriber pp will be run whenever mouse emits something".
-
-In the above case, you would see these sorts of things in the terminal:
-```
-@[:press (234 472)]
-@[:release (234 472)]
-```
-
-The above describe what the physical mouse did, like pressing a button, and at what pixel relative to the window the mouse did what it did.
-So @[:press (234 472)] means "the mouse was pressed on x position 234 and y position 472". (0 0) would be the top left corner.
-
-A "thing that can happen" is called "event".
-
-
-## Available emitters
-
-Freja's built in emitters are listed below.
-
-### `mouse`
-
-Emits events related to the physical mouse.
-In the form of `@[kind-of-event mouse-position]` if not specified otherwise.
-
-`kind-of-event` can be one of the following:
-- :press
-- :release
-- :drag
-- :double-click
-- :triple-click
-- :scroll
--- in the form of `@[:scroll scroll-amount mouse-position]`, where scroll amount is how many pixels of scrolling occured
-
-`mouse-position` is a tuple of the x/y coordinates relative to the window's top left corner.
-
-####
-
-```
-(use ./misc/frp4)
-(subscribe! mouse pp)
-```
-
-
-### `keyboard`
-
-Emits events related to the physical keyboard.
-Always in the form of `@[kind-of-event key]`
-
-`kind-of-event` can be one of the following:
-- :key-down
--- is emitted when a key is pressed, or repeatedly when held for a certain period of time
-
-`key` is a keyword corresponding to the physical button. This will not account for locale, e.g. if using dvorak and hitting physical n, you will get `:n`, not b. This is due to how raylib works internally.
-
-#### Example
-
-```
-(use ./misc/frp4)
-(subscribe! keyboard pp)
-```
-
-
-
-### `chars`
-
-Emits events related to physical keyboard presses, respecting the locale of the user.
-Always in the form of `@[:char char]`
-
-`char` is a number corresponding to an ascii character. E.g. writing a emits `@[:char 97]`.
-
-#### Example
-
-```
-(use ./misc/frp4)
-(subscribe! chars pp)
-```
-
-### `callbacks`
-A stack of key -> callbacks, which will always only call the last callback for each key.
-
-### `frame-queue`
-Emits an event each new frame.
-
-### `rerender`
-Emits events when rerendering is needed.
-
-````)
-
-(use freja-jaylib)
-
+(import freja-jaylib :as jay)
 (import ./events :as e :fresh true)
 (import ./state :as state)
 (import ./keyboard :as kb :fresh true)
@@ -151,43 +27,43 @@ Emits events when rerendering is needed.
 
 (defn handle-keys
   [dt]
-  (var k (get-char-pressed))
+  (var k (jay/get-char-pressed))
 
   (while (not= 0 k)
     (queue/push chars @[:char k])
-    (set k (get-char-pressed)))
+    (set k (jay/get-char-pressed)))
 
   # must release keys before...
   (loop [k :in kb/possible-keys]
-    (when (key-released? k)
+    (when (jay/key-released? k)
       (queue/push keyboard @[:key-release k])))
 
   # ...checking for held keys
   (loop [[k dl] :pairs state/keys-down
          # might just have been released
-         :when (not (key-released? k))
+         :when (not (jay/key-released? k))
          :let [left ((update state/keys-down k - dt) k)]]
     (when (<= left 0)
       (queue/push keyboard @[:key-repeat k])))
 
   (loop [k :in kb/possible-keys]
-    (when (key-pressed? k)
+    (when (jay/key-pressed? k)
       (queue/push keyboard @[:key-down k]))))
 
 (varfn handle-scroll
   []
-  (let [move (get-mouse-wheel-move)]
+  (let [move (jay/get-mouse-wheel-move)]
     (when (not= move 0)
-      (queue/push mouse @[:scroll (* move 30) (get-mouse-position)]))))
+      (queue/push mouse @[:scroll (* move 30) (jay/get-mouse-position)]))))
 
 (def callbacks @{:event/changed false})
 
 (varfn handle-resize
   []
-  (when (window-resized?)
+  (when (jay/window-resized?)
     (-> screen-size
-        (e/put! :screen/width (get-screen-width))
-        (e/put! :screen/height (get-screen-height)))))
+        (e/put! :screen/width (jay/get-screen-width))
+        (e/put! :screen/height (jay/get-screen-height)))))
 
 (defn push-callback!
   [ev cb]
@@ -209,24 +85,24 @@ Emits events when rerendering is needed.
 
 (varfn handle-mouse
   [mouse-data]
-  (def pos (get-mouse-position))
+  (def pos (jay/get-mouse-position))
   (def [x y] pos)
 
   (put mouse-data :just-double-clicked false)
   (put mouse-data :just-triple-clicked false)
 
-  (when (mouse-button-released? 0)
+  (when (jay/mouse-button-released? 0)
     (put mouse-data :just-down nil)
     (put mouse-data :recently-double-clicked nil)
     (put mouse-data :recently-triple-clicked nil)
     (put mouse-data :up-pos [x y])
 
-    (queue/push mouse @[:release (get-mouse-position)]))
+    (queue/push mouse @[:release (jay/get-mouse-position)]))
 
-  (when (mouse-button-pressed? 0)
+  (when (jay/mouse-button-pressed? 0)
     (when (and (mouse-data :down-time2)
                # max time to pass for triple click
-               (> 0.4 (- (get-time) (mouse-data :down-time2)))
+               (> 0.4 (- (jay/get-time) (mouse-data :down-time2)))
                # max distance to travel for triple click
                (> 200 (v/dist-sqr pos (mouse-data :down-pos))))
       (put mouse-data :just-triple-clicked true)
@@ -234,43 +110,43 @@ Emits events when rerendering is needed.
 
     (when (and (mouse-data :down-time)
                # max time to pass for double click
-               (> 0.25 (- (get-time) (mouse-data :down-time)))
+               (> 0.25 (- (jay/get-time) (mouse-data :down-time)))
                # max distance to travel for double click
                (> 100 (v/dist-sqr pos (mouse-data :down-pos))))
       (put mouse-data :just-double-clicked true)
       (put mouse-data :recently-double-clicked true)
-      (put mouse-data :down-time2 (get-time))))
+      (put mouse-data :down-time2 (jay/get-time))))
 
   (cond (mouse-data :just-triple-clicked)
-    (queue/push mouse @[:triple-click (get-mouse-position)])
+    (queue/push mouse @[:triple-click (jay/get-mouse-position)])
 
     (and (mouse-data :just-double-clicked)
-         (not (key-down? :left-shift))
-         (not (key-down? :right-shift)))
-    (queue/push mouse @[:double-click (get-mouse-position)])
+         (not (jay/key-down? :left-shift))
+         (not (jay/key-down? :right-shift)))
+    (queue/push mouse @[:double-click (jay/get-mouse-position)])
 
     (or (mouse-data :recently-double-clicked)
         (mouse-data :recently-triple-clicked))
     nil # don't start selecting until mouse is released again
 
-    (mouse-button-down? 0)
+    (jay/mouse-button-down? 0)
     (do
-      (put mouse-data :down-time (get-time))
+      (put mouse-data :down-time (jay/get-time))
 
       (if (= nil (mouse-data :just-down))
         (do (put mouse-data :just-down true)
           (put mouse-data :last-pos pos)
           (put mouse-data :down-pos pos)
-          (queue/push mouse @[:press (get-mouse-position)]))
+          (queue/push mouse @[:press (jay/get-mouse-position)]))
         (do (put mouse-data :just-down false)
           (unless (= pos (mouse-data :last-pos))
             (put mouse-data :last-pos pos)
-            (queue/push mouse @[:drag (get-mouse-position)])))))
+            (queue/push mouse @[:drag (jay/get-mouse-position)])))))
 
     # no mouse button down
     (not= pos (mouse-data :last-pos))
     (do (put mouse-data :last-pos pos)
-      (queue/push mouse @[:mouse-move (get-mouse-position)]))))
+      (queue/push mouse @[:mouse-move (jay/get-mouse-position)]))))
 
 (def deps @{})
 
