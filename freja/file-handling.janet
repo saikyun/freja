@@ -1,5 +1,4 @@
 (import ./new_gap_buffer :prefix "")
-(import ./text_api :as old)
 (import ./state)
 (import spork/path)
 
@@ -94,14 +93,6 @@
     (file/flush f)
     (unless no-print
       (print "Saved file: " path))))
-
-(varfn load-file2
-  [props path]
-  (old/replace-content props (read-file path)))
-
-(varfn lul
-  [x]
-  (print "hej KAKA " x))
 
 (comment
   (import freja/frp)
@@ -263,8 +254,7 @@
       #  ((compile newtup env where)))
 )))
 
-#GOHERE
-(varfn freja-dofile
+(defn freja-dofile
   [top-env path]
   (print (string `=> (freja-dofile "` path `")`))
 
@@ -347,8 +337,6 @@
           # flychecking
           (freja-dofile* path :evaluator flycheck-evaluator)
 
-          #        (print "second step")
-
           (freja-dofile* path :env env))
         ([err fib]
           (if (dictionary? err)
@@ -413,23 +401,17 @@
                 existing-var new-var)
               (do
                 (print "new var " k " in ns " ns-name " replaces var " (string/format "%P" existing-sym))
-                #(put ns k (in env k))
+
                 # we want to keep existing var and update it
                 # since this is what existing functions will have as reference
                 (put-in ns [k :ref] existing-var)
                 (put existing-var 0 (in new-var 0)))
 
               new-var
-              (do
-                (put ns k (in env k))
-                #(print "new var " k " in ns " ns-name " replaces non-var " existing-sym)
-)
+              (put ns k (in env k))
 
               # else only existing-var
-              (do
-                (put ns k (in env k))
-                #(print "new non-var " k " in ns " ns-name " replaces var " existing-sym)
-)))
+              (put ns k (in env k))))
 
           (set state/user-env ns))
 
@@ -469,11 +451,6 @@
   (file-handling/fine)
   (curenv)
   (state/user-env))
-
-(varfn fine
-  "HHUUUH"
-  []
-  (print "fine123"))
 
 (varfn save-and-dofile
   [props]

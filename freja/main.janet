@@ -21,10 +21,6 @@
 (def freja-jaylib (require "freja-jaylib"))
 (use freja-jaylib)
 
-(def ns (require "./ns"))
-(import ./ns :as ns)
-(put module/cache "freja/ns" ns)
-
 (def state (require "./state"))
 (import ./state :as state)
 (put module/cache "freja/state" state)
@@ -328,8 +324,7 @@
         #:env env
 ))
     ([err fib]
-      (print "nope")
-      (print (debug/stacktrace fib err "")))))
+      (debug/stacktrace fib err ""))))
 
 (defn run-init-file
   []
@@ -400,13 +395,7 @@
 
         (loop-it)))
     ([err fib]
-      (print "error! " err)
       (debug/stacktrace fib err "")
-
-      (let [path "text_experiment_dump"]
-        ## TODO:  Dump-state
-        #(dump-state path gb-data)
-        (print "Dumped state to " path))
 
       (when state/quit-hook
         (state/quit-hook))
@@ -444,6 +433,8 @@
   [& args]
   (setdyn :redef true)
 
+  (set-trace-log-level :warning)
+
   (put module/loaders :source
        (fn source-loader
          [path args]
@@ -451,10 +442,6 @@
          (defer (put module/loading path nil)
            (def env (get module/cache path))
            (default env (make-env))
-           #(if (string/find "spork/path" path)
-           #  (put env :redef false)
-           #  (put env :dynamic-defs123 true))
-           #(print "second loady thing: " path)
            (dofile path :env env ;args))))
 
   # TODO: parse args in better way
@@ -516,7 +503,6 @@ flags:
     (os/exit 0))
 
   (put module/cache "freja-jaylib" freja-jaylib)
-  (put module/cache "freja/ns" ns)
   (put module/cache "freja/state" state)
   (put module/cache "freja/defonce" defonce)
 
@@ -548,8 +534,6 @@ flags:
 
   (default-subscriptions/init)
 
-  (pp state/editor-components)
-
   (file-handling/ensure-dir (file-handling/data-path ""))
 
   (when (= "--dofile" (get args 1))
@@ -561,14 +545,11 @@ flags:
             (do
               (run-file path))
             ([err fib]
-              (print "nope")
-              (print (debug/stacktrace fib err ""))))
+              (debug/stacktrace fib err "")))
 
           (subscribe/unsubscribe-finally! state/frame-events initial-dofile)
           #(set state/quit true)
 )
-
-        (print "subscribing!")
 
         (subscribe/subscribe-finally! state/frame-events initial-dofile))
 
@@ -581,9 +562,7 @@ flags:
                              (get args 2)
                              (get args 1))]
              file))
-         :no-init-file? no-init-file?)
-
-  (print "JANET_PATH is: " (dyn :syspath)))
+         :no-init-file? no-init-file?))
 
 
 (setdyn :redef true)

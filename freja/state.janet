@@ -52,13 +52,13 @@
 
 (defn ext->editor
   [ext &opt data]
-  (default ext (do (print "no ext provided, defaulting to .janet")
+  (default ext (do (printf "no ext provided, defaulting to .janet")
                  ".janet"))
   (def compo (get editor-components ext))
-  (default compo (do (print "no component found for " ext ", defaulting to .janet")
+  (default compo (do (printf "no component found for " ext ", defaulting to .janet")
                    (editor-components ".janet")))
   (def state-creator (get editor-state-creators ext))
-  (default state-creator (do (print "no state-creator found for " ext ", defaulting to .janet")
+  (default state-creator (do (printf "no state-creator found for " ext ", defaulting to .janet")
                            (editor-state-creators ".janet")))
   [(compo data) (state-creator data)])
 

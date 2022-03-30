@@ -2,6 +2,7 @@
 (import ../freja/default-hotkeys :as dh)
 (import ../freja/state)
 (import ../freja/new_gap_buffer :as gb)
+(import ./util/replay-events :as replay)
 
 (defn press
   [k & body]
@@ -26,6 +27,5 @@
   (fn
     []
     (with-dyns [:out stdout]
-      (print "just checks if not crashing")
       (print "test successful\n------------------------------")
       (os/exit 0))))

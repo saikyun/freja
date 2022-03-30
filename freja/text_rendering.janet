@@ -1,38 +1,8 @@
 (use freja-jaylib)
 (import spork/test)
-(import ./find_row_etc :prefix "")
+(use ./find_row_etc)
 
-(def weird-str
-  ``
-  aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaabbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbcccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
-  ``)
-
-
-(def org-str @``hello there mr arnold 
-  how are you doing? 
-  I hope you're doing okay 
-  I know I'm not 
-  You know... 
-  My wife... 
-  She.. 
-  She... 
-  She's inhaled snow. 
-  Multiple times. 
-  I just don't know what to do. 
-  It feels like my life is over. 
-  It will never end, this feeling of misery, the feeling of helplesness. The reason being that I'm simply not good enough for her. I probably never were. 
-  And now snow is all she wants.``)
-
-(def s100 (string/repeat
-            org-str
-            100))
-
-(def s1000 (string/repeat
-             org-str
-             1000))
-
-
-(varfn content
+(defn content
   "Returns a big string of all the pieces in the text data."
   [{:selected selected :text text :after after}]
   (string text selected (string/reverse after)))
@@ -76,7 +46,7 @@
                 (* scale 1 spacing)
                 color))
 
-(varfn get-pos-in-text
+(defn get-pos-in-text
   [text-data x]
   (def {:conf conf :offset offset :text text :selected selected :after after} text-data)
   (def {:size font-size :spacing spacing} conf)
@@ -125,7 +95,7 @@
             (set total-w (+ total-w spacing))))
       res)))
 
-(varfn split-words
+(defn split-words
   [t]
   (peg/match '(any (+ (capture (some (if-not :s 1)))
                       (capture (* (if-not "\n" :s)))
@@ -137,7 +107,7 @@
 
   (test/timeit (split-words org-str)))
 
-(varfn measure-each-char
+(defn measure-each-char
   [conf whole-text]
   (def {:size size :spacing spacing} conf)
   (var arr (buffer/new 1))
@@ -150,7 +120,7 @@
       (let [[x y] (measure-text conf arr)]
         [(+ x (* (conf :mult) spacing)) y]))))
 
-(varfn size-between
+(defn size-between
   [sizes word]
   (var size @{:w 0 :h 0})
   (loop [c :in word
@@ -172,7 +142,7 @@
       (break)))
   ret)
 
-(varfn regular-word
+(defn regular-word
   [state word {:w w}]
   (let [row (last (state :rows))]
     (-> row
@@ -180,7 +150,7 @@
         (update :w + w)
         (update :words array/push word))))
 
-(varfn handle-newline
+(defn handle-newline
   [state word {:w w :h h}]
   (let [row (last (state :rows))
         start (row :stop)
@@ -197,9 +167,9 @@
                                      :start stop
                                      :stop stop})))
 
-(varfn add-word [w i] nil)
+(defn add-word [w i] nil)
 
-(varfn handle-wide-word
+(defn handle-wide-word
   [state word {:h h}]
   (let [row (last (state :rows))
         start (row :stop)
@@ -225,7 +195,7 @@
 
     state))
 
-(varfn handle-wide-line
+(defn handle-wide-line
   [state word size]
   (let [{:w w :h h} size
         {:rows rows
@@ -257,7 +227,7 @@
 
       (add-word state word))))
 
-(varfn add-word [state word]
+(defn add-word [state word]
   (let [{:rows rows
          :max-width max-width} state
 
@@ -290,7 +260,7 @@
 ## or keep going for x amount of lines and give up
 ## all word wrapped lines that come after a real newline must be recalculated "properly"
 
-(varfn words-before-cursor-until-invisible
+(defn words-before-cursor-until-invisible
   "Find all words, and start wrapping them, assuming that the current position is at the end of the current line."
   [sizes width top-y x y chars]
 
@@ -375,7 +345,7 @@
   #(pp state)
   )
 
-(varfn words-before-cursor-until-invisiblev1.5
+(defn words-before-cursor-until-invisiblev1.5
   "Find all words, and start wrapping them, assuming that the current position is at the end of the current line."
   [sizes width top-y x y chars]
 
@@ -441,7 +411,7 @@
 (var lines @[])
 (var need-wordwrap @[])
 
-(varfn words-before-cursor-until-invisiblev2
+(defn words-before-cursor-until-invisiblev2
   "Find all words, and start wrapping them, assuming that the current position is at the end of the current line."
   [lines
    need-wordwrap
@@ -477,7 +447,7 @@
 
   lines)
 
-(varfn wordwrap2
+(defn wordwrap2
   [conf sizes words max-width]
   (var rows @[@{:y 0
                 :h 0
@@ -496,7 +466,7 @@
 
   rows)
 
-(varfn wordwrap2-max-y
+(defn wordwrap2-max-y
   [conf sizes text max-width max-y]
   (var rows @[@{:y 0
                 :h 0
@@ -529,7 +499,7 @@
 
   rows)
 
-(varfn glyphs->size-struct
+(defn glyphs->size-struct
   [conf glyphs]
   (table ;(interleave
             glyphs
@@ -667,7 +637,7 @@
                    (text-data :text))))
 
 
-(varfn char-positions
+(defn char-positions
   [sizes rows]
   (var i 0)
   (var ps @[])
@@ -683,12 +653,12 @@
     (+= i nof))
   ps)
 
-(varfn y->row
+(defn y->row
   "Finds the row closest to a y position."
   [{:rows rows :offset offset} y]
   (binary-search-closest rows |(compare y (+ ($ :y) ($ :h) (offset 0)))))
 
-(varfn pos->row
+(defn pos->row
   "Figures out the de facto row of a logical position."
   [{:rows rows :offset offset} pos]
   (rows (binary-search-closest rows (fn [{:start start :stop stop}]
@@ -708,7 +678,7 @@
   (pos->row text-data 4)
   ((pos->row text-data 0) :y))
 
-(varfn range->rects
+(defn range->rects
   [props start stop]
   (def {:positions ps :sizes sizes} props)
   (var rects @[])
@@ -732,7 +702,7 @@
     0
     5))
 
-(varfn get-caret-pos
+(defn get-caret-pos
   [{:current-row current-row
     :offset offset
     :rows rows
@@ -753,7 +723,7 @@
                                 (get-in rows [current-row :word-wrapped])
                                 (= (length text) (get-in rows [current-row :stop])))
         y ((get rows current-row) :y)]
-    #(print "curre " current-row " - y " y)
+
     (when-let [{:x cx :y cy} (or (when-let [pos (get ps (max (dec (length text)) 0))]
                                    (cond newline
                                      (let [h (* ((get rows current-row) :h)
@@ -774,7 +744,7 @@
             w (if (or newline word-wrapped-down) 0 (get s 0 0))]
         [(- (+ cx w) (* spacing 1.25)) cy]))))
 
-(varfn row-of-pos
+(defn row-of-pos
   "Row of logical character index."
   [rows pos]
   (var current-row 0)
@@ -789,7 +759,7 @@
     (set current-row i))
   current-row)
 
-(varfn cursor-pos
+(defn cursor-pos
   "Returns the position of the cursor, which depends on the direction of selection."
   [props]
   (if (= :right (props :dir))
@@ -797,7 +767,7 @@
        (length (props :selected)))
     (length (props :text))))
 
-(varfn weighted-row-of-pos
+(defn weighted-row-of-pos
   "Calculates the row of the position `cp`.
 Takes stickiness into account,
 e.g. when at the end / right after a word wrapped line."
@@ -830,19 +800,19 @@ e.g. when at the end / right after a word wrapped line."
 
     current-row))
 
-(varfn refresh-caret-pos
+(defn refresh-caret-pos
   [props]
   (comment
     ## TODO: Uncomment
     (re-measure props)
     (put props :caret-pos (get-caret-pos props))))
 
-(varfn reset-blink
+(defn reset-blink
   [props]
   (set (props :blink) 0)
   props)
 
-(varfn scroll-to-focus
+(defn scroll-to-focus
   [props]
   (comment
     # TODO: Uncomment this stuff

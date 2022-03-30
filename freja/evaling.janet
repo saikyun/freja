@@ -68,8 +68,6 @@ ouae
  :b 20}
 ``))
 
-# (pp (string/reverse s))
-
 (varfn get-last-sexp
   [s]
   (-?>> s
@@ -87,10 +85,6 @@ ouae
       (string/slice 0 (gb :caret))
       get-last-sexp))
 
-#(eval-last-sexp gb-data)
-#(pp (gb-data :caret))
-#(pp (get-last-sexp text))
-
 (defn eval-it
   [env code]
   (print "=> " (string/trim code))
@@ -106,14 +100,8 @@ ouae
       (def res (eval-string code))
       (fiber/setenv (fiber/current) last-env)
       (queue/push state/eval-results {:value res
-                                      #:code code
-                                      :fiber (fiber/current)})
-      #      (pp res)
-)
+                                      :fiber (fiber/current)}))
     ([err fib]
       (fiber/setenv (fiber/current) last-env)
-      #(debug/stacktrace fib err)
-
       (queue/push state/eval-results {:error err
-                                      #:code code
                                       :fiber fib}))))

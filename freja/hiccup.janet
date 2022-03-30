@@ -20,8 +20,6 @@
   [e ev]
   # traverse children first
   # will return true if the event is taken
-  #(pp (e :tag))
-  #(pp (e :left))
   (with-dyns [:offset-x (+ (dyn :offset-x)
                            (get e :left 0)
                            (get-in e [:offset 3] 0))
@@ -52,12 +50,7 @@
                 :left x
                 :top y} c]
          :until (or taken (> y max-h))]
-
-    #(with-dyns [:offset-x (+ (dyn :offset-x))
-    #            :offset-y (+ (dyn :offset-y))]
-    (set taken (elem-on-event c ev))) #)
-
-  #
+    (set taken (elem-on-event c ev)))
 
   taken)
 
@@ -66,6 +59,7 @@
   [tree ev name]
   # only run events if no one else has already taken the event
   (unless (state/callbacks ev)
+    # offset is the top left corner of each element
     (with-dyns [:offset-x 0
                 :offset-y 0
                 :event-max-h (tree :height)]
@@ -85,23 +79,16 @@
     (with-dyns [:text/font text/font
                 :text/size text/size
                 :text/get-font a/font]
-      # (print "compiling tree...")
       (def root #(test/timeit
         (ch/compile [hiccup props]
                     :tags tags
                     :element old-root
-                    :to-init to-init)
-        #)
-)
+                    :to-init to-init))
 
-      #(print "sizing tree...")
       (def root-with-sizes
-        #(test/timeit
         (-> root
             (def-siz/set-definite-sizes max-width max-height)
-            (rel-siz/set-relative-size max-width max-height))
-        #)
-)
+            (rel-siz/set-relative-size max-width max-height)))
 
       (put props :compilation/changed false)
 
@@ -159,30 +146,20 @@
                    (:draw self dt)
 
                    (_ (table? ev))
-                   (do # (print "compiling tree!")
-                     (put self :props ev)
-                     (put self :root (:compile self ev)))
+                   (-> self
+                       (put :props ev)
+                       (put :root (:compile self ev)))
 
                    (handle-ev (self :root) ev (self :name)))
 
                  ([err fib]
-                   (print "Error during event:")
-                   (pp ev)
+                   (eprint "Error during event:")
+                   (eprintf "%P" ev)
 
                    (propagate err fib)
 
-                   #(print "Hiccup: ")
-                   #(pp ((self :hiccup) (self :props)))
-                   #(print "Full tree:")
-                   #(pp (self :root))
-                   #(if (self :root)
-                   #  (do
-                   #    (print "Tree: ")
-                   #    (ch/print-tree (self :root)))
-                   #  (print "(self :root) is nil"))
-
                    (when (self :remove-layer-on-error)
-                     (print "Removing layer: " (self :name))
+                     (printf "Removing layer: %s" (self :name))
                      (remove-layer (self :name) (self :props))))))})
 
 (defn new-layer
@@ -196,8 +173,6 @@
           :text/font text/font
           :text/size text/size
           :remove-layer-on-error remove-layer-on-error}]
-
-  (print "Adding hiccup layer: " name)
 
   (def render-tree (or (named-layers name)
                        (let [c @{}]
@@ -216,10 +191,7 @@
   (put render-tree :props props)
 
   (default render jt/render)
-  (put render-tree :render |(do
-                              #(when (= name :text-area)
-                              #  (print "rendering hiccup"))
-                              (render $ 0 0)))
+  (put render-tree :render |(render $ 0 0))
 
   (default max-width (state/screen-size :screen/width))
   (put render-tree :max-width max-width)

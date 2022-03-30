@@ -2,7 +2,7 @@
 (import ../freja/state)
 (import ../freja/new_gap_buffer :as gb)
 (import ../freja/checkpoint :as c)
-(import ./util/replay-events :as replay)
+(import ./util/replay-events :as r)
 
 (math/seedrandom (os/time))
 
@@ -13,15 +13,15 @@
 (main/main nil nil "--no-init")
 
 (var commands
-  @[;(press :left-control
-            ;(press :o))
-    ;(chars path)
-    ;(press :enter)
-    ;(chars content)
-    ;(press :left-control
-            ;(press :s))])
+  @[;(r/press :left-control
+              ;(press :o))
+    ;(r/chars path)
+    ;(r/press :enter)
+    ;(r/chars content)
+    ;(r/press :left-control
+              ;(r/press :s))])
 
-(replay/run-commands
+(r/run-commands
   (fn []
     (with-dyns [:out stdout]
       (let [top-buf (last (state/editor-state :stack))

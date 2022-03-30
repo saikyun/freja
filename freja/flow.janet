@@ -103,10 +103,6 @@ font must either be:
             (when state
               (put state :element self))
 
-            #(print "focus game")
-            #(e/put! state/focus :focus self)
-            #(e/put! state/editor-state (if (props :left) :left-focus :right-focus) true)
-
             (comment global-set-key
                      [:alt :u]
                      (fn [_]
@@ -234,7 +230,7 @@ font must either be:
 (when (dyn :freja/loading-file)
   (start-game {:render (fn render [{:width width :height height}]
                          (draw-rectangle -20 0 (- width 20) (- height 20) :blue))
-               :on-event (fn on-event [self ev] (pp ev))
-               :change (fn [] (print "such change"))})
+               :on-event (fn on-event [self ev] (printf "%P" ev))
+               :change (fn [] (printf "such change"))})
   #
 )

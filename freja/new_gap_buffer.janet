@@ -11,6 +11,7 @@ Generally used for internal stuff.
 (import spork/test)
 (import ./new_gap_buffer_util :prefix "")
 (use freja-jaylib)
+(import ./find_row_etc :as find)
 
 
 (defn min*
@@ -1245,23 +1246,11 @@ Otherwise moves the caret backward one character."
            last)))
 
 
-(import ./find_row_etc :prefix "")
-
 (varfn gb-find2!
   [gb peg]
   (def matches (peg/match (finder peg) (content gb) 0))
 
-  [(binary-search-closest matches |(compare (gb :caret) (first $))) matches])
-
-(comment
-  #do
-
-  (import freja/state)
-
-  (def gbb (get-in state/editor-state [:left-state :editor :gb]))
-  (pp (gb-find2! gbb "finder"))
-  #
-)
+  [(find/binary-search-closest matches |(compare (gb :caret) (first $))) matches])
 
 (varfn gb-find-backward!
   [gb peg]

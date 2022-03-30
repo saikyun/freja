@@ -1,6 +1,3 @@
-(import ./ns)
-(ns/start "freja/rainbow")
-
 (use ./new_gap_buffer)
 
 (defn rgba->f
@@ -297,64 +294,8 @@
   # => "bad escape"
 )
 
-(def delims-pos-grammar
-  ~{:ws (set " \t\r\f\n\0\v")
-    :readermac (set "';~,|")
-    :symchars (+ (range "09" "AZ" "az" "\x80\xFF") (set "!$%&*+-./:<?=>@^_"))
-    :token (some :symchars)
-    :hex (range "09" "af" "AF")
-    :escape (* "\\" (+ (set "ntrzfev0\"\\")
-                       (* "x" :hex :hex)
-                       (* "u" [4 :hex])
-                       (* "U" [6 :hex])
-                       #(error (constant "bad escape"))
-))
-    :comment (* "#" (any (if-not (+ "\n" -1) 1)))
-    :symbol :token
-    :keyword (* ":" (any :symchars))
-    :constant (* (+ "true" "false" "nil") (not :symchars))
-    :bytes (* "\"" (any (+ :escape (if-not "\"" 1))) "\"")
-    :string :bytes
-    :buffer (* "@" :bytes)
-    :long-bytes {:delim (some "`")
-                 :open (capture :delim :n)
-                 :close (cmt (* (not (> -1 "`")) (-> :n) ':delim) ,=)
-                 :main (drop (* :open (any (if-not :close 1)) :close))}
-    :long-string :long-bytes
-    :long-buffer (* "@" :long-bytes)
-    :number (drop (cmt (<- :token) ,scan-number))
-    :raw-value (+ :comment :constant :number :keyword
-                  :string :buffer :long-string :long-buffer
-                  :parray :barray :ptuple :btuple :struct :dict :symbol)
-    :value (* (any (+ :ws :readermac)) :raw-value (any :ws))
-    :root (any :value)
-    :root2 (any (* :value :value))
-    :ptuple (* (cmt (* ($) "(") ,inc-depth) :root (opt (cmt (* ($) ")") ,dec-depth)))
-    :btuple (* (cmt (* ($) "[") ,inc-depth) :root (opt (cmt (* ($) "]") ,dec-depth)))
-    :struct (* (cmt (* ($) "{") ,inc-depth) :root2 (opt (cmt (* ($) "}") ,dec-depth)))
-    :parray (* "@" :ptuple)
-    :barray (* "@" :btuple)
-    :dict (* "@" :struct)
-    :main :root})
-
-(comment
-  (pp (peg/match delims-pos-grammar
-                 ``
-(+ 1 (* 3 3))
-# hej )
-(* 5 # 123 )
-)
-``))
-  #
-)
-
 (defn gb->delim-ps
   [gb]
-  #(print "HAHA")
   (set depth 0)
-  (peg/match jg # delims-pos-grammar
+  (peg/match jg
              (content gb)))
-
-(print "huhu")
-
-(ns/stop)

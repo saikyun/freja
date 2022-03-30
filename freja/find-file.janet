@@ -59,15 +59,13 @@
 
   (loop [v :in (get-files-relative (os/cwd))] (print v))
 
-  (def peg ~{:main (any (+ (* ($) "freja")
-                           1))})
-
-  (pp
-    (->>
-      (map (fn [p] (unless (empty? (peg/match peg p))
-                     p))
-           (get-files-relative (os/cwd)))
-      (filter (comp not nil?))))
+  (let [peg ~{:main (any (+ (* ($) "freja")
+                            1))}]
+    (pp (->>
+          (map (fn [p] (unless (empty? (peg/match peg p))
+                         p))
+               (get-files-relative (os/cwd)))
+          (filter (comp not nil?)))))
 
   #
 )

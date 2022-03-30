@@ -10,101 +10,6 @@
 (import ./rainbow :as rb)
 (import ./highlighting :as hl)
 
-(comment
-
-  (import freja/default-hotkeys :as dh)
-
-  (dh/global-set-key [:control :k]
-                     (fn [_]
-                       (print (os/execute ["./start-freja" "--dofile" "repro-scroll-bug.janet"] :p))))
-
-  ## DEBUGGING STUFF
-
-
-  (import ./state)
-  (import ./events :as e)
-
-  (ev/spawn
-    (ev/sleep 0.5)
-    (def faulty-stuf
-      ``
-hej
-phoentpoa
-dig
-ho
-htneosua
-``)
-
-    (def faulty-stuf
-      ``
-hej
-hej
-hej
-``)
-
-    (defn safe-slice
-      [s start stop]
-      (string/slice s start (min (length s) stop)))
-
-    (defn show-keys
-      [o ks]
-      [:block {}
-       ;(seq [k :in ks
-              :let [s (string/format "%p %p" k (get o k))]]
-          [:block {}
-           (safe-slice s 0 1000)])])
-
-    (e/put!
-      state/editor-state
-      :right
-      (fn [{:left-state rs}]
-        (def {:editor editor} rs)
-        (def {:gb gb} editor)
-
-        (try
-          [:padding {:all 6}
-           [:block {}
-            [:block {}
-             "gb"]
-
-            (string "nof lines: " (length (gb :lines)))
-
-            (show-keys gb [:caret
-                           :scroll
-                           :checked-word
-                           :lines
-                           :y-poses])
-
-            [:padding {:top 16}
-             [:block {:padding-top 16}
-              "gb keys"]
-             [:block {}
-              (safe-slice (string/format "%p" (keys gb)) 0 1000)]]
-
-            [:padding {:top 16}
-             [:block {}
-              "Editor keys"]
-             [:block {}
-              (safe-slice (string/format "%p" (keys editor)) 0 1000)]]
-
-            [:block {}
-             "Right state keys"]
-            [:block {}
-             (safe-slice (string/format "%p" (keys rs)) 0 1000)]]]
-          ([err fib]
-            (debug/stacktrace fib err "")
-            "err"))))
-    # (e/put! state/editor-state :bottom-right nil)
-)
-  (import freja/default-hotkeys :as dh)
-
-  ## END OF DEBUGGING STUFF
-
-  #
-)
-
-#
-
 (defn reset-blink
   [props]
   (set (props :blink) 0)
@@ -160,9 +65,8 @@ hej
     (if-not sz
       (let [sz (first (values sizes))]
         (unless (warned-chars c)
-          (print "no size for char " c ", using first sizes instead." sz)
+          (eprint "no size for char " c ", using first sizes instead." sz)
           (put warned-chars c true))
-        #(debug/stacktrace (fiber/current) "")
         sz)
       sz)))
 
@@ -179,15 +83,6 @@ hej
     (let [[w h] (get-size sizes c)] (+= acc-w w)))
 
   acc-w)
-
-(comment
-  (width-between gb-data 0 10)
-
-  (gb/gb-iterate
-    gb-data
-    0 100
-    i c
-    (print i)))
 
 (defn index-passing-max-width
   "Returns the index of the char exceeding the max width.
@@ -206,8 +101,6 @@ Returns `nil` if the max width is never exceeded."
     i c
     (let [[w h] (get-size sizes c)]
       (+= acc-w w)
-      (when (dyn :debug)
-        (print "i: " i " - c: " c " - " "acc-w: " acc-w))
       (when (> acc-w max-width) # we went too far!
         (return stop-gb-iterate i)))))
 
@@ -228,8 +121,6 @@ Returns `nil` if the max width is never exceeded."
         (let [[w h] (sizes c)]
           (+= acc-w (+ (* w 0.5) last-w))
           (set last-w (* w 0.5))
-          (when (dyn :debug)
-            (print "i: " i " - c: " c " - " "acc-w: " acc-w))
           (when (> acc-w max-width) # we went too far!
             (return stop-gb-iterate i))))
       stop))
@@ -296,10 +187,6 @@ new-line-hook call, so don't save this
           :changed changed
           :change-pos change-pos}]
 
-  (when (gb :id)
-    #(print (gb :id))
-)
-
   (def {:lines lines
         :y-poses y-poses
         :line-flags line-flags
@@ -333,18 +220,6 @@ new-line-hook call, so don't save this
   (def h (* (gb :text/size) (gb :text/line-height)))
 
   (def start-i (get lines start-line-i 0))
-
-  (comment when (gb :id)
-           (print "word wrap " (gb :id))
-           (print "start-i: " start-i)
-           (print "last lines: " (last lines))
-           (print "length lines: " (length lines))
-           (print "start-line-i: " start-line-i)
-           (print "stop: " stop)
-           (print "last line-numbers: " (last line-numbers)))
-
-  #(def line-limit 999999999999999)
-  #(def y-limit 999999999999999)
 
   (default line-limit 999999999999)
 
@@ -398,10 +273,7 @@ new-line-hook call, so don't save this
 
     (new-line-hook gb (dec (length lines)) current-line)
 
-    (buffer/clear current-line)
-
-    (comment when (gb :id)
-             (print "new line: " line-i)))
+    (buffer/clear current-line))
 
   (defn check-if-word-is-too-wide
     [old-w i c]
@@ -452,11 +324,6 @@ new-line-hook call, so don't save this
     i c
 
     (buffer/push current-line c)
-
-    (comment when (gb :id)
-             (def lul @"")
-             (buffer/push lul c)
-             (print "char: " lul))
 
     (case c gb/newline
       (do (check-if-word-is-too-wide w i c)
@@ -541,10 +408,6 @@ new-line-hook call, so don't save this
     # we always add a line at the end -- just to have the last element in lines
     # makes it easier when looping over lines
     (new-line stop line-number :regular h))
-
-  (comment when (gb :id)
-           (print "last line-numbers: " (last line-numbers))
-           (debug/stacktrace (fiber/current) "" ""))
 
   lines)
 
@@ -750,7 +613,6 @@ new-line-hook call, so don't save this
         :highlighting highlighting
         :offset offset
         :colors colors
-        :debug debug
         :styling styling} gb)
   (def [x-scale y-scale] screen-scale)
   (def [x-offset y-offset] offset)
@@ -759,11 +621,6 @@ new-line-hook call, so don't save this
 
   (var delim-i 0)
   (var hl-i 0)
-
-  (when debug
-    (print "rendering lines")
-    (print "from " start-index " to ")
-    (pp lines))
 
   (var last-gb-index start-index)
 
@@ -799,7 +656,6 @@ new-line-hook call, so don't save this
                            0
                            (lines i)))
       (set line-i i)
-      # (print "skipped " i " lines")
       (break)))
 
   # just used for debugging
@@ -840,13 +696,6 @@ new-line-hook call, so don't save this
 
           (put s 0 c)
 
-          (when debug
-            (print "last: " last-gb-index " - l: " l)
-            (prin s)
-            (print (length s))
-            #(print "x: " x " - y: " y)
-)
-
           (do
             (while (and delim-ps
                         (< delim-i (length delim-ps))
@@ -881,13 +730,7 @@ new-line-hook call, so don't save this
 
           (+= x (* x-scale w))))
 
-      (when debug
-        (print))
-
-      (set last-gb-index l)))
-
-  #  (print "rendered " nof-lines " lines")
-)
+      (set last-gb-index l))))
 
 (defn current-line
   [gb]
@@ -1065,7 +908,6 @@ new-line-hook call, so don't save this
 
 (defn move-up!
   [gb]
-  #(print "move up")
   (-> gb
       gb/deselect
       reset-blink
@@ -1222,29 +1064,7 @@ new-line-hook call, so don't save this
             index)
         y (y-poses line-index)]
 
-    (when (dyn :debug)
-      (print "line-index: " line-index))
-
     [x y]))
-
-(comment
-  (gb-data :y-poses)
-
-  (with-dyns [:debug true]
-    (index->pos gb-data (gb-data :caret))))
-
-(var timing-enabled false)
-(set timing-enabled true)
-(set timing-enabled false)
-
-(defmacro timeit
-  [label & body]
-  ~(if timing-enabled
-     (do
-       (test/timeit (let [res (do ,;body)]
-                      (print "timing: " ,label)
-                      res)))
-     (do ,;body)))
 
 (defn inner-draw
   [gb]
@@ -1373,8 +1193,6 @@ new-line-hook call, so don't save this
 
 (defn gb-pre-render
   [gb]
-  #(print "lul")
-
   (def {:position position
         :offset offset
         :size size
@@ -1469,8 +1287,6 @@ new-line-hook call, so don't save this
              0))
 
       (generate-texture gb))
-
-    #        (pp (ez-gb gb))
 
     (put gb :lowest-changed-at nil)
     (put gb :resized nil)
@@ -1616,12 +1432,7 @@ new-line-hook call, so don't save this
     #
 )
 
-  (rl-pop-matrix)
-
-  (when timing-enabled
-    (print)
-    (print)
-    (set timing-enabled false)))
+  (rl-pop-matrix))
 
 (defn render-cursor
   [gb]
@@ -1700,15 +1511,3 @@ new-line-hook call, so don't save this
           (or (gb :caret/color) (get-in gb [:colors :caret]))))
 
       (rl-pop-matrix))))
-
-(comment
-
-  (var last-i 0)
-  (loop [l :in lines]
-    (gb/gb-iterate gb
-                   last-i l
-                   i c
-                   (prin (-> (buffer/new 1)
-                             (buffer/push-byte c))))
-    (print)
-    (set last-i l)))

@@ -13,8 +13,6 @@
 (use freja/defonce)
 (use freja-jaylib)
 
-(setdyn :pretty-format "%.40M")
-
 (defonce my-props @{})
 (defonce state @{})
 
@@ -75,7 +73,6 @@
 
 (defn file-menu
   [props]
-  (print "file menu")
   [:shrink {}
    [menu-row
     {:f find-file/find-file-dialog
@@ -126,7 +123,6 @@
                    (fn [self [ev-kind]]
                      (when (my-props :open-menu)
                        (when (= ev-kind :release)
-                         (print "release close menu")
                          (s/put! my-props :open-menu nil))))}
 
    [:padding {:left 0 :top 0}
@@ -178,5 +174,5 @@
 #
 # this will only be true when running load-file inside freja
 (when ((curenv) :freja/loading-file)
-  (print "reiniting :)")
+  (printf "reiniting :)")
   (init))

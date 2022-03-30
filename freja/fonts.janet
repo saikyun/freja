@@ -107,7 +107,7 @@
 
 (try (init-fonts)
   ([err fib]
-    (print "couldn't load fonts in top level")))
+    (eprint "couldn't load fonts in top level")))
 
 # storage for loaded fonts
 (def fonts @{})

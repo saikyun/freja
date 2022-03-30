@@ -17,14 +17,13 @@
                          :blank)}
    [:padding {:all 2}
     [ed/editor {:state props
-               :id :left
-               :focus-on-init true
-               :initial-file state/initial-file
-               :open (props :open)
-               :set-open |(do (print "opening: " $)
-                            # TODO: remove
-                            (e/put! state/editor-state :force-refresh true)
-                            (e/put! props :open $))}]]])
+                :id :left
+                :focus-on-init true
+                :initial-file state/initial-file
+                :open (props :open)
+                :set-open |(do # TODO: remove
+                             (e/put! state/editor-state :force-refresh true)
+                             (e/put! props :open $))}]]])
 
 (defn default-right-editor
   [props & _]
@@ -37,10 +36,9 @@
                           :blank)}
     [:padding {:all 2}
      [ed/editor @{:state (props :right-state)
-                 :id :right
-                 :open (props :right-open)
-                 :set-open |(do (print "opening: " $)
-                              (e/put! props :right-open $))}]]]])
+                  :id :right
+                  :open (props :right-open)
+                  :set-open |(e/put! props :right-open $)}]]]])
 
 (defn other-row
   [{:hiccup hiccup}]
@@ -56,7 +54,7 @@
       [:text {:size 16
               :color :white
               :text (state :freja/label)}]]]
-    
+
     [:clickable
      {:on-click (fn [_]
                   (state/push-buffer-stack hiccup)
@@ -67,7 +65,7 @@
       [:text {:size 16
               :color :white
               :text "O"}]]]
-    
+
     [:clickable
      {:on-click (fn [_]
                   (e/put! state/editor-state :other nil)
@@ -79,14 +77,14 @@
               :color :white
               :text "X"}]]]
     #
-    ]])
+]])
 
 (defn stack-row
   [{:hiccup hiccup
     :put-in-other put-in-other
     :cant-close cant-close}]
   (def [_ state] hiccup)
-  
+
   [:block {}
    [:row {}
     [:clickable
@@ -105,7 +103,7 @@
       [:text {:size 16
               :color :white
               :text (state :freja/label)}]]]
-    
+
     [:clickable
      {:on-click (fn [_]
                   (when-let [o (state/editor-state :other)]
@@ -116,7 +114,7 @@
       [:text {:size 16
               :color :white
               :text "->"}]]]
-    
+
     (when-let [o (state/editor-state :other)]
       [:clickable
        {:on-click (fn [_]
@@ -130,7 +128,7 @@
         [:text {:size 16
                 :color :white
                 :text "O"}]]])
-    
+
     (unless cant-close
       [:clickable
        {:on-click (fn [_]
@@ -143,7 +141,7 @@
                 :color :white
                 :text "X"}]]])
     #
-    ]])
+]])
 
 (defn text-area-hc
   [props & _]
@@ -172,12 +170,12 @@
            ;(seq [hiccup :in rest
                   :let [[compo state] hiccup]]
               [stack-row {:hiccup hiccup}])]))
-      
+
       (when-let [o (props :other)]
         [:column {:weight 1}
          [other-row {:hiccup o}]
          [:block {:weight 1} o]])
-      
+
       #[:block {:width 2}]
 
       (when (or (props :right)
@@ -195,14 +193,14 @@
             [(props :bottom-right) props])]])
 
       #
-      ]
+]
 
      (when bottom
        [:block {}
         [bottom props]])]
 
     #
-    ]])
+]])
 
 (comment
   (e/put! state/editor-state :right
@@ -210,25 +208,10 @@
             "hej"))
 
   #
-  )
+)
 
 # exposing the hiccup layer for debugging purposes
 (var hiccup-layer nil)
-
-(comment
-  (use freja-layout/compile-hiccup)
-
-  # here we can print the element tree
-  # in a decently readable form
-  (-> (get-in c [:root])
-      print-tree)
-  #
-  )
-
-(comment
-  (print (string/format "%P" (keys (get-in state/editor-state [:left-state :editor :gb]))))
-  #
-  )
 
 (defn init
   []
@@ -241,21 +224,17 @@
                       text-area-hc
                       state/editor-state))
 
-  #  (e/put! state/editor-state
-  #         :stack
-  #        default-left-editor)
-
   (e/put! state/editor-state
           :right
           nil
           #default-right-editor
-          )
+)
 
   (comment
     (keys (get-in state/editor-state [:old-left 1 :freja/label]))
     (get state/editor-state :last-left)
     #
-    )
+)
 
   (frp/subscribe!
     state/focus
@@ -276,9 +255,20 @@
         (when (state/editor-state :right-focus)
           (e/put! state/editor-state :right-focus false))))))
 
+(comment
+  (use freja-layout/compile-hiccup)
+
+  # here we can print the element tree
+  # in a decently readable form
+  (-> (get-in hiccup-layer [:root])
+      print-tree)
+
+  #
+)
+
+
 #
 # this will only be true when running load-file inside freja
 (when ((curenv) :freja/loading-file)
   (print "reiniting :)")
   (init))
- 

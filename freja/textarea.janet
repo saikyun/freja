@@ -173,10 +173,7 @@
   (def gb (get-in (last (get-in state/editor-state [:stack])) [1 :editor :gb]))
   (def steps (peg/match janet-peg "call filter call fn"))
   (def steps2 (peg/match janet-peg "hurp dash cat"))
-  #(pp steps)
-  #(pp steps2)
 )
-
 
 (varfn keyword-before?
   "Gets the position of the start of the word before the caret, if it is a keyword.
@@ -208,8 +205,6 @@ Does not skip spaces."
 (defn voice-transform
   [peg t]
   (peg/match peg t))
-
-#nstoeuathnsueohntsaushneo
 
 (defn remove-voiced-part
   [gb]
@@ -285,7 +280,7 @@ Does not skip spaces."
 
       (when-let [m (gb :voice/next-mode)]
         (put gb :voice/mode m)
-        (print "voice mode is now: " m)
+        (printf "voice mode is now: " m)
         (put gb :voice/next-mode nil)))
 
     [:voice-partial-literal t]
@@ -306,7 +301,7 @@ Does not skip spaces."
 
       (when-let [m (gb :voice/next-mode)]
         (put gb :voice/mode m)
-        (print "voice mode is now: " m)
+        (printf "voice mode is now: " m)
         (put gb :voice/next-mode nil)))
 
     [:voice-stack t]
@@ -364,9 +359,6 @@ Does not skip spaces."
           :blank)))
 
   (rgb/gb-pre-render gb)
-  #  (rgb/inner-render gb)
-
-  #(print "huh")
 
   (rgb/gb-render-text gb)
 
@@ -470,7 +462,6 @@ Does not skip spaces."
         @{:children []
           :relative-sizing
           (fn [el max-width max-height]
-            # (print "resizing text area " max-width " " max-height)
             # TODO: something strange happens when width / height is too small
             # try removing 50 then resize to see
             (-> el
@@ -490,19 +481,12 @@ Does not skip spaces."
               (put-in state [:gb :changed] true)
               (put-in state [:gb :resized] true))
 
-            # (print "el: " (el :width) " / " (el :height))
-
             el)
 
           :render (fn [self parent-x parent-y]
                     (:draw state))
 
           :on-event (fn [self ev]
-                      #(pp self)
-                      #(print "start " (state :id))
-
-                      #(tracev [(dyn :offset-x) (dyn :offset-y)])
-
                       (defn update-pos
                         [[x y]]
                         [(- x

@@ -112,7 +112,6 @@
   (var editor-new? false)
 
   (unless (state :editor)
-    (print "new editor state for " id)
     (put state :editor (ta/default-textarea-state))
 
     #    (when initial-path
@@ -266,7 +265,6 @@
                             (gb/move-n gb column))))
 
                       (when focus-on-init
-                        (print "focusing!")
                         (e/put! state/focus :focus editor-state)))
                     :text/spacing 0.5
                     :text/size text/size

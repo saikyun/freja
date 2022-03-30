@@ -132,8 +132,6 @@ To get information about a font (e.g. loaded styles), use `font-info`.
 Leaving `:style` empty will use the `:default-style` for the font.
 ``
   [name size &keys {:style style}]
-  #(print "`(font  " name " " size ")`")
-  #(test/timeit (do
   (def font (fonts name))
 
   (assert font
@@ -156,8 +154,6 @@ To get information about a font (e.g. loaded styles), use `font-info`.
 Leaving `:style` empty will use the `:default-style` for the font.
 ``
   [name size &keys {:style style}]
-  #(print "`(font  " name " " size ")`")
-  #(test/timeit (do
   (def font (fonts name))
 
   (assert font

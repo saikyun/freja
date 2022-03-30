@@ -1,6 +1,7 @@
 (import ../freja/main)
 (import ../freja/state)
 (import ../freja/new_gap_buffer :as gb)
+(import ./util/replay-events :as replay)
 
 (var commands
   @[@[:key-down :left-control]
@@ -11,12 +12,11 @@
 
 (main/main)
 
-
 (replay/run-commands
   commands
   (fn []
     (with-dyns [:out stdout]
-      (if (deep= @"a" (tracev (gb/content (get-in state/editor-state [:stack 0 1 :editor :gb]))))
+      (if (deep= @"a" (gb/content (get-in state/editor-state [:stack 0 1 :editor :gb])))
         (do
           (print "test successful\n------------------------------")
           (os/exit 0))

@@ -3,19 +3,19 @@
 (import ../freja/state)
 (import ../freja/new_gap_buffer :as gb)
 (import spork/path)
-
+(import ./util/replay-events :as r)
 
 (var commands
-  @[;(press
+  @[;(r/press
        :left-control
-       ;(press :p))
-    ;(chars "popp li")
-    ;(press :down)
-    ;(press :enter)])
+       ;(r/press :p))
+    ;(r/chars "popp li")
+    ;(r/press :down)
+    ;(r/press :enter)])
 
 (main/main nil nil "--no-init")
 
-(run-commands
+(r/run-commands
   commands
   (fn []
     (with-dyns [:out stdout]

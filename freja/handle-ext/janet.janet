@@ -9,8 +9,6 @@
   [{:path path}]
   (def state @{})
 
-  (print "initing state for " path)
-
   (put state :editor (textarea/default-textarea-state))
   (put state :freja/label path)
   (put state :freja/focus (fn [{:editor editor}]

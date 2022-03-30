@@ -124,8 +124,8 @@
                         (or (res :msg) (res :error))
                         "")
       (do (print "no fiber")
-        (pp (res :error))))
-    (pp (res :value))))
+        (eprintf "%P" (res :error))))
+    (printf "%P" (res :value))))
 
 (defn init
   []

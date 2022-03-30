@@ -20,7 +20,6 @@
   (let [path (path/abspath path)
         # need to do this on windows for e.g. `C:`
         path (string/replace-all ":" "_COLON_" path)
-        _ (print "path: " path)
         parts (path/parts path)
         root-checkpoints-dir (file-handling/data-path "checkpoints")
         checkpoint-dir
@@ -39,10 +38,8 @@
   [path note]
   # only allow characters that are OK in a path
   # TODO: remove more non-ok characters
-  (let [_ (print "note: " note)
-        note (string/replace-all path/sep "_SLASH_" note)
+  (let [note (string/replace-all path/sep "_SLASH_" note)
         note (string/replace-all ":" "_COLON_" note)
-        _ (print "note: " note)
         checkpoint-dir (path->checkpoint-dir path)
         day-dir (string checkpoint-dir path/sep (checkpoint-date))
         checkpoint-path (string day-dir path/sep (checkpoint-time) " " note)]
@@ -117,7 +114,6 @@
 (defn save-file-with-checkpoint
   [props &opt note]
   (def path (props :path))
-  (print "checkpoint save: " path)
 
   (default note "manual save")
 
@@ -180,8 +176,7 @@
                                 (fh/load-file textarea
                                               fullpath)
                                 (put-in textarea [:gb :path] path)
-                                (:put props :selected fullpath)
-                                (print fullpath))}
+                                (:put props :selected fullpath))}
                   [:block {}
                    [:background {:color (when (= selected fullpath)
                                           (theme/colors :text))}
@@ -200,7 +195,6 @@
 (defn checkpoint-component
   [props]
   (unless (props :checkpoint-props)
-    (print "new checkpoint props")
     (let [left-state (get-in editor-state [:stack 0 1])
           checkpoint-props
           @{:path (get-in left-state [:editor :gb :path])
