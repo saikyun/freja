@@ -1,11 +1,10 @@
 (import freja/editor :as ed)
 (import freja/theme :as t)
 (import freja/hiccup :as h)
-(import freja/events :as e)
 (import freja/file-handling :as fh)
 (import freja/new_gap_buffer :as gb)
 (import freja/state)
-(import freja/frp)
+(import freja/event/subscribe :as s)
 (use freja/defonce)
 
 (defn default-left-editor
@@ -22,8 +21,8 @@
                 :initial-file state/initial-file
                 :open (props :open)
                 :set-open |(do # TODO: remove
-                             (e/put! state/editor-state :force-refresh true)
-                             (e/put! props :open $))}]]])
+                             (s/put! state/editor-state :force-refresh true)
+                             (s/put! props :open $))}]]])
 
 (defn default-right-editor
   [props & _]
@@ -38,7 +37,7 @@
      [ed/editor @{:state (props :right-state)
                   :id :right
                   :open (props :right-open)
-                  :set-open |(e/put! props :right-open $)}]]]])
+                  :set-open |(s/put! props :right-open $)}]]]])
 
 (defn other-row
   [{:hiccup hiccup}]
@@ -58,7 +57,7 @@
     [:clickable
      {:on-click (fn [_]
                   (state/push-buffer-stack hiccup)
-                  (e/put! state/editor-state :other nil)
+                  (s/put! state/editor-state :other nil)
                   (when (state :freja/focus)
                     (:freja/focus state)))}
      [:padding {:all 4}
@@ -68,7 +67,7 @@
 
     [:clickable
      {:on-click (fn [_]
-                  (e/put! state/editor-state :other nil)
+                  (s/put! state/editor-state :other nil)
                   (when-let [[_ top-state] (last (state/editor-state :stack))]
                     (when (:freja/focus top-state)
                       (:freja/focus top-state))))}
@@ -95,7 +94,7 @@
                       (when-let [o (state/editor-state :other)]
                         (state/push-buffer-stack o))
                       (state/remove-buffer-stack hiccup)
-                      (e/put! state/editor-state :other hiccup))
+                      (s/put! state/editor-state :other hiccup))
                     (state/push-buffer-stack hiccup))
                   (when (state :freja/focus)
                     (:freja/focus state)))}
@@ -109,7 +108,7 @@
                   (when-let [o (state/editor-state :other)]
                     (state/push-buffer-stack o))
                   (state/remove-buffer-stack hiccup)
-                  (e/put! state/editor-state :other hiccup))}
+                  (s/put! state/editor-state :other hiccup))}
      [:padding {:all 4}
       [:text {:size 16
               :color :white
@@ -121,7 +120,7 @@
                     (state/remove-buffer-stack hiccup)
                     (state/push-buffer-stack o)
                     (state/push-buffer-stack hiccup)
-                    (e/put! state/editor-state :other nil)
+                    (s/put! state/editor-state :other nil)
                     (when (state :freja/focus)
                       (:freja/focus state)))}
        [:padding {:all 4}
@@ -202,14 +201,6 @@
     #
 ]])
 
-(comment
-  (e/put! state/editor-state :right
-          (fn [props & _]
-            "hej"))
-
-  #
-)
-
 # exposing the hiccup layer for debugging purposes
 (var hiccup-layer nil)
 
@@ -224,7 +215,7 @@
                       text-area-hc
                       state/editor-state))
 
-  (e/put! state/editor-state
+  (s/put! state/editor-state
           :right
           nil
           #default-right-editor
@@ -236,24 +227,24 @@
     #
 )
 
-  (frp/subscribe!
+  (s/subscribe!
     state/focus
     (fn [{:focus focus
           :last-focut last-focus}]
       (unless (= focus last-focus)
-        (e/put! state/editor-state :force-refresh true))
+        (s/put! state/editor-state :force-refresh true))
 
       (if (= focus (get-in state/editor-state [:left-state :editor]))
         (unless (state/editor-state :left-focus)
-          (e/put! state/editor-state :left-focus true))
+          (s/put! state/editor-state :left-focus true))
         (when (state/editor-state :left-focus)
-          (e/put! state/editor-state :left-focus false)))
+          (s/put! state/editor-state :left-focus false)))
 
       (if (= focus (get-in state/editor-state [:right-state :editor]))
         (unless (state/editor-state :right-focus)
-          (e/put! state/editor-state :right-focus true))
+          (s/put! state/editor-state :right-focus true))
         (when (state/editor-state :right-focus)
-          (e/put! state/editor-state :right-focus false))))))
+          (s/put! state/editor-state :right-focus false))))))
 
 (comment
   (use freja-layout/compile-hiccup)

@@ -1,21 +1,19 @@
 (import ./textarea :as ta :fresh true)
 (import ./theme :as t)
 (import ./default-hotkeys :as dh)
-(import freja/events :as e)
 (import freja/state)
 (import freja/file-handling :as fh)
 (import freja/new_gap_buffer :as gb)
 (import freja/render_new_gap_buffer :as rgb)
 (import ./evaling)
+(import freja/event/subscribe :as s)
 
-(use profiling/profile)
-
-(varfn eval-expr
+(defn eval-expr
   [props]
   (evaling/eval-it state/user-env
                    (string ((gb/commit! props) :text))))
 
-(varfn search
+(defn search
   [props]
   (let [search-term (string (gb/content props))
         gb (props :search-target)]
@@ -46,7 +44,7 @@
             (put :changed-selection true))))))
 
 
-(varfn search-backwards
+(defn search-backwards
   [props]
   (let [search-term (string (gb/content props))
         gb (props :search-target)]
@@ -131,17 +129,17 @@
   (put-in editor-state [:gb :open-file]
           (fn [_]
             (set-open :file-open)
-            (e/put! state/focus :focus file-open)))
+            (s/put! state/focus :focus file-open)))
 
   (put-in editor-state [:gb :eval-expr]
           (fn [_]
             (set-open :eval-expr)
-            (e/put! state/focus :focus eval-state)))
+            (s/put! state/focus :focus eval-state)))
 
   (put-in editor-state [:gb :search]
           (fn [_]
             (set-open :search)
-            (e/put! state/focus :focus search-state)))
+            (s/put! state/focus :focus search-state)))
 
   (put-in editor-state [:gb :goto-line]
           (fn [_]
@@ -150,18 +148,18 @@
   (put-in file-open [:gb :escape]
           (fn [props]
             (set-open false)
-            (e/put! state/focus :focus editor-state)))
+            (s/put! state/focus :focus editor-state)))
 
   (put-in file-open [:gb :enter]
           (fn [props]
             (set-open false)
             ((file-open-binds :load-file) editor-state (string ((gb/commit! props) :text)))
-            (e/put! state/focus :focus editor-state)))
+            (s/put! state/focus :focus editor-state)))
 
   (put-in eval-state [:gb :escape]
           (fn [props]
             (set-open false)
-            (e/put! state/focus :focus editor-state)))
+            (s/put! state/focus :focus editor-state)))
 
   (put-in eval-state [:gb :eval-expr] eval-expr)
 
@@ -170,7 +168,7 @@
   (put-in search-state [:gb :escape]
           (fn [props]
             (set-open false)
-            (e/put! state/focus :focus editor-state)))
+            (s/put! state/focus :focus editor-state)))
 
   (put-in search-state [:gb :search] search)
   (put-in search-state [:gb :search-backwards] search-backwards)
@@ -196,16 +194,16 @@
                          :text/color (t/colors :text)
 
                          :init (defn focus-textarea-on-init [self _]
-                                 (e/put! state/focus :focus (self :state)))
+                                 (s/put! state/focus :focus (self :state)))
 
                          :extra-binds
 
                          @{:escape (fn [props]
                                      (set-open false)
-                                     (e/put! state/focus :focus editor-state))
+                                     (s/put! state/focus :focus editor-state))
                            :enter (fn [props]
                                     (set-open false)
-                                    (e/put! state/focus :focus editor-state)
+                                    (s/put! state/focus :focus editor-state)
                                     (rgb/goto-line-number (editor-state :gb)
                                                           (scan-number (gb/content props))))}}]]
 
@@ -265,7 +263,7 @@
                             (gb/move-n gb column))))
 
                       (when focus-on-init
-                        (e/put! state/focus :focus editor-state)))
+                        (s/put! state/focus :focus editor-state)))
                     :text/spacing 0.5
                     :text/size text/size
                     :text/font "MplusCode"

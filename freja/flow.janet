@@ -1,5 +1,4 @@
 (import freja/hiccup)
-(import freja/events :as e)
 (import freja/theme)
 (import freja/state)
 (import freja-layout/default-tags :as dt)
@@ -9,6 +8,7 @@
 (import ./vector-math :as v :export true)
 (import freja/text_rendering :as tr)
 (import freja/assets :as a)
+(import freja/event/subscribe :as s)
 
 (defn measure-text
   [text &keys {:size size
@@ -101,13 +101,7 @@ font must either be:
         @{:init
           (fn [self _]
             (when state
-              (put state :element self))
-
-            (comment global-set-key
-                     [:alt :u]
-                     (fn [_]
-                       (e/put! state/focus :focus self)
-                       (e/put! state/editor-state (if (props :left) :left-focus :right-focus) true))))
+              (put state :element self)))
 
           :children []
 
@@ -142,7 +136,7 @@ font must either be:
                         (show-cursor)
                         (put-in state/editor-state
                                 [:left-state :editor :gb :blink] 0)
-                        (e/put! state/focus :focus
+                        (s/put! state/focus :focus
                                 (get-in state/editor-state
                                         [:left-state :editor])))
 
@@ -173,8 +167,8 @@ font must either be:
 
                           (when in?
                             (unless (= self (state/focus :focus))
-                              (e/put! state/focus :focus self)
-                              (e/put! state/editor-state (if (props :left) :left-focus :right-focus)
+                              (s/put! state/focus :focus self)
+                              (s/put! state/editor-state (if (props :left) :left-focus :right-focus)
                                       true)))))
 
                       (when on-event
@@ -218,7 +212,7 @@ font must either be:
                                       (state/focus! el))))
   (update state :freja/focus? |(or $ (fn [{:element el}] (= el (state/focus :focus)))))
 
-  (e/put! state/editor-state :other
+  (s/put! state/editor-state :other
           [(fn [outer-props]
              [:background {:color (if (outer-props :right-focus)
                                     (theme/comp-cols :background)

@@ -10,10 +10,10 @@
 (import freja/theme)
 (import freja/hiccup :as h)
 (import freja/textarea :as t)
-(import freja/events :as e)
 (import freja/open-file)
 (import freja/file-handling :as fh)
 (import freja/state)
+(import freja/event/subscribe :as s)
 
 (defn get-files
   [root]
@@ -169,7 +169,7 @@
            @{:text/color :white
              :init
              (fn [self _]
-               (e/put! state/focus :focus (self :state)))
+               (s/put! state/focus :focus (self :state)))
 
              :text/size 20
              :height 22
@@ -181,14 +181,14 @@
                                    new (if (>= new (length filtered-files))
                                          0
                                          new)]
-                               (e/put! props :offset new)))
+                               (s/put! props :offset new)))
                :up (fn [_] (let [new (dec offset)
                                  new (if (< new 0)
                                        (dec (length filtered-files))
                                        new)]
-                             (e/put! props :offset new)))
+                             (s/put! props :offset new)))
                :enter (fn [_] (open selected-file))}
-             :on-change |(e/put! props :search $)}]]
+             :on-change |(s/put! props :search $)}]]
          [:background {:color (theme/comp-cols :bar-bg)}
           ;(seq [f :in filtered-files
                  :let [selected (= f selected-file)]]

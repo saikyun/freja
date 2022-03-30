@@ -1,5 +1,10 @@
 (import spork/path)
 (import ./file-handling)
+(use freja/state)
+(import freja/event/subscribe :as s)
+(import freja/theme)
+(import freja/file-handling :as fh)
+(import freja/render_new_gap_buffer :as rgb)
 
 (varfn checkpoint-date
   []
@@ -58,7 +63,7 @@
         (def content (file/read org-f :all))
         (file/write f content)))
 
-    (print "saved checkpoint: " checkpoint-path)))
+    (printf "Saved checkpoint: %s" (last (string/split path/sep path)))))
 
 (varfn list-checkpoints
   [path]
@@ -78,21 +83,6 @@
   (->
     (get-in editor-state [:stack 0 1 :editor :gb :path])
     list-checkpoints)
-  #
-)
-
-
-# TODO: click to go back in time
-# also make checkpoint at current point in time
-
-(use freja/state)
-(import freja/events :as e)
-(import freja/theme)
-(import freja/file-handling :as fh)
-(import freja/render_new_gap_buffer :as rgb)
-
-(comment
-  (keys (get-in editor-state [:left-state :editor :gb]))
   #
 )
 
@@ -202,11 +192,11 @@
             :needs-save true
             :close (fn []
                      (put props :checkpoint-props nil)
-                     (e/put! editor-state :right nil))}]
+                     (s/put! editor-state :right nil))}]
 
       (put checkpoint-props :put
            (fn [self k v]
-             (e/update! props :checkpoint-props put k v)))
+             (s/update! props :checkpoint-props put k v)))
 
       (put props :checkpoint-props checkpoint-props)))
 
@@ -215,9 +205,9 @@
 (varfn show-checkpoints
   []
   (if-not (= (editor-state :right) checkpoint-component)
-    (e/put! editor-state :right checkpoint-component)
+    (s/put! editor-state :right checkpoint-component)
     (do (put editor-state :checkpoint-props nil)
-      (e/put! editor-state :right nil))))
+      (s/put! editor-state :right nil))))
 
 #(save-checkpoint "checkpoint.janet")
 (comment

@@ -1,5 +1,4 @@
 (import freja/state)
-(import freja/events :as e)
 (import freja/new_gap_buffer :as gb)
 (import freja/render_new_gap_buffer :as rgb)
 (import freja/theme)

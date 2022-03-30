@@ -5,7 +5,6 @@
 (import freja/file-handling :as fh)
 (import freja/input)
 (import freja/checkpoint)
-(import freja/events :as e)
 (import ./echoer)
 (import ./evaling)
 (import ./open-file)

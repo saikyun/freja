@@ -3,7 +3,7 @@
 (import freja/textarea)
 (import freja/theme)
 (import freja/editor)
-(import freja/events :as e)
+(import freja/event/subscribe :as s)
 
 (defn new-editor-state
   [{:path path}]
@@ -40,8 +40,8 @@
                     #:initial-file state/initial-file
                     :open (props :left-open)
                     :set-open |(do #TODO: REMOVE
-                                 (e/put! state/editor-state :force-refresh true)
-                                 (e/put! props :left-open $))}]]])
+                                 (s/put! state/editor-state :force-refresh true)
+                                 (s/put! props :left-open $))}]]])
 
 (state/add-ext-handling
   ".janet"
