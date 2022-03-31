@@ -2,23 +2,12 @@
 (import ../freja/default-hotkeys :as dh)
 (import ../freja/state)
 (import ../freja/new_gap_buffer :as gb)
-(import ./util/replay-events :as replay)
-
-(defn press
-  [k & body]
-  [@[:key-down k]
-   ;body
-   @[:key-release k]])
-
-(defn chars
-  [s]
-  (map (fn [c]
-         @[:char (keyword (string/from-bytes c))]) s))
+(import ./util/replay-events :as r)
 
 (var commands
-  @[;(press
+  @[;(r/press
        :left-control
-       ;(press :p))])
+       ;(r/press :p))])
 
 (main/main)
 

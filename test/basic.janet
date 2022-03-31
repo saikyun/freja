@@ -4,11 +4,11 @@
 (import ./util/replay-events :as replay)
 
 (var commands
-  @[@[:key-down :left-control]
-    @[:key-down :a]
-    @[:key-release :a]
-    @[:key-release :left-control]
-    @[:char :a]])
+  @[@{:key/down :left-control}
+    @{:key/down :a}
+    @{:key/release :a}
+    @{:key/release :left-control}
+    @{:key/char :a}])
 
 (main/main)
 
