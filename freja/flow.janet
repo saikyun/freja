@@ -1,6 +1,7 @@
 (import freja/hiccup)
 (import freja/theme)
 (import freja/state)
+(import ./input)
 (import freja-layout/default-tags :as dt)
 (import freja/default-hotkeys :prefix "" :export true)
 (import freja-jaylib :prefix "" :export true)
@@ -88,6 +89,29 @@ font must either be:
   [el color]
   (draw-rectangle 0 0 (el :width) (el :height) color))
 
+(defn custom-on-event
+  [self ev]
+  (let [ev (input/offset-event-pos ev (dyn :offset-x) (dyn :offset-y))]
+    (match ev
+      # unfocus game panel
+      {:key/down :escape}
+      (let [top-stack-state (in (last (state/editor-state :stack)) 1)]
+        (show-cursor)
+        (put-in top-stack-state [:editor :gb :blink] 0)
+        (:freja/focus top-stack-state))
+
+      # focus game panel
+      ({:mouse/release _
+        :mouse/pos p}
+        (and (not (= self (state/focus :focus)))
+             (dt/in-rec? p 0 0 (self :width) (self :height))))
+      (do (state/focus! self)
+        (s/put! state/editor-state (if (get-in self [:props :left]) :left-focus :right-focus)
+                true)))
+
+    (when-let [on-event (get-in self [:props :on-event])]
+      (on-event self ev))))
+
 (defn custom
   [props]
   (def {:render render
@@ -130,49 +154,7 @@ font must either be:
                     (unless (props :render-anywhere)
                       (end-scissor-mode)))
 
-          :on-event (fn [self ev]
-                      (defn unfocus
-                        []
-                        (show-cursor)
-                        (put-in state/editor-state
-                                [:left-state :editor :gb :blink] 0)
-                        (s/put! state/focus :focus
-                                (get-in state/editor-state
-                                        [:left-state :editor])))
-
-                      (match ev
-                        [:key-down :d]
-                        (when (key-down? :left-alt)
-                          (unfocus))
-
-                        [:key-down :escape]
-                        (unfocus)
-
-                        ([kind :tab] ({:key-down 1 :key-repeat 1} kind))
-                        (when (key-down? :right-control)
-                          (swap-top-two-buffers nil))
-
-                        [(_ (or (= (ev 0) :release)
-                                # (= (ev 0) :mouse-move)
-)) _]
-                        (do
-                          (def pos (ev 1))
-
-                          (def in?
-                            (dt/in-rec? pos
-                                        (dyn :offset-x)
-                                        (dyn :offset-y)
-                                        (self :width)
-                                        (self :height)))
-
-                          (when in?
-                            (unless (= self (state/focus :focus))
-                              (s/put! state/focus :focus self)
-                              (s/put! state/editor-state (if (props :left) :left-focus :right-focus)
-                                      true)))))
-
-                      (when on-event
-                        (on-event self ev)))})))
+          :on-event custom-on-event})))
 
 (defn start-game
   ``
@@ -224,7 +206,7 @@ font must either be:
 (when (dyn :freja/loading-file)
   (start-game {:render (fn render [{:width width :height height}]
                          (draw-rectangle -20 0 (- width 20) (- height 20) :blue))
-               :on-event (fn on-event [self ev] (printf "%P" ev))
+               :on-event (fn on-event [self ev] (printf "example on-event: %p" ev))
                :change (fn [] (printf "such change"))})
   #
 )
