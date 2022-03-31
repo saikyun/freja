@@ -19,8 +19,8 @@
   commands
   (fn []
     (with-dyns [:out stdout]
-      (if (= (tracev (path/join "freja" "fonts" "Poppins-Regular_LICENSE"))
-             (tracev (((last (state/editor-state :stack)) 1) :freja/label)))
+      (if (= (path/join "freja" "fonts" "Poppins-Regular_LICENSE")
+             (((last (state/editor-state :stack)) 1) :freja/label))
         (do
           (print "test successful\n------------------------------")
           (os/exit 0))

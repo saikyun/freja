@@ -1,11 +1,9 @@
-# docs: https://github.com/saikyun/freja/wiki/%22frp%22
-
 (import freja-jaylib :as jay)
 (import bounded-queue :as queue)
-(import ./events :as e :fresh true)
+(import ./subscribe :as s)
 (import ../state :as state)
-(import ../keyboard :as kb :fresh true)
-(import ../vector-math :as v :fresh true)
+(import ../keyboard :as kb)
+(import ../vector-math :as v)
 (import ../theme)
 (import ../fonts)
 (import ../input :as i)
@@ -50,8 +48,8 @@
   []
   (when (jay/window-resized?)
     (-> state/screen-size
-        (e/put! :screen/width (jay/get-screen-width))
-        (e/put! :screen/height (jay/get-screen-height)))))
+        (s/put! :screen/width (jay/get-screen-width))
+        (s/put! :screen/height (jay/get-screen-height)))))
 
 (def mouse-data (i/new-mouse-data))
 

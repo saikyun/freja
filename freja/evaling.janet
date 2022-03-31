@@ -1,6 +1,6 @@
 (import freja/state)
 (import bounded-queue :as queue)
-(use ./new_gap_buffer)
+(import ./new_gap_buffer :as gap)
 
 (def grammar
   ~{:ws (set " \t\r\f\n\0\v")
@@ -80,7 +80,7 @@ ouae
 (varfn gb-get-last-sexp
   [gb]
   (-> gb
-      commit!
+      gap/commit!
       (get :text)
       (string/slice 0 (gb :caret))
       get-last-sexp))

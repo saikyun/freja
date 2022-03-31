@@ -1,6 +1,6 @@
 (import bounded-queue :as queue)
 (import ../state)
-(import ./events :as e)
+(import ./subscribe :as s)
 
 (defn put!
   ``
@@ -11,7 +11,7 @@
   gets to do something with an event.
   ``
   [ev cb]
-  (e/update! state/callbacks
+  (s/update! state/callbacks
              ev
              (fn [chan]
                # only the last callback will be called
@@ -29,7 +29,7 @@
   [callbacks]
   (loop [[ev cbs] :pairs state/callbacks
          :when (not= ev :event/changed)]
-    (e/pull-all cbs [apply]))
+    (s/pull-all cbs [apply]))
 
   (table/clear callbacks))
 

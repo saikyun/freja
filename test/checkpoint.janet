@@ -14,7 +14,7 @@
 
 (var commands
   @[;(r/press :left-control
-              ;(press :o))
+              ;(r/press :o))
     ;(r/chars path)
     ;(r/press :enter)
     ;(r/chars content)
@@ -22,6 +22,7 @@
               ;(r/press :s))])
 
 (r/run-commands
+  commands
   (fn []
     (with-dyns [:out stdout]
       (let [top-buf (last (state/editor-state :stack))
@@ -30,7 +31,7 @@
             cp-path (last (in (last checkpoints) 1))]
         (os/rm path2)
         (if (and (deep= content
-                        (tracev (gb/content (get-in top-buf [1 :editor :gb]))))
+                        (gb/content (get-in top-buf [1 :editor :gb])))
                  (deep= content
                         (slurp cp-path)))
           (do

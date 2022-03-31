@@ -1,6 +1,5 @@
 (import bounded-queue :as queue)
 (import ../state)
-(import ./jaylib-to-events :as jaylib->events)
 
 # a push-pull system
 # events are pushed to queues
