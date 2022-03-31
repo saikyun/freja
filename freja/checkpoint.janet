@@ -1,6 +1,6 @@
 (import spork/path)
 (import ./file-handling)
-(use freja/state)
+(import freja/state)
 (import freja/event/subscribe :as s)
 (import freja/theme)
 (import freja/file-handling :as fh)
@@ -81,7 +81,7 @@
 
   (use freja/state)
   (->
-    (get-in editor-state [:stack 0 1 :editor :gb :path])
+    (get-in state/editor-state [:stack 0 1 :editor :gb :path])
     list-checkpoints)
   #
 )
@@ -185,14 +185,14 @@
 (defn checkpoint-component
   [props]
   (unless (props :checkpoint-props)
-    (let [left-state (get-in editor-state [:stack 0 1])
+    (let [left-state (get-in state/editor-state [:stack 0 1])
           checkpoint-props
           @{:path (get-in left-state [:editor :gb :path])
             :textarea (left-state :editor)
             :needs-save true
             :close (fn []
                      (put props :checkpoint-props nil)
-                     (s/put! editor-state :right nil))}]
+                     (s/put! state/editor-state :right nil))}]
 
       (put checkpoint-props :put
            (fn [self k v]
@@ -204,10 +204,10 @@
 
 (varfn show-checkpoints
   []
-  (if-not (= (editor-state :right) checkpoint-component)
-    (s/put! editor-state :right checkpoint-component)
-    (do (put editor-state :checkpoint-props nil)
-      (s/put! editor-state :right nil))))
+  (if-not (= (state/editor-state :right) checkpoint-component)
+    (s/put! state/editor-state :right checkpoint-component)
+    (do (put state/editor-state :checkpoint-props nil)
+      (s/put! state/editor-state :right nil))))
 
 #(save-checkpoint "checkpoint.janet")
 (comment
