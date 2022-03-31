@@ -105,9 +105,7 @@ font must either be:
         :mouse/pos p}
         (and (not (= self (state/focus :focus)))
              (dt/in-rec? p 0 0 (self :width) (self :height))))
-      (do (state/focus! self)
-        (s/put! state/editor-state (if (get-in self [:props :left]) :left-focus :right-focus)
-                true)))
+      (state/focus! self))
 
     (when-let [on-event (get-in self [:props :on-event])]
       (on-event self ev))))
