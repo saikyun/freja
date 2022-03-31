@@ -120,9 +120,9 @@
 (defn hiccup
   [props & children]
   [:event-handler {:on-event
-                   (fn [self [ev-kind]]
+                   (fn [self ev]
                      (when (my-props :open-menu)
-                       (when (= ev-kind :release)
+                       (when (ev :mouse/release)
                          (s/put! my-props :open-menu nil))))}
 
    [:padding {:left 0 :top 0}

@@ -94,7 +94,6 @@
 
 (varfn handle-eval-results
   [res]
-  (xprint stdout "huh?")
   (when-let [code (res :code)]
     (print "=> " (string/trim code)))
 

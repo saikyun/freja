@@ -134,18 +134,19 @@
    :on-event (defnp hiccup-on-event [self ev]
                (try
                  (match ev
-                   @{:screen/width w
-                     :screen/height h}
+                   {:screen/width w
+                    :screen/height h}
                    (do
                      (put self :max-width w)
                      (put self :max-height h)
 
                      (put self :root (:compile self (self :props))))
 
-                   [:dt dt]
+                   {:frame/delta-time dt}
                    (:draw self dt)
 
-                   (_ (table? ev))
+                   # new props
+                   {:compilation/changed _}
                    (-> self
                        (put :props ev)
                        (put :root (:compile self ev)))

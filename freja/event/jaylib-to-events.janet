@@ -18,13 +18,13 @@
   (var k (jay/get-char-pressed))
 
   (while (not= 0 k)
-    (queue/push state/chars @[:char k])
+    (queue/push state/chars @{:key/char k})
     (set k (jay/get-char-pressed)))
 
   # must release keys before...
   (loop [k :in kb/possible-keys]
     (when (jay/key-released? k)
-      (queue/push state/keyboard @[:key-release k])))
+      (queue/push state/keyboard @{:key/release k})))
 
   # ...checking for held keys
   (loop [[k dl] :pairs state/keys-down
@@ -32,17 +32,18 @@
          :when (not (jay/key-released? k))
          :let [left ((update state/keys-down k - dt) k)]]
     (when (<= left 0)
-      (queue/push state/keyboard @[:key-repeat k])))
+      (queue/push state/keyboard @{:key/repeat k})))
 
   (loop [k :in kb/possible-keys]
     (when (jay/key-pressed? k)
-      (queue/push state/keyboard @[:key-down k]))))
+      (queue/push state/keyboard @{:key/down k}))))
 
 (varfn handle-scroll
   []
   (let [move (jay/get-mouse-wheel-move)]
     (when (not= move 0)
-      (queue/push state/mouse @[:scroll (* move 30) (jay/get-mouse-position)]))))
+      (queue/push state/mouse @{:mouse/scroll (* move 30)
+                                :mouse/pos (jay/get-mouse-position)}))))
 
 (varfn handle-resize
   []
@@ -55,8 +56,8 @@
 
 (varfn handle-mouse
   [mouse-data]
-  (def pos (jay/get-mouse-position))
-  (def [x y] pos)
+  (def mouse-pos (jay/get-mouse-position))
+  (def [x y] mouse-pos)
 
   (put mouse-data :just-double-clicked false)
   (put mouse-data :just-triple-clicked false)
@@ -67,33 +68,38 @@
     (put mouse-data :recently-triple-clicked nil)
     (put mouse-data :up-pos [x y])
 
-    (queue/push state/mouse @[:release (jay/get-mouse-position)]))
+    (queue/push state/mouse @{:mouse/pos mouse-pos
+                              :mouse/release mouse-pos}))
 
   (when (jay/mouse-button-pressed? 0)
-    (when (and (mouse-data :down-time2)
+    (cond (and (mouse-data :down-time2)
                # max time to pass for triple click
                (> 0.4 (- (jay/get-time) (mouse-data :down-time2)))
                # max distance to travel for triple click
-               (> 200 (v/dist-sqr pos (mouse-data :down-pos))))
-      (put mouse-data :just-triple-clicked true)
-      (put mouse-data :recently-triple-clicked true))
+               (> 200 (v/dist-sqr mouse-pos (mouse-data :down-pos))))
+      (do (put mouse-data :just-triple-clicked true)
+        (put mouse-data :recently-triple-clicked true))
 
-    (when (and (mouse-data :down-time)
-               # max time to pass for double click
-               (> 0.25 (- (jay/get-time) (mouse-data :down-time)))
-               # max distance to travel for double click
-               (> 100 (v/dist-sqr pos (mouse-data :down-pos))))
-      (put mouse-data :just-double-clicked true)
-      (put mouse-data :recently-double-clicked true)
-      (put mouse-data :down-time2 (jay/get-time))))
+      (and (mouse-data :down-time)
+           # max time to pass for double click
+           (> 0.25 (- (jay/get-time) (mouse-data :down-time)))
+           # max distance to travel for double click
+           (> 100 (v/dist-sqr mouse-pos (mouse-data :down-pos))))
+      (do (put mouse-data :just-double-clicked true)
+        (put mouse-data :recently-double-clicked true)
+        (put mouse-data :down-time2 (jay/get-time)))))
 
   (cond (mouse-data :just-triple-clicked)
-    (queue/push state/mouse @[:triple-click (jay/get-mouse-position)])
+    (queue/push state/mouse @{:mouse/pos mouse-pos
+                              :mouse/down mouse-pos
+                              :mouse/triple-click mouse-pos})
 
     (and (mouse-data :just-double-clicked)
          (not (jay/key-down? :left-shift))
          (not (jay/key-down? :right-shift)))
-    (queue/push state/mouse @[:double-click (jay/get-mouse-position)])
+    (queue/push state/mouse @{:mouse/pos mouse-pos
+                              :mouse/down mouse-pos
+                              :mouse/double-click mouse-pos})
 
     (or (mouse-data :recently-double-clicked)
         (mouse-data :recently-triple-clicked))
@@ -105,29 +111,32 @@
 
       (if (= nil (mouse-data :just-down))
         (do (put mouse-data :just-down true)
-          (put mouse-data :last-pos pos)
-          (put mouse-data :down-pos pos)
-          (queue/push state/mouse @[:press (jay/get-mouse-position)]))
+          (put mouse-data :last-pos mouse-pos)
+          (put mouse-data :down-pos mouse-pos)
+          (queue/push state/mouse @{:mouse/pos mouse-pos
+                                    :mouse/down mouse-pos}))
         (do (put mouse-data :just-down false)
-          (unless (= pos (mouse-data :last-pos))
-            (put mouse-data :last-pos pos)
-            (queue/push state/mouse @[:drag (jay/get-mouse-position)])))))
+          (unless (= mouse-pos (mouse-data :last-pos))
+            (put mouse-data :last-pos mouse-pos)
+            (queue/push state/mouse @{:mouse/pos mouse-pos
+                                      :mouse/drag mouse-pos})))))
 
     # no mouse button down
-    (not= pos (mouse-data :last-pos))
-    (do (put mouse-data :last-pos pos)
-      (queue/push state/mouse @[:mouse-move (jay/get-mouse-position)]))))
+    (not= mouse-pos (mouse-data :last-pos))
+    (do (put mouse-data :last-pos mouse-pos)
+      (queue/push state/mouse @{:mouse/pos mouse-pos
+                                :mouse/move mouse-pos}))))
 
 (defn handle-key-events
   [ev]
   (match ev
-    [:key-release k]
+    {:key/release k}
     (put state/keys-down k nil)
 
-    [:key-repeat k]
+    {:key/repeat k}
     (put state/keys-down k i/repeat-delay)
 
-    [:key-down k]
+    {:key/down k}
     (put state/keys-down k i/initial-delay)))
 
 (varfn convert
@@ -136,6 +145,6 @@
   (handle-scroll)
   (handle-resize)
 
-  (queue/push state/frame-events @[:dt dt])
+  (queue/push state/frame-events @{:frame/delta-time dt})
 
   (handle-mouse mouse-data))

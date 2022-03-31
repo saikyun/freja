@@ -10,11 +10,13 @@
 
 (setdyn :freja/ns "freja/input")
 
-(def mouse-events {:press :press
-                   :drag :drag
-                   :release :release
-                   :double-click :double-click
-                   :triple-click :triple-click})
+(def mouse-events {:mouse/down :mouse/press
+                   :mouse/move :mouse/move
+                   :mouse/drag :mouse/drag
+                   :mouse/release :mouse/release
+                   :mouse/double-click :mouse/double-click
+                   :mouse/triple-click :mouse/triple-click
+                   :mouse/scroll :mouse/scroll})
 
 (varfn new-mouse-data
   []
@@ -366,7 +368,7 @@
         :sizes sizes
         :scroll scroll
         :width-of-last-line-number width-of-last-line-number} props)
-  (def [kind mouse-pos] event)
+  (def {:mouse/pos mouse-pos} event)
   (def [x y] mouse-pos)
 
   (def [ox oy] offset)
@@ -378,63 +380,86 @@
 
   (when (in-rec? mouse-pos
                  (gb-rec props))
+    (match event
+      {:mouse/release _}
+      (cb |(put props :down-index nil))
 
-    (cond
-      (= kind :release)
-      (cb kind |(put props :down-index nil))
-
-      (= kind :triple-click)
-      (cb kind |(gb/select-region props ;(gb/find-surrounding-paragraph!
-                                           props
-                                           (get-mouse-pos props mouse-pos))))
+      {:mouse/triple-click _}
+      (cb |(gb/select-region props ;(gb/find-surrounding-paragraph!
+                                      props
+                                      (get-mouse-pos props mouse-pos))))
       #                       should maybe remember original pos
 
-      (and (= kind :double-click)
-           (not (key-down? :left-shift))
-           (not (key-down? :right-shift)))
-      (cb kind |(gb/select-region props ;(gb/word-at-index props
-                                                           (get-mouse-pos props mouse-pos))))
+      ({:mouse/double-click _}
+        (and (not (key-down? :left-shift))
+             (not (key-down? :right-shift))))
+      (cb |(gb/select-region props ;(gb/word-at-index props
+                                                      (get-mouse-pos props mouse-pos))))
       #                                    should maybe remember original pos
 
-      (and (or (= kind :press)
-               (= kind :drag))
-           (or (key-down? :left-shift)
-               (key-down? :right-shift)))
+      ({:mouse/down _}
+        (and (or (key-down? :left-shift)
+                 (key-down? :right-shift))))
       (handle-shift-mouse-down props event cb)
 
-      (= kind :press)
+      {:mouse/down _}
       (if-let [f (get-in props [:binds :press])]
-        (cb kind |(f (get-mouse-pos-line props mouse-pos)))
-        (cb kind |(let [[line cur-index] (get-mouse-pos-line props mouse-pos)
-                        #              # if true, this means cur-index is at the start of the line
-                        stickiness (if (= cur-index (lines line))
-                                     :down
-                                     :right)]
-                    (-> props
-                        reset-blink
-                        (put :down-index cur-index)
-                        (put :selection nil)
-                        (put :changed-selection true)
-                        (put :caret cur-index)
-                        (put :changed-x-pos true)
-                        (put :stickiness stickiness)
-                        (put :changed-nav true)))))
+        (cb |(f (get-mouse-pos-line props mouse-pos)))
+        (cb |(let [[line cur-index] (get-mouse-pos-line props mouse-pos)
+                   #              # if true, this means cur-index is at the start of the line
+                   stickiness (if (= cur-index (lines line))
+                                :down
+                                :right)]
+               (-> props
+                   reset-blink
+                   (put :down-index cur-index)
+                   (put :selection nil)
+                   (put :changed-selection true)
+                   (put :caret cur-index)
+                   (put :changed-x-pos true)
+                   (put :stickiness stickiness)
+                   (put :changed-nav true)))))
 
-      (and (= kind :drag)
-           # if this is nil, the press happened outside the textarea
-           (props :down-index))
-      (cb kind |(let [down-pos (props :down-index)
-                      curr-pos (get-mouse-pos props mouse-pos)]
+      ({:mouse/drag _}
+        # if this is nil, the press happened outside the textarea
+        (props :down-index))
+      (cb |(let [down-pos (props :down-index)
+                 curr-pos (get-mouse-pos props mouse-pos)]
 
-                  (if (not= down-pos curr-pos)
-                    (-> props
-                        (put :selection down-pos)
-                        (put :changed-selection true))
-                    (-> props
-                        (put :selection nil)
-                        (put :changed-selection true)))
+             (if (not= down-pos curr-pos)
+               (-> props
+                   (put :selection down-pos)
+                   (put :changed-selection true))
+               (-> props
+                   (put :selection nil)
+                   (put :changed-selection true)))
 
-                  (-> props
-                      (put :caret curr-pos)
-                      (put :stickiness (if (< x x-offset) :down :right))
-                      (put :changed-nav true)))))))
+             (-> props
+                 (put :caret curr-pos)
+                 (put :stickiness (if (< x x-offset) :down :right))
+                 (put :changed-nav true)))))))
+
+# table containing all positions that should be
+# offset by `offset-event-pos`
+(def event-positions
+  @{:mouse/down :mouse/press
+    :mouse/drag :mouse/drag
+    :mouse/move :mouse/move
+    :mouse/release :mouse/release
+    :mouse/double-click :mouse/double-click
+    :mouse/triple-click :mouse/triple-click
+    :mouse/pos :mouse/pos})
+
+(defn offset-event-pos
+  ``
+  Offsets all (known) positions in an event.
+  This is used to transform an event from global positions,
+  to local positions, e.g. the top left of a textarea being [0 0].
+  ``
+  [ev ox oy]
+  (let [new-ev (table/clone ev)]
+    (loop [[k v] :pairs new-ev
+           :when (event-positions k)]
+      (let [[x y] v]
+        (put new-ev k [(- x ox) (- y oy)])))
+    new-ev))

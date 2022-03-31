@@ -172,8 +172,7 @@
 (comment
   (def gb (get-in (last (get-in state/editor-state [:stack])) [1 :editor :gb]))
   (def steps (peg/match janet-peg "call filter call fn"))
-  (def steps2 (peg/match janet-peg "hurp dash cat"))
-)
+  (def steps2 (peg/match janet-peg "hurp dash cat")))
 
 (varfn keyword-before?
   "Gets the position of the start of the word before the caret, if it is a keyword.
@@ -268,7 +267,6 @@ Does not skip spaces."
 (defn text-area-on-event
   [self ev]
   (def gb (self :gb))
-
   (match ev
     [:voice-text-literal t]
     (when (or (nil? (gb :voice/mode))
@@ -311,33 +309,36 @@ Does not skip spaces."
         (put :voice-gb-length nil)
         (put :voice-partial-gb-length nil))
 
-    [:key-down k]
+    {:key/down k}
     (press :key-down)
 
-    [:key-repeat k]
+    {:key/repeat k}
     (press :key-repeat)
 
-    [:key-release k]
+    {:key/release k}
     (press :key-release)
 
-    [:char k]
+    {:key/char k}
     (do
       (i/handle-keyboard-char
         (self :gb)
         k)
       (put self :event/changed true))
 
-    [:scroll n mp]
+    {:mouse/scroll n
+     :mouse/pos mp}
     (when (c/in-rec? mp
                      (i/gb-rec (self :gb)))
       (i/handle-scroll-event (self :gb) n)
       (put self :event/changed true))
 
-    [(_ (i/mouse-events (first ev))) _]
+    # all mouse events has :mouse/pos
+    {:mouse/pos _}
+
     (i/handle-mouse-event
       (self :gb)
       ev
-      (fn [kind f]
+      (fn [f]
         (f)
         (state/focus! self)
         (put (self :gb) :event/changed true)))))
@@ -486,36 +487,21 @@ Does not skip spaces."
           :render (fn [self parent-x parent-y]
                     (:draw state))
 
-          :on-event (fn [self ev]
-                      (defn update-pos
-                        [[x y]]
-                        [(- x
-                            (dyn :offset-x 0))
-                         (- y
-                            (dyn :offset-y 0))])
+          :on-event
+          (fn [self ev]
+            (let [new-ev (i/offset-event-pos
+                           ev
+                           (dyn :offset-x 0)
+                           (dyn :offset-y 0))]
+              (:on-event state new-ev)
 
-                      (def new-ev (if (= (first ev) :scroll)
-                                    [(ev 0)
-                                     (ev 1)
-                                     (update-pos (ev 2))]
-                                    [(ev 0)
-                                     (update-pos (ev 1))]))
+              (when (and on-change
+                         (get-in state [:gb :changed]))
+                (on-change (gb/content (state :gb))))
 
-                      #(text-area-on-event state new-ev)
-                      (:on-event state new-ev)
-
-                      (when (and on-change
-                                 (get-in state [:gb :changed]))
-                        (on-change (gb/content (state :gb))))
-
-                      (def pos (new-ev
-                                 (if (= :scroll (first new-ev))
-                                   2
-                                   1)))
-
-                      (when (dt/in-rec? pos
-                                        0
-                                        0
-                                        (self :width)
-                                        (self :height))
-                        true))})))
+              (when (dt/in-rec? (new-ev :mouse/pos)
+                                0
+                                0
+                                (self :width)
+                                (self :height))
+                true)))})))
