@@ -91,7 +91,9 @@ font must either be:
 
 (defn custom-on-event
   [self ev]
-  (let [ev (input/offset-event-pos ev (dyn :offset-x) (dyn :offset-y))]
+  (let [ev (input/offset-event-pos ev (dyn :offset-x)
+                                   (dyn :offset-y)
+                                   :scale (get-in self [:props :scale] 1))]
     (match ev
       # unfocus game panel
       {:key/down :escape}
@@ -114,7 +116,6 @@ font must either be:
   [props]
   (def {:render render
         :on-event on-event
-        :change change
         :state state} props)
 
   (-> (dyn :element)
@@ -130,15 +131,15 @@ font must either be:
           :relative-sizing
           (fn [el max-width max-height]
             (-> el
-                (put :width (max (or (el :preset-width) max-width)))
-                (put :height (or (el :preset-height)
-                                 max-height))
+                (put :width (or (el :preset-width) max-width))
+                (put :height (or (el :preset-height) max-height))
                 (put :content-width (el :width))
                 (put :layout/lines nil))
 
             el)
 
           :render (fn [self parent-x parent-y]
+                    (def scale (get props :scale 1))
                     (put self :focused? (= self (in state/focus :focus)))
 
                     (put self :render-x parent-x)
@@ -147,7 +148,10 @@ font must either be:
                     (unless (props :render-anywhere)
                       (begin-scissor-mode parent-x parent-y (self :width) (self :height)))
 
-                    (render self)
+                    (defer (rl-pop-matrix)
+                      (rl-push-matrix)
+                      (rl-scalef scale scale 1)
+                      (render self))
 
                     (unless (props :render-anywhere)
                       (end-scissor-mode)))
@@ -159,9 +163,6 @@ font must either be:
   props allows following keys:
   :render (mandatory) -- called every frame, with &keys :width & :height
                          :width / :height has width / height of the game
-  :change -- zero args function that is called at the
-             beginning of every frame, if the game
-             is focused. meant to be used to handle input
   :on-event -- function that takes arguments `self` and `event`.
                if present it is called every time an event occurs,
                e.g. `:key-down`.
@@ -171,6 +172,11 @@ font must either be:
             containing a reference to the element
   :render-anywhere -- set to true to disable scissor-mode,
                       i.e. render outside element bounds
+  :size -- takes tuple/array `[width height]` where width and height are integers.
+           game will be this size in pixels. if not set, game will cover whole panel.
+  :scale -- scale factor of the game.
+            affects both rendering and events (e.g. :mouse/pos).
+  :border -- color of area surrounding the game
 
   Optionally, props can be a function. In this case, that function will be used as `:render` above.
 ``
@@ -192,19 +198,35 @@ font must either be:
                                       (state/focus! el))))
   (update state :freja/focus? |(or $ (fn [{:element el}] (= el (state/focus :focus)))))
 
-  (s/put! state/editor-state :other
-          [(fn [outer-props]
-             [:background {:color (if (outer-props :right-focus)
-                                    (theme/comp-cols :background)
-                                    :blank)}
-              [:padding {:all 2}
-               [custom props]]])
-           state]))
+  (let [size (props :size)
+        scale (get props :scale 1)
+        bg (get props :border :blank)]
+    (s/put! state/editor-state :other
+            [(fn [outer-props]
+               [:background {:color bg}
+                [:padding {:all 2}
+                 (if size
+                   # crazy way to almost center something
+                   [:column {}
+                    [:block {:weight 1}]
+                    [:row {}
+                     [:block {:weight 1}]
+                     [:block {:width (* scale (get-in props [:size 0]))
+                              :height (* scale (get-in props [:size 1]))}
+                      [custom props]]
+                     [:block {:weight 1}]]
+                    [:block {:weight 1}]]
+
+                   [custom props])]])
+             state])))
 
 (when (dyn :freja/loading-file)
   (start-game {:render (fn render [{:width width :height height}]
-                         (draw-rectangle -20 0 (- width 20) (- height 20) :blue))
+                         (draw-rectangle 0 0 200 200 :blue)
+                         (draw-rectangle 100 100 100 100 :black))
                :on-event (fn on-event [self ev] (printf "example on-event: %p" ev))
-               :change (fn [] (printf "such change"))})
+               :size [200 200]
+               :scale 4
+               :border [0.3 0 0 1]})
   #
 )

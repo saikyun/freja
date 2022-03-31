@@ -456,10 +456,13 @@
   This is used to transform an event from global positions,
   to local positions, e.g. the top left of a textarea being [0 0].
   ``
-  [ev ox oy]
+  [ev ox oy &keys {:scale scale}]
+  (default scale 1)
+
   (let [new-ev (table/clone ev)]
     (loop [[k v] :pairs new-ev
            :when (event-positions k)]
       (let [[x y] v]
-        (put new-ev k [(- x ox) (- y oy)])))
+        (put new-ev k [(math/floor (/ (- x ox) scale))
+                       (math/floor (/ (- y oy) scale))])))
     new-ev))
