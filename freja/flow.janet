@@ -139,22 +139,26 @@ font must either be:
             el)
 
           :render (fn [self parent-x parent-y]
-                    (def scale (get props :scale 1))
-                    (put self :focused? (= self (in state/focus :focus)))
+                    (try
+                      (do
+                        (def scale (get props :scale 1))
+                        (put self :focused? (= self (in state/focus :focus)))
 
-                    (put self :render-x parent-x)
-                    (put self :render-y parent-y)
+                        (put self :render-x parent-x)
+                        (put self :render-y parent-y)
 
-                    (unless (props :render-anywhere)
-                      (begin-scissor-mode parent-x parent-y (self :width) (self :height)))
+                        (unless (props :render-anywhere)
+                          (begin-scissor-mode parent-x parent-y (self :width) (self :height)))
 
-                    (defer (rl-pop-matrix)
-                      (rl-push-matrix)
-                      (rl-scalef scale scale 1)
-                      (render self))
+                        (defer (rl-pop-matrix)
+                          (rl-push-matrix)
+                          (rl-scalef scale scale 1)
+                          (render self))
 
-                    (unless (props :render-anywhere)
-                      (end-scissor-mode)))
+                        (unless (props :render-anywhere)
+                          (end-scissor-mode)))
+                      ([err fib]
+                        (debug/stacktrace fib err))))
 
           :on-event custom-on-event})))
 
