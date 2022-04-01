@@ -1,6 +1,6 @@
-(import ./event/default-subscriptions)
-(import ./event/subscribe)
-(import ./event/jaylib-to-events :as jaylib->events)
+(import freja/event/default-subscriptions)
+(import freja/event/subscribe)
+(import freja/event/jaylib-to-events :as jaylib->events)
 (import freja/hiccup)
 (import freja/theme)
 (import freja/state)
@@ -242,45 +242,48 @@ font must either be:
     ~(do (when (,props :init)
            ((,props :init)))
        (start-game-f ,props))
-    ~(defn main
-       [& _]
-       (def {:size size
-             :scale scale
-             :render render} ,props)
+    ~(upscope
+       (defn main
+         [& _]
+         (print "main?")
 
-       (default scale 1)
+         (def {:size size
+               :scale scale
+               :render render} ,props)
 
-       (default-subscriptions/init)
+         (default scale 1)
 
-       (init-window ;(v/v* size scale) "Cross")
+         (,default-subscriptions/init)
 
-       (when (,props :init)
-         ((,props :init)))
+         (init-window ;(v/v* size scale) "Cross")
 
-       (start-game-f (-> (from-pairs (pairs ,props))
-                         (put :new-layer true)
-                         (put :size nil)))
+         (when (,props :init)
+           ((,props :init)))
 
-       (set-target-fps 60)
+         (start-game-f (-> (from-pairs (pairs ,props))
+                           (put :new-layer true)
+                           (put :size nil)))
 
-       (var last-mp nil)
+         (set-target-fps 60)
 
-       (with-dyns [:offset-x 0 :offset-y 0]
-         (while (not (window-should-close))
-           (begin-drawing)
+         (var last-mp nil)
 
-           (clear-background :white)
+         (with-dyns [:offset-x 0 :offset-y 0]
+           (while (not (window-should-close))
+             (begin-drawing)
 
-           (jaylib->events/convert (get-frame-time))
+             (clear-background :white)
 
-           (let [{:regular regular
-                  :finally finally}
-                 state/subscriptions]
-             (subscribe/call-subscribers regular finally))
+             (,jaylib->events/convert (get-frame-time))
 
-           (end-drawing)))
+             (let [{:regular regular
+                    :finally finally}
+                   ',state/subscriptions]
+               (,subscribe/call-subscribers regular finally))
 
-       (close-window))))
+             (end-drawing)))
+
+         (close-window)))))
 
 (start-game {:render (fn render [{:width width :height height}]
                        (draw-rectangle 0 0 200 200 :blue)

@@ -38,8 +38,13 @@
 (import ./assets :as assets)
 (put module/cache "freja/assets" assets)
 
+(def jaylib->events (require "./event/jaylib-to-events"))
 (import ./event/jaylib-to-events :as jaylib->events)
+(put module/cache "freja/event/jaylib-to-events" jaylib->events)
+
+(def default-subscriptions (require "./event/default-subscriptions"))
 (import ./event/default-subscriptions)
+(put module/cache "freja/event/default-subscriptions" default-subscriptions)
 
 (def subscribe (require "./event/subscribe"))
 (import ./event/subscribe :as subscribe)
@@ -528,6 +533,8 @@ flags:
   (put module/cache "freja/rainbow" rainbow)
   (put module/cache "freja/echoer" echoer)
   (put module/cache "freja/vector-math" vector-math)
+  (put module/cache "freja/event/default-subscriptions" default-subscriptions)
+  (put module/cache "freja/event/jaylib-to-events" jaylib->events)
 
   #(set server (netrepl/server "127.0.0.1" "9365" env))
   #(buffer/push-string derp/derp "from main")
