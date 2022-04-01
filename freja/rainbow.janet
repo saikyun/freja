@@ -1,4 +1,4 @@
-(use ./new_gap_buffer)
+(import ./new_gap_buffer :as gb)
 
 (defn rgba->f
   [r g b & [a]]
@@ -298,4 +298,4 @@
   [gb]
   (set depth 0)
   (peg/match jg
-             (content gb)))
+             (gb/content gb)))
