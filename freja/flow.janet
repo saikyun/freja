@@ -1,3 +1,6 @@
+(import ./event/default-subscriptions)
+(import ./event/subscribe)
+(import ./event/jaylib-to-events :as jaylib->events)
 (import freja/hiccup)
 (import freja/theme)
 (import freja/state)
@@ -162,8 +165,58 @@ font must either be:
 
           :on-event custom-on-event})))
 
-(defn start-game
+(defn start-game-f
+  [props]
+  (def props
+    (if (function? props)
+      {:render props}
+      props))
+
+  (assert (props :render) "start-game needs :render")
+
+  (def state (get props :state @{}))
+  # copy the props
+  (def props (from-pairs (pairs props)))
+  (put props :state state)
+
+  (update state :freja/label |(or $ "Game"))
+  (update state :freja/focus |(or $ (fn [{:element el}]
+                                      (state/focus! el))))
+  (update state :freja/focus? |(or $ (fn [{:element el}] (= el (state/focus :focus)))))
+
+  (defn component
+    [outer-props]
+    (let [size (props :size)
+          scale (get props :scale 1)
+          bg (get props :border :blank)]
+      [:background {:color bg}
+       (if size
+         # crazy way to center something
+         [:column {}
+          [:block {:weight 1}]
+          [:row {}
+           [:block {:weight 1}]
+           [:block {:width (* scale (get-in props [:size 0]))
+                    :height (* scale (get-in props [:size 1]))}
+            [custom props]]
+           [:block {:weight 1}]]
+          [:block {:weight 1}]]
+
+         [custom props])]))
+
+  (if (props :new-layer)
+    (hiccup/new-layer :game component state)
+
+    (s/put! state/editor-state :other
+            [component
+             state])))
+
+
+(defmacro start-game
   ``
+  When running from Freja, starts the game in a panel.
+  When running from janet or when building an exe, will generate a main-function.
+  
   props allows following keys:
   :render (mandatory) -- called every frame, with &keys :width & :height
                          :width / :height has width / height of the game
@@ -185,52 +238,54 @@ font must either be:
   Optionally, props can be a function. In this case, that function will be used as `:render` above.
 ``
   [props]
-  (def props
-    (if (function? props)
-      {:render props}
-      props))
+  (if (dyn :freja/loading-file)
+    ~(do (when (,props :init)
+           ((,props :init)))
+       (start-game-f ,props))
+    ~(defn main
+       [& _]
+       (def {:size size
+             :scale scale
+             :render render} ,props)
 
-  (assert (props :render) "start-game needs :render")
+       (default scale 1)
 
-  (def state (get props :state @{}))
-  # copy the props
-  (def props (from-pairs (pairs props)))
-  (put props :state state)
+       (default-subscriptions/init)
 
-  (update state :freja/label |(or $ "Game"))
-  (update state :freja/focus |(or $ (fn [{:element el}]
-                                      (state/focus! el))))
-  (update state :freja/focus? |(or $ (fn [{:element el}] (= el (state/focus :focus)))))
+       (init-window ;(v/v* size scale) "Cross")
 
-  (let [size (props :size)
-        scale (get props :scale 1)
-        bg (get props :border :blank)]
-    (s/put! state/editor-state :other
-            [(fn [outer-props]
-               [:background {:color bg}
-                [:padding {:all 2}
-                 (if size
-                   # crazy way to almost center something
-                   [:column {}
-                    [:block {:weight 1}]
-                    [:row {}
-                     [:block {:weight 1}]
-                     [:block {:width (* scale (get-in props [:size 0]))
-                              :height (* scale (get-in props [:size 1]))}
-                      [custom props]]
-                     [:block {:weight 1}]]
-                    [:block {:weight 1}]]
+       (when (,props :init)
+         ((,props :init)))
 
-                   [custom props])]])
-             state])))
+       (start-game-f (-> (from-pairs (pairs ,props))
+                         (put :new-layer true)
+                         (put :size nil)))
 
-(when (dyn :freja/loading-file)
-  (start-game {:render (fn render [{:width width :height height}]
-                         (draw-rectangle 0 0 200 200 :blue)
-                         (draw-rectangle 100 100 100 100 :black))
-               :on-event (fn on-event [self ev] (printf "example on-event: %p" ev))
-               :size [200 200]
-               :scale 4
-               :border [0.3 0 0 1]})
-  #
-)
+       (set-target-fps 60)
+
+       (var last-mp nil)
+
+       (with-dyns [:offset-x 0 :offset-y 0]
+         (while (not (window-should-close))
+           (begin-drawing)
+
+           (clear-background :white)
+
+           (jaylib->events/convert (get-frame-time))
+
+           (let [{:regular regular
+                  :finally finally}
+                 state/subscriptions]
+             (subscribe/call-subscribers regular finally))
+
+           (end-drawing)))
+
+       (close-window))))
+
+(start-game {:render (fn render [{:width width :height height}]
+                       (draw-rectangle 0 0 200 200 :blue)
+                       (draw-rectangle 100 100 100 100 :black))
+             :on-event (fn on-event [self ev] (printf "example on-event: %p" ev))
+             :size [200 200]
+             :scale 2
+             :border [0.3 0 0 1]})

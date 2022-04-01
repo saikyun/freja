@@ -1,5 +1,5 @@
 (import bounded-queue :as queue)
-(import ../state)
+(import freja/state)
 (import ./subscribe :as s)
 
 (defn put!

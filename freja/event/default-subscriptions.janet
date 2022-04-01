@@ -1,5 +1,5 @@
 (import bounded-queue :as queue)
-(import ../state)
+(import freja/state)
 (import ./callback)
 (import ./jaylib-to-events :as jaylib->events)
 

@@ -1,5 +1,5 @@
 (use freja-jaylib)
-(import freja/state)
+(import ./state)
 (import spork/path)
 (import ./dumb :prefix "")
 (import ./text_rendering :as tr)

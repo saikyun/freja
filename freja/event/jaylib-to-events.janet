@@ -1,7 +1,7 @@
 (import freja-jaylib :as jay)
 (import bounded-queue :as queue)
 (import ./subscribe :as s)
-(import ../state :as state)
+(import freja/state :as state)
 (import ../keyboard :as kb)
 (import ../vector-math :as v)
 (import ../theme)

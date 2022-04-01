@@ -8,8 +8,6 @@
 (import ./find_row_etc :prefix "")
 (import ./collision :prefix "")
 
-(setdyn :freja/ns "freja/input")
-
 (def mouse-events {:mouse/down :mouse/press
                    :mouse/move :mouse/move
                    :mouse/drag :mouse/drag
