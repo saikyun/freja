@@ -238,7 +238,77 @@ font must either be:
   Optionally, props can be a function. In this case, that function will be used as `:render` above.
 ``
   [props]
-  (if (dyn :freja/loading-file)
+  (cond (dyn :freja/web-build)
+    ~(upscope
+       (defn desktop
+         []
+         (set-config-flags :msaa-4x-hint)
+         (set-target-fps 60))
+
+       (var update-draw-frame nil)
+       (var main-fiber nil)
+       (defn render-f
+         [& _]
+         (while (not (window-should-close))
+           (begin-drawing)
+
+           (clear-background :white)
+
+           (,jaylib->events/convert (get-frame-time))
+
+           (let [{:regular regular
+                  :finally finally}
+                 ',state/subscriptions]
+             (,subscribe/call-subscribers regular finally))
+
+           (end-drawing))
+
+         (close-window))
+
+       (defn common-startup
+         []
+         (print "main?")
+
+         (def {:size size
+               :scale scale
+               :render render} ,props)
+
+         (default scale 1)
+
+         (,default-subscriptions/init)
+         #
+         (init-window ;(v/v* size scale) "Cross")
+         #
+         (when (,props :init)
+           ((,props :init)))
+         #
+
+         (start-game-f (-> (from-pairs (pairs ,props))
+                           (put :new-layer true)
+                           (put :size nil)))
+         #
+         #(j/init-audio-device)
+         # to facilitate calling from main.c
+         (set update-draw-frame |(render-f))
+         # XXX
+         (setdyn :frame 0)
+         # this fiber is used repeatedly by the c code, partly to maintain
+         # dynamic variables (as those are per-fiber), but also because reusing
+         # a fiber with a function is likely faster than parsing and compiling
+         # code each time the game loop performs one iteration
+         (print "setting main fiber")
+         (set main-fiber
+              (fiber/new
+                (fn []
+                  # XXX: this content only gets used when main.c uses janet_continue
+                  (while (not (window-should-close))
+                    (print "inner")
+                    (render-f)
+                    (yield)))
+                # important for inheriting existing dynamic variables
+                :i))))
+
+    (dyn :freja/loading-file)
     ~(do (when (,props :init)
            ((,props :init)))
        (start-game-f ,props))
@@ -285,10 +355,11 @@ font must either be:
 
          (close-window)))))
 
-(start-game {:render (fn render [{:width width :height height}]
-                       (draw-rectangle 0 0 200 200 :blue)
-                       (draw-rectangle 100 100 100 100 :black))
-             :on-event (fn on-event [self ev] (printf "example on-event: %p" ev))
-             :size [200 200]
-             :scale 2
-             :border [0.3 0 0 1]})
+(comment
+  (start-game {:render (fn render [{:width width :height height}]
+                         (draw-rectangle 0 0 200 200 :blue)
+                         (draw-rectangle 100 100 100 100 :black))
+               :on-event (fn on-event [self ev] (printf "example on-event: %p" ev))
+               :size [200 200]
+               :scale 2
+               :border [0.3 0 0 1]}))
