@@ -161,7 +161,7 @@ font must either be:
                         (unless (props :render-anywhere)
                           (end-scissor-mode)))
                       ([err fib]
-                        (debug/stacktrace fib err))))
+                        (debug/stacktrace fib err ""))))
 
           :on-event custom-on-event})))
 
