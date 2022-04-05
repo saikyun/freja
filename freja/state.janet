@@ -1,5 +1,3 @@
-(import ./new_gap_buffer :prefix "")
-(import ./theme :prefix "")
 (import bounded-queue :as queue)
 
 (setdyn :freja/ns "freja/state")
