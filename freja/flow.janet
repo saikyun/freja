@@ -43,6 +43,10 @@ font must either be:
                     spacing))
 
 (defn draw-text
+  ``
+  Draws `text` as [x y] `pos`.
+  Returns `text` which means it can be used as `tracev`.
+  ``
   [text pos &keys {:size size
                    :font font
                    :spacing spacing
@@ -86,7 +90,10 @@ font must either be:
                  pos
                  size
                  spacing
-                 color))
+                 color)
+
+  # return the input so `draw-text` can be used as tracev
+  text)
 
 (defn fill
   [el color]
@@ -153,13 +160,13 @@ font must either be:
                         (unless (props :render-anywhere)
                           (begin-scissor-mode parent-x parent-y (self :width) (self :height)))
 
-                        (defer (rl-pop-matrix)
+                        (defer (do (rl-pop-matrix)
+                                 (unless (props :render-anywhere)
+                                   (end-scissor-mode)))
+
                           (rl-push-matrix)
                           (rl-scalef scale scale 1)
-                          (render self))
-
-                        (unless (props :render-anywhere)
-                          (end-scissor-mode)))
+                          (render self)))
                       ([err fib]
                         (debug/stacktrace fib err ""))))
 

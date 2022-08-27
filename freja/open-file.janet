@@ -30,6 +30,10 @@
     (when column
       (gb/move-n gb column))))
 
+(defn close-file
+  [path]
+  (put state/open-files (path/abspath path) nil))
+
 (comment
   (open-file "freja/main.janet")
   #

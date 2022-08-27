@@ -3,6 +3,7 @@
 (import freja/textarea)
 (import freja/theme)
 (import freja/editor)
+(import ../open-file)
 (import freja/event/subscribe :as s)
 
 (defn new-editor-state
@@ -18,7 +19,8 @@
   (put state :freja/quit (fn [{:editor editor}]
                            (checkpoint/save-file-with-checkpoint
                              (editor :gb)
-                             "before quitting")))
+                             "before quitting")
+                           (open-file/close-file (get-in editor [:gb :path]))))
 
   (checkpoint/load-file-with-checkpoints (state :editor) path)
 
