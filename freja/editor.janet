@@ -70,7 +70,7 @@
         replace-term (string (gb/content gb-replace))
         gb (gb-search :replace-target)]
 
-    (when (= (tracev search-term) (tracev (string (gb/get-selection gb))))
+    (when (= search-term) (string (gb/get-selection gb))
       (gb/delete-region! gb ;(gb/selection-tuple gb))
       (def start (gb :caret))
       (gb/insert-string-at-caret! gb replace-term)
