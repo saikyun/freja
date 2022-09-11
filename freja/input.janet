@@ -16,7 +16,7 @@
                    :mouse/triple-click :mouse/triple-click
                    :mouse/scroll :mouse/scroll})
 
-(varfn new-mouse-data
+(defn new-mouse-data
   []
   @{:just-down nil
     :just-double-clicked nil
@@ -34,7 +34,7 @@
   [k]
   (state/keys-down k))
 
-(varfn meta-down?
+(defn meta-down?
   []
   (if (= :macos (os/which))
     (or (key-down? :left-super)
@@ -51,24 +51,6 @@
 
 ## stores held keys and the delay until they should trigger
 (var delay-left @{})
-
-(varfn handle-keyboard-char
-  [props k]
-
-  (def {:binds binds} props)
-
-  # TODO: Need to add get-char-pressed
-
-  (reset-blink props)
-
-  (cond
-    (or (key-down? :left-shift)
-        (key-down? :right-shift))
-    (gb/insert-char-upper! props k)
-
-    (gb/insert-char! props k))
-
-  (scroll-to-focus props))
 
 (def modifiers [:caps-lock :control :right-control :alt :shift
                 :right-alt #:meta
@@ -114,13 +96,13 @@
 
 (defn hotkey-triggered
   [kmap key-code kind]
+
   (def mods (seq [m :in modifiers
                   :when ((in check-modifiers m) key-code)]
               m))
 
   (var ret-f nil)
   (loop [[k f] :pairs (or (get-in kmap mods) [])
-         # :when (function? f) # on partial mod-combination, f will be a table
          :when (= k key-code)]
     (if-let [specific-f (and (table? f)
                              (in f kind))]
@@ -129,7 +111,8 @@
         (break))
 
       (when (and (or (= kind :key-down)
-                     (= kind :key-repeat))
+                     (= kind :key-repeat)
+                     (= kind :char))
                  (function? f))
         (set ret-f f)
         (break))))
@@ -169,7 +152,7 @@
 )
 
 
-(varfn handle-keyboard2
+(defn handle-keyboard2
   [props k kind]
   (def {:binds binds} props)
 
@@ -185,7 +168,28 @@
 
       (scroll-to-focus props))))
 
-(varfn handle-scroll-event
+(defn handle-keyboard-char
+  [props k]
+
+  (def {:binds binds} props)
+
+  # TODO: Need to add get-char-pressed
+
+  (reset-blink props)
+
+  (let [f (hotkey-triggered (props :binds) k :char)]
+    (cond
+      f (f props)
+
+      (or (key-down? :left-shift)
+          (key-down? :right-shift))
+      (gb/insert-char-upper! props k)
+
+      (gb/insert-char! props k))
+
+    (scroll-to-focus props)))
+
+(defn handle-scroll-event
   [props move]
   (if-let [max-y (-?> (props :y-poses)
                       last
@@ -196,7 +200,7 @@
 
   (put props :changed-scroll true))
 
-(varfn get-mouse-pos
+(defn get-mouse-pos
   [props [mx my]]
 
   (def {:lines lines
@@ -248,7 +252,7 @@
 
           char-i)))))
 
-(varfn get-mouse-pos-line
+(defn get-mouse-pos-line
   [props [mx my]]
 
   (def {:lines lines
@@ -302,7 +306,7 @@
            char-i))])))
 
 
-(varfn handle-shift-mouse-down
+(defn handle-shift-mouse-down
   [props [kind mouse-pos] cb]
   (def {:lines lines
         :offset offset
@@ -339,7 +343,7 @@
                     (put :stickiness (if (< x x-offset) :down :right))
                     (put :changed-selection true))))))
 
-(varfn gb-rec
+(defn gb-rec
   [{:offset offset
     :position position
     :size size
@@ -356,7 +360,7 @@
    (size 0)
    (size 1)])
 
-(varfn handle-mouse-event
+(defn handle-mouse-event
   [props event cb]
   (def {:lines lines
         :offset offset

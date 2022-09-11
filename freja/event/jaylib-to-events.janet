@@ -24,7 +24,18 @@
   # must release keys before...
   (loop [k :in kb/possible-keys]
     (when (jay/key-released? k)
-      (queue/push state/keyboard @{:key/release k})))
+      (queue/push state/keyboard @{:key/release k})
+
+      # not sure why, but sometimes I feel like when pressing
+      # right alt on windows, left-control is pressed on the same frame
+      # and then when I release right-alt, left-control is still being held
+      # this is a desperate attempt to fix that
+      # WARNING: might occur strangeness since events 
+      (when (and (= k :right-alt)
+                 (not (jay/key-pressed? :left-control))
+                 (state/keys-down :left-control))
+        (print "strange left-control situation occurred")
+        (queue/push state/keyboard @{:key/release :left-control}))))
 
   # ...checking for held keys
   (loop [[k dl] :pairs state/keys-down

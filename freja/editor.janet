@@ -21,11 +21,6 @@
                        (max (gb :selection)
                             (gb :caret))
                        (gb :caret)))
-    (comment (when-let [i (gb/gb-find-forward! gb search-term)]
-               (-> gb
-                   (gb/put-caret i)
-                   (put :selection (gb/gb-find-backward! gb search-term))
-                   (put :changed-selection true))))
 
     (let [[pos matches] (gb/gb-find2! gb search-term)
           pos
@@ -69,6 +64,39 @@
             (put :selection (gb/gb-find-forward! gb search-term))
             (put :changed-selection true))))))
 
+(defn replace
+  [gb-search gb-replace]
+  (let [search-term (string (gb/content gb-search))
+        replace-term (string (gb/content gb-replace))
+        gb (gb-search :replace-target)]
+
+    (when (= (tracev search-term) (tracev (string (gb/get-selection gb))))
+      (gb/delete-region! gb ;(gb/selection-tuple gb))
+      (def start (gb :caret))
+      (gb/insert-string-at-caret! gb replace-term)
+      (gb/select-region gb start (gb :caret)))
+
+    (gb/put-caret gb (if (gb :selection)
+                       (max (gb :selection)
+                            (gb :caret))
+                       (gb :caret)))
+
+    (let [[pos matches] (gb/gb-find2! gb search-term)
+          pos
+          (if (= pos (length matches)) # if too far, wrap
+            0
+            pos)]
+      (:put gb-search :nof-matches (length matches))
+      (:put gb-search :match-index -1)
+      (unless (empty? matches)
+
+        (:put gb-search :match-index pos)
+
+        (-> gb
+            (gb/put-caret (in (in matches pos) 1))
+            (put :selection (gb/gb-find-backward! gb search-term))
+            (put :changed-selection true))))))
+
 (def file-open-binds
   (-> @{}
       (table/setproto dh/file-open-binds)))
@@ -80,6 +108,10 @@
 (def search-binds
   (-> @{}
       (table/setproto dh/search-binds)))
+
+(def replace-binds
+  (-> @{}
+      (table/setproto dh/replace-binds)))
 
 (defn editor
   [props & children]
@@ -107,6 +139,12 @@
   (unless (state :search)
     (put state :search (ta/default-textarea-state :binds search-binds)))
 
+  (unless (state :replace)
+    (put state :replace (ta/default-textarea-state :binds replace-binds)))
+
+  (unless (state :replace2)
+    (put state :replace2 (ta/default-textarea-state :binds replace-binds)))
+
   (var editor-new? false)
 
   (unless (state :editor)
@@ -120,6 +158,8 @@
   (def {:file-open file-open
         :eval-expr eval-state
         :search search-state
+        :replace replace-state
+        :replace2 replace-state2
         :editor editor-state} state)
 
   (when id
@@ -140,6 +180,11 @@
           (fn [_]
             (set-open :search)
             (s/put! state/focus :focus search-state)))
+
+  (put-in editor-state [:gb :replace]
+          (fn [_]
+            (set-open :replace)
+            (s/put! state/focus :focus replace-state)))
 
   (put-in editor-state [:gb :goto-line]
           (fn [_]
@@ -175,6 +220,39 @@
   (put-in search-state [:gb :put] (fn [self k v]
                                     (put self k v)
                                     (set-open open)))
+
+  ## replace
+  (put-in replace-state [:gb :replace-target] (editor-state :gb))
+
+  (put-in replace-state [:gb :escape]
+          (fn [props]
+            (set-open false)
+            (s/put! state/focus :focus editor-state)))
+
+  (put-in replace-state [:gb :next-field]
+          (fn [props]
+            (s/put! state/focus :focus replace-state2)))
+
+  (put-in replace-state2 [:gb :next-field]
+          (fn [props]
+            (s/put! state/focus :focus replace-state)))
+
+  (put-in replace-state [:gb :replace] |(replace $ (replace-state2 :gb)))
+  (put-in replace-state [:gb :put] (fn [self k v]
+                                     (put self k v)
+                                     (set-open open)))
+
+  (put-in replace-state2 [:gb :replace-target] (editor-state :gb))
+
+  (put-in replace-state2 [:gb :escape]
+          (fn [props]
+            (set-open false)
+            (s/put! state/focus :focus editor-state)))
+
+  (put-in replace-state2 [:gb :replace] |(replace (replace-state :gb) $))
+  (put-in replace-state2 [:gb :put] (fn [self k v]
+                                      (put self k v)
+                                      (set-open open)))
 
   [:block {}
    [:column {}
@@ -244,7 +322,32 @@
                          :text/size 22
                          :height 28
                          :text/color (t/colors :text)
-                         :state search-state}]])]]
+                         :state search-state}]]
+
+          :replace
+          [:block {}
+           [:row {}
+            [:text {:size 22
+                    :color (t/comp-cols :text/color)
+                    :text (string "Replace "
+                                  (when-let [mi (get-in replace-state [:gb :match-index])]
+                                    (string
+                                      (inc mi)
+                                      "/"
+                                      (get-in replace-state [:gb :nof-matches])))
+                                  " ")}]
+            [ta/textarea {:weight 1
+                          :text/size 22
+                          :height 28
+                          :text/color (t/colors :text)
+                          :state replace-state}]]
+           [:padding {:top 2}
+            [:row {}
+             [ta/textarea {:weight 1
+                           :text/size 22
+                           :height 28
+                           :text/color (t/colors :text)
+                           :state replace-state2}]]]])]]
       #
 )
 

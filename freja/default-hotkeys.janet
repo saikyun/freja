@@ -130,6 +130,10 @@
   [props]
   (:search props))
 
+(defn replace-dialog
+  [props]
+  (:replace props))
+
 (defn eval-it
   [props]
   (evaling/eval-it state/user-env
@@ -179,6 +183,7 @@
                            :tab swap-top-two-buffers
 
                            :f search-dialog
+                           :r replace-dialog
                            :g goto-line-dialog
                            :o open-file-dialog
                            :l fh/save-and-dofile
@@ -214,7 +219,15 @@
     :control @{:f |(:search $)
                :b |(:search-backwards $)}})
 
+(def replace-binds
+  @{:escape |(:escape $)
+    :enter |(:replace $)
+    :tab |(:next-field $)
+    :control @{:f |(:replace $)
+               :b |(:replace-backwards $)}})
+
 (table/setproto search-binds global-keys)
+(table/setproto replace-binds global-keys)
 
 (def global-set-key (partial input/set-key global-keys))
 

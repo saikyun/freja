@@ -104,7 +104,7 @@
 
 (import spork/netrepl)
 (import spork/path)
-(setdyn :pretty-format "%.40M")
+(setdyn :pretty-format "%.40m")
 (import whereami :as wai)
 
 
@@ -277,6 +277,11 @@
                (if any-quit-failed
                  (set state/quit false)
                  (do
+                   (spit
+                     (file-handling/data-path "screen-size")
+                     (string/format "%p"
+                                    state/screen-size))
+
                    (close-window)
                    (os/exit)
                    (error "QUIT!"))))
@@ -343,7 +348,17 @@
       #(set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
 
-      (init-window 800 600 "Freja")
+      (if-let [{:screen/width w
+                :screen/height h} (try
+                                    (-> (slurp (file-handling/data-path "screen-size"))
+                                        parse)
+                                    ([err fib]
+                                      (eprint err)
+                                      nil))]
+
+        (init-window w h "Freja")
+
+        (init-window 800 600 "Freja"))
 
       (put state/screen-size :screen/width (get-screen-width))
       (put state/screen-size :screen/height (get-screen-height))

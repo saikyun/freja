@@ -185,6 +185,21 @@ Like `string/slice`, but for gap buffers.
                 (buffer/push-byte b c))
     b))
 
+(defn selection-tuple
+  "Gets the selection as a [start-index stop-index] tuple."
+  [gb]
+  (def {:selection selection
+        :caret caret} gb)
+  (when selection
+    (let [sel-start (min selection caret)
+          sel-stop (max selection caret)]
+      [sel-start sel-stop])))
+
+(defn get-selection
+  "Gets the selection as a buffer."
+  [gb]
+  (gb-slice gb ;(selection-tuple gb)))
+
 (varfn start-stop-text-gap-nth*
   ``
 Returns the char at `i`.
