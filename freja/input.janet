@@ -34,14 +34,6 @@
   [k]
   (state/keys-down k))
 
-(defn meta-down?
-  []
-  (if (= :macos (os/which))
-    (or (key-down? :left-super)
-        (key-down? :right-super))
-    (or (key-down? :left-control)
-        (key-down? :right-control))))
-
 ## delay before first repetition of held keys
 # TODO: if these delays are set to super low, frp bugs and wont release keys
 (var initial-delay 0.2)
@@ -52,7 +44,7 @@
 ## stores held keys and the delay until they should trigger
 (var delay-left @{})
 
-(def modifiers [:caps-lock :control :right-control :alt :shift
+(def modifiers [:caps-lock :control :right-control :alt :shift :super :right-super
                 :right-alt #:meta
 ])
 
@@ -66,6 +58,13 @@
 
    :control |(and (not= $ :left-control)
                   (key-down? :left-control))
+
+   :super |(and (not= $ :left-super)
+                (key-down? :left-super))
+
+   :right-super |(and (not= $ :right-super)
+                      (key-down? :right-super))
+
    :right-control |(and (not= $ :right-control)
                         (key-down? :right-control))
 
@@ -73,7 +72,7 @@
                 (not= $ :right-shift)
                 (or (key-down? :left-shift)
                     (key-down? :right-shift)))
-   # :meta meta-down?
+
    :alt |(and (not= $ :left-alt)
               (key-down? :left-alt))
    :right-alt |(and (not= $ :right-alt)
@@ -81,25 +80,31 @@
 
 (defn set-key
   [kmap ks f]
-  (var key nil)
+  (var key (last ks))
   (var mods @[])
 
   # this ensures mods are ordered the same way
-  (loop [m :in modifiers
-         k :in ks]
-    (if (= k m)
-      (array/push mods k)
-      (set key k)))
+  (def mod-keys (take (dec (length ks)) ks))
+  (loop [m :in modifiers]
+    (loop [k :in mod-keys]
+      (var found false)
+      (when (= k m)
+        (array/push mods k)
+        (break))))
+
+  (unless (= (length mods) (length mod-keys))
+    (errorf "mod-keys %p contains keys not available in modifiers: %p" mod-keys mods))
 
   (array/push mods key)
   (put-in kmap mods f))
 
 (defn hotkey-triggered
   [kmap key-code kind]
-
   (def mods (seq [m :in modifiers
                   :when ((in check-modifiers m) key-code)]
               m))
+
+  # (printf "%p %p" mods key-code)
 
   (var ret-f nil)
   (loop [[k f] :pairs (or (get-in kmap mods) [])

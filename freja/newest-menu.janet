@@ -1,6 +1,7 @@
 (import freja-layout/sizing/relative :as rs)
 (use freja-layout/put-many)
 
+(import freja/echoer)
 (import freja/hiccup :as h)
 (import freja/event/subscribe :as s)
 (import freja/state)
@@ -28,7 +29,9 @@
       :dropdown-bg dropdown-bg}
   theme/comp-cols)
 
-(def kws {:control "Ctrl"})
+(def kws {:control "Ctrl"
+          :shift "Shift"
+          :right-super "Right CMD"})
 
 (defn kw->string
   [kw]
@@ -108,7 +111,7 @@
 
    [:padding {:all 8}
     @{:render (fn [{:width w :height h} parent-x parent-y]
-                (draw-rectangle 0 0 w (inc h) 0xffffff22))
+                (draw-rectangle 0 0 (math/floor w) (math/floor (inc h)) 0xffffff22))
       :relative-sizing rs/block-sizing
       :children []
       :props {}}]
@@ -116,6 +119,18 @@
    [menu-row
     {:f dh/search-dialog
      :label "Search"}]])
+
+
+
+(defn view-menu
+  [props]
+  [:shrink {}
+   [menu-row
+    {:f echoer/toggle-console
+     :label "Toggle Log"}]
+   [menu-row
+    {:f echoer/clear-console
+     :label "Clear Log"}]])
 
 (defn hiccup
   [props & children]
@@ -139,13 +154,23 @@
                   :size 22
                   :text "File"}]]]
 
-        [:clickable {:on-click (fn [_]
-                                 (s/put! props :open-menu :edit))}
-         [:text {:color (if (= (props :open-menu) :edit)
-                          highlight-color
-                          damp-color)
-                 :size 22
-                 :text "Edit"}]]]]]]
+        [:padding {:right 8}
+         [:clickable {:on-click (fn [_]
+                                  (s/put! props :open-menu :edit))}
+          [:text {:color (if (= (props :open-menu) :edit)
+                           highlight-color
+                           damp-color)
+                  :size 22
+                  :text "Edit"}]]]
+
+        [:padding {:right 8}
+         [:clickable {:on-click (fn [_]
+                                  (s/put! props :open-menu :view))}
+          [:text {:color (if (= (props :open-menu) :view)
+                           highlight-color
+                           damp-color)
+                  :size 22
+                  :text "View"}]]]]]]]
 
     (when-let [om (props :open-menu)]
       (case om
@@ -154,6 +179,7 @@
          [:padding {:all 8
                     :top 3}
           [file-menu props]]]
+
         :edit
         [:block {}
          [:padding {:right 8}
@@ -161,7 +187,18 @@
          [:background {:color dropdown-bg}
           [:padding {:all 8
                      :top 3}
-           [edit-menu props]]]]))]])
+           [edit-menu props]]]]
+
+        :view
+        [:block {}
+         [:padding {:right 8}
+          [:text {:color 0x00000000 :size 22 :text "File"}]]
+         [:padding {:right 8}
+          [:text {:color 0x00000000 :size 22 :text "Edit"}]]
+         [:background {:color dropdown-bg}
+          [:padding {:all 8
+                     :top 3}
+           [view-menu props]]]]))]])
 
 (defn init
   []

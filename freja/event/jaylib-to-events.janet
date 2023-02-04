@@ -11,10 +11,25 @@
 (import ../render_new_gap_buffer :prefix "")
 (import ../new_gap_buffer :prefix "")
 
+(defn key-handler
+  [key scancode kind mods]
+  # (pp [ key scancode kind mods ])
+  (queue/push state/keyboard
+    @{(case kind
+        :press :key/down
+        :repeat :key/repeat
+        :release :key/release)
+      key}))
+
+(defn char-handler
+  [key]
+  (queue/push state/chars @{:key/char key}))
+
 (def delay-left @{})
 
 (defn handle-keys
   [dt]
+  (break)
   (var k (jay/get-char-pressed))
 
   (while (not= 0 k)

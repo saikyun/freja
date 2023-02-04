@@ -315,10 +315,13 @@ font must either be:
                 # important for inheriting existing dynamic variables
                 :i))))
 
+    # running inside freja
     (dyn :freja/loading-file)
     ~(do (when (,props :init)
            ((,props :init)))
        (start-game-f ,props))
+
+    # standalone janet script
     ~(upscope
        (defn main
          [& _]
@@ -364,9 +367,10 @@ font must either be:
 
 (comment
   (start-game {:render (fn render [{:width width :height height}]
-                         (draw-rectangle 0 0 200 200 :blue)
-                         (draw-rectangle 100 100 100 100 :black))
+                         #(clear-background :white)
+                         (draw-rectangle 0 0 200 200 :green)
+                         (draw-rectangle 100 100 100 100 :red))
                :on-event (fn on-event [self ev] (printf "example on-event: %p" ev))
                :size [200 200]
                :scale 2
-               :border [0.3 0 0 1]}))
+               :border [0.3 0 0.3 1]}))

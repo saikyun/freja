@@ -359,6 +359,9 @@
         (init-window w h "Freja")
 
         (init-window 800 600 "Freja"))
+      
+      (set-key-callback jaylib->events/key-handler)
+      (set-char-callback jaylib->events/char-handler)
 
       (put state/screen-size :screen/width (get-screen-width))
       (put state/screen-size :screen/height (get-screen-height))
@@ -501,8 +504,9 @@ flags:
         (let [path (if (= :windows (os/which))
                      (string (os/getenv "LOCALAPPDATA") path/sep "freja")
                      (string (os/getenv "HOME") path/sep ".config" path/sep "freja"))]
-          (when (os/stat path)
-            (string path path/sep)))
+          (if (os/stat path)
+            (string path path/sep)
+            (print "no freja directory found at " path)))
 
         (let [p (wai/get-executable-path)]
           ### unless running as script
