@@ -252,12 +252,26 @@
                    (print state/out)))
 
                (var any-quit-failed false)
+
+               (defn inner-quit
+                 []
+                 (unless any-quit-failed
+                   (do
+                     (spit
+                       (file-handling/data-path "screen-size")
+                       (string/format "%p"
+                                      state/screen-size))
+
+                     (close-window)
+                     (os/exit)
+                     (error "QUIT!"))))
+
                (loop [[_ s] :in (filter |(not (nil? $))
                                         [;(state/editor-state :stack)
                                          (state/editor-state :other)])]
                  (try
                    (when (s :freja/quit)
-                     (:freja/quit s))
+                     (:freja/quit s inner-quit))
                    ([err fib]
                      (set any-quit-failed true)
                      (with-dyns [:out stdout]
@@ -270,21 +284,8 @@
                          (print "also dumping it to: " dump-path)
                          (spit dump-path string-rep))))))
 
-               #(checkpoint/save-file-with-checkpoint
-               #  (get-in state/editor-state [:left-state :editor :gb])
-               #  "before quitting")
-
-               (if any-quit-failed
-                 (set state/quit false)
-                 (do
-                   (spit
-                     (file-handling/data-path "screen-size")
-                     (string/format "%p"
-                                    state/screen-size))
-
-                   (close-window)
-                   (os/exit)
-                   (error "QUIT!"))))
+               # in case someone presses "cancel" in the :freja/quit call above
+               (set state/quit false))
 
              (try
                (do
@@ -359,9 +360,10 @@
         (init-window w h "Freja")
 
         (init-window 800 600 "Freja"))
-      
+
       (set-key-callback jaylib->events/key-handler)
       (set-char-callback jaylib->events/char-handler)
+      (set-scroll-callback jaylib->events/scroll-handler)
 
       (put state/screen-size :screen/width (get-screen-width))
       (put state/screen-size :screen/height (get-screen-height))

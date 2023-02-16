@@ -25,6 +25,13 @@
   [key]
   (queue/push state/chars @{:key/char key}))
 
+(defn scroll-handler
+  [x y]
+  (queue/push state/mouse @{:mouse/scroll y
+                            :mouse/scroll-x x
+                            :mouse/scroll-y y
+                            :mouse/pos (jay/get-mouse-position)}))
+
 (def delay-left @{})
 
 (defn handle-keys
@@ -168,7 +175,7 @@
 (varfn convert
   [dt]
   (handle-keys dt)
-  (handle-scroll)
+  #(handle-scroll)
   (handle-resize)
 
   (queue/push state/frame-events @{:frame/delta-time dt})

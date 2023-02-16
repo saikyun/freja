@@ -1,6 +1,8 @@
 (import freja-layout/sizing/relative :as rs)
 (use freja-layout/put-many)
 
+(import freja/open-file)
+(import freja/file-handling)
 (import freja/echoer)
 (import freja/hiccup :as h)
 (import freja/event/subscribe :as s)
@@ -46,6 +48,27 @@
   [hk]
   (string/join (map kw->string hk) "+"))
 
+(defn open-scratch
+  [& args]
+  (unless (os/stat file-handling/scratch-path)
+    (spit file-handling/scratch-path ``
+# This is your personal scratch file
+# if you want to try it out, just hit Ctrl/Cmd + L
+
+(print "Welcome to your personal scratch file!")
+``))
+
+  (open-file/open-file file-handling/scratch-path))
+
+(defn line
+  [props & cs]
+  [:padding {:all 8}
+   @{:render (fn [{:width w :height h} parent-x parent-y]
+               (draw-rectangle 0 0 (math/floor w) (math/floor (inc h)) 0xffffff22))
+     :relative-sizing rs/block-sizing
+     :children []
+     :props {}}])
+
 (defn menu-row
   [{:f f
     :label label
@@ -86,6 +109,15 @@
    [menu-row
     {:f dh/save-file
      :label "Save"}]
+
+   [line {}]
+
+   [menu-row
+    {:f open-scratch
+     :label "Open Scratch"}]
+
+   [line {}]
+
    [menu-row
     {:f dh/quit
      :label "Quit"}]])
@@ -109,17 +141,11 @@
     {:f dh/paste!
      :label "Paste"}]
 
-   [:padding {:all 8}
-    @{:render (fn [{:width w :height h} parent-x parent-y]
-                (draw-rectangle 0 0 (math/floor w) (math/floor (inc h)) 0xffffff22))
-      :relative-sizing rs/block-sizing
-      :children []
-      :props {}}]
+   [line {}]
 
    [menu-row
     {:f dh/search-dialog
      :label "Search"}]])
-
 
 
 (defn view-menu

@@ -4,6 +4,7 @@
 (import freja/theme)
 (import freja/editor)
 (import ../open-file)
+(import ../file-handling :as fh)
 (import freja/event/subscribe :as s)
 
 (defn new-editor-state
@@ -15,12 +16,19 @@
   (put state :freja/focus (fn [{:editor editor}]
                             (state/focus! editor)))
   (put state :freja/focus? (fn [{:editor editor}]
-                               (= editor (state/focus :focus))))
-  (put state :freja/quit (fn [{:editor editor}]
-                           (checkpoint/save-file-with-checkpoint
-                             (editor :gb)
-                             "before quitting")
-                           (open-file/close-file (get-in editor [:gb :path]))))
+                             (= editor (state/focus :focus))))
+  (put state :freja/quit (fn [{:editor editor} cb]
+                           (checkpoint/save-checkpoint (get-in editor [:gb :path]) "before quitting")
+
+                           (def path (get-in editor [:gb :path]))
+                           (if (tracev (get-in editor [:gb :ever-modified]))
+                             (do
+                               (fh/save-before-closing (editor :gb)
+                                                       |(do (cb)
+                                                          (open-file/close-file path))))
+                             (do
+                               (open-file/close-file path)
+                               (cb)))))
 
   (checkpoint/load-file-with-checkpoints (state :editor) path)
 

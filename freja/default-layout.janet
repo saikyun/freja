@@ -131,10 +131,22 @@
     (unless cant-close
       [:clickable
        {:on-click (fn [_]
-                    (state/remove-buffer-stack hiccup)
-                    (when-let [[_ top-state] (last (state/editor-state :stack))]
-                      (when (:freja/focus top-state)
-                        (:freja/focus top-state))))}
+                    (def quit-fn? (state :freja/quit))
+
+                    (if quit-fn?
+                      (:freja/quit state
+                                   (fn []
+
+                                     (state/remove-buffer-stack hiccup)
+                                     (when-let [[_ top-state] (last (state/editor-state :stack))]
+                                       (when (:freja/focus top-state)
+                                         (:freja/focus top-state)))))
+
+                      (do
+                        (state/remove-buffer-stack hiccup)
+                        (when-let [[_ top-state] (last (state/editor-state :stack))]
+                          (when (:freja/focus top-state)
+                            (:freja/focus top-state))))))}
        [:padding {:all 4}
         [:text {:size 16
                 :color :white

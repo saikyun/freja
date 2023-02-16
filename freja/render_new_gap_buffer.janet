@@ -600,6 +600,35 @@ new-line-hook call, so don't save this
          (break)))
      active-stylings))
 
+
+(defn number?
+  [c]
+  (and (>= c (chr "0"))
+       (<= c (chr "9"))))
+
+### colors used for ansi-escape
+(def ansi-colors
+  @{# Black
+    30 0x000000ff
+    # Red	
+    31 0xff0000ff
+    # Green	
+    32 0x99ff99ff
+    # Yellow	
+    33 0xeeee99ff
+    # Blue	
+    34 0x9999ddff
+    # Magenta	
+    35 0xee99eeff
+    # Cyan
+    36 0x99eeeeff
+    # White
+    37 :white
+    # Default
+    39 nil
+    # Reset
+    0 nil})
+
 (defn render-lines
   ``
   Renders the lines in gap buffer.
@@ -688,6 +717,10 @@ new-line-hook call, so don't save this
                          (rel-y gb (* y-scale (- line-y line-start-y)))]
                         :gray)))
 
+      (var in-escape false)
+      (var current-color nil)
+      (def color-buffer @"")
+
       (gb/gb-iterate
         gb
         last-gb-index l
@@ -707,28 +740,54 @@ new-line-hook call, so don't save this
                         (< ((highlighting hl-i) 1) i))
               (++ hl-i)))
 
-          (gb-draw-text gb
-                        s
-                        [(math/floor (rel-text-x gb x))
-                         (math/floor (* y-scale target-y))]
-                        (cond (in-selection? gb i)
-                          :white
+          (if in-escape
+            (cond
+              (= c (chr "[")) nil
+              (number? c) (buffer/push-byte color-buffer c)
+              (= c (chr "m"))
+              (do
+                (set current-color (ansi-colors (scan-number color-buffer)))
 
-                          (and delim-ps
-                               (< delim-i (length delim-ps))
-                               (= ((delim-ps delim-i) 0) i))
-                          (get rb/colors ((delim-ps delim-i) 1) :pink)
+                # can be uncommented to debug unhandled escapes
+                #(unless (or current-color (zero? (scan-number color-buffer)))
+                #  (print "reset color " (scan-number color-buffer) " " (get ansi-colors (scan-number color-buffer) "(nil)")))
+                
+                (buffer/clear color-buffer)
+                (set in-escape false)))
 
-                          (and highlighting
-                               (< hl-i (length highlighting))
-                               (<= ((highlighting hl-i) 0) i))
-                          (get colors ((highlighting hl-i) 2) default-text-color)
+            (case c
+              (chr "\e") (set in-escape true)
+              # else
 
-                          # else
-                          (get gb :text/color
-                               default-text-color)))
+              (do
+                (gb-draw-text gb
+                              s
+                              [(math/floor (rel-text-x gb x))
+                               (math/floor (* y-scale target-y))]
+                              (cond
+                                current-color current-color
 
-          (+= x (* x-scale w))))
+                                (in-selection? gb i)
+                                :white
+
+                                (and delim-ps
+                                     (< delim-i (length delim-ps))
+                                     (= ((delim-ps delim-i) 0) i))
+                                (get rb/colors ((delim-ps delim-i) 1) :pink)
+
+                                (and highlighting
+                                     (< hl-i (length highlighting))
+                                     (<= ((highlighting hl-i) 0) i))
+                                (get colors ((highlighting hl-i) 2) default-text-color)
+
+                                # else
+                                (get gb :text/color
+                                     default-text-color)))
+
+                #
+                (+= x (* x-scale w))
+                #
+)))))
 
       (set last-gb-index l))))
 
@@ -1351,7 +1410,7 @@ new-line-hook call, so don't save this
 
       (rl-translatef 0 smear-y 0)
 
-      (do #comment
+      '(do #comment
 
         (def stretch-y (inc (* 0.002 (math/abs mag))))
 

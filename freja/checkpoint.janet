@@ -104,7 +104,6 @@
 (defn save-file-with-checkpoint
   [props &opt note]
   (def path (props :path))
-
   (default note "manual save")
 
   (fh/save-file props)

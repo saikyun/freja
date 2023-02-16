@@ -1,6 +1,8 @@
 (import ./new_gap_buffer :prefix "")
 (import ./state)
 (import spork/path)
+(import ./hiccup :as h)
+
 
 (defn string->path-line-column
   ``
@@ -61,7 +63,7 @@
   []
   (os/rm scratch-path))
 
-(varfn read-file
+(defn read-file
   [path]
   (def f (file/open path))
   (if (not f) #(error (string "File " path " not found."))
@@ -71,7 +73,7 @@
       (def text (file/read f :all))
       text)))
 
-(varfn load-file
+(defn load-file
   [props path]
   (-> (props :gb)
       (replace-content (read-file path))
@@ -82,7 +84,7 @@
 
   (put props :event/changed true))
 
-(varfn save-file
+(defn save-file
   [props &keys {:no-print no-print}]
   (def path (props :path))
 
@@ -92,7 +94,8 @@
                       (get :text)))
     (file/flush f)
     (unless no-print
-      (print "Saved file: " path))))
+      (print "Saved file: " path))
+    (put props :ever-modified false)))
 
 (comment
   (import freja/frp)
@@ -452,15 +455,66 @@
   (curenv)
   (state/user-env))
 
-(varfn save-and-dofile
+(defn save-and-dofile
   [props]
   (def path (props :path))
   (save-file props :no-print true)
   (freja-dofile (get-in props [:context :top-env]) path))
 
-(varfn df
+(defn df
   [path]
   (do (freja-dofile (fiber/getenv (fiber/current)) path) :ok))
+
+(defn save-before-closing-component
+  [props]
+  (def {:gb gb :path path :callback callback} props)
+
+  (defn cancel
+    [& _]
+    (h/remove-layer :save-before-closing props)
+    (:freja/focus (in (last (state/editor-state :stack)) 1)))
+
+  (defn close-file
+    [& _]
+    (cancel)
+    (callback))
+
+  (defn save-and-close-file
+    [_]
+    (save-file gb)
+    (close-file))
+
+  [:padding {:all 0}
+   [:column {}
+    [:block {:weight 1}]
+    [:row {}
+     [:block {:weight 1}]
+     [:background {:color :white}
+      [:padding {:all 32}
+       "Your file was modified."
+       "Do you want to save?"
+       [:row {}
+        [:clickable {:weight 1 :on-click save-and-close-file} "Yes"]
+        [:clickable {:weight 1 :on-click close-file} "No"]
+        [:clickable {:weigth 1 :on-click cancel} "Cancel"]]]]
+     [:block {:weight 1}]]
+    [:block {:weight 1}]]])
+
+(defn save-before-closing
+  [gb callback]
+  (h/new-layer :save-before-closing
+               save-before-closing-component
+               @{:path (gb :path)
+                 :gb gb
+                 :callback callback}))
+
+(comment
+  #
+  (do
+    (save-before-closing-dialog nil)
+    :ok)
+  #
+)
 
 
 (comment

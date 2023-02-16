@@ -200,8 +200,8 @@
                       last
                       -
                       (* (screen-scale 1)))]
-    (update props :scroll |(max max-y (min 0 (+ $ (* move 2)))))
-    (update props :scroll |(min 0 (+ $ (* move 2)))))
+    (update props :scroll |(max max-y (min 0 (+ $ (* move 20)))))
+    (update props :scroll |(min 0 (+ $ (* move 20)))))
 
   (put props :changed-scroll true))
 
@@ -312,7 +312,7 @@
 
 
 (defn handle-shift-mouse-down
-  [props [kind mouse-pos] cb]
+  [props {:mouse/pos mouse-pos} cb]
   (def {:lines lines
         :offset offset
         :position position
@@ -330,23 +330,23 @@
   (def x-offset (+ x-pos ox))
 
   (if (nil? (props :selection))
-    (cb kind |(-> props
-                  (put :selection (props :caret))
-                  (gb/put-caret (get-mouse-pos props mouse-pos))
-                  (put :stickiness (if (< x x-offset) :down :right))
-                  (put :changed-selection true)))
+    (cb |(-> props
+             (put :selection (props :caret))
+             (gb/put-caret (get-mouse-pos props mouse-pos))
+             (put :stickiness (if (< x x-offset) :down :right))
+             (put :changed-selection true)))
 
-    (cb kind |(let [curr-pos (get-mouse-pos props mouse-pos)
-                    start (min (props :selection) (props :caret))
-                    stop (max (props :selection) (props :caret))]
-                (-> props
-                    (put :selection
-                         (if (> curr-pos start)
-                           start
-                           stop))
-                    (gb/put-caret curr-pos)
-                    (put :stickiness (if (< x x-offset) :down :right))
-                    (put :changed-selection true))))))
+    (cb |(let [curr-pos (get-mouse-pos props mouse-pos)
+               start (min (props :selection) (props :caret))
+               stop (max (props :selection) (props :caret))]
+           (-> props
+               (put :selection
+                    (if (> curr-pos start)
+                      start
+                      stop))
+               (gb/put-caret curr-pos)
+               (put :stickiness (if (< x x-offset) :down :right))
+               (put :changed-selection true))))))
 
 (defn gb-rec
   [{:offset offset

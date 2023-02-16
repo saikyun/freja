@@ -676,6 +676,7 @@ Does bounds check as well."
     (-> gb
         (put :gap-start start)
         (put :gap-stop stop)
+        (put :ever-modified true)
         (update :lowest-changed-at min* start)
         commit!)))
 
@@ -701,6 +702,7 @@ Updates caret etc as expected."
                (put :changed-x-pos true)
                (put :changed true))]
     (-> gb
+        (put :ever-modified true)
         (update :lowest-changed-at min* start)
         (update :actions array/push
                 {:kind :delete
@@ -756,6 +758,7 @@ Updates caret etc as expected."
               (update :caret |(max 0 (dec $)))))
 
         (-> gb
+            (put :ever-modified true)
             (update :lowest-changed-at min* (gb :caret))
             (update :actions array/push
                     {:kind :delete
@@ -853,6 +856,7 @@ Used e.g. when loading a file."
          :gap gap} (move-gap-to-pos! gb pos)
         gap-i (- pos gap-start)]
     (-> gb
+        (put :ever-modified true)
         (update :lowest-changed-to min* pos)
         (update :gap
                 (fn [gap]
@@ -877,6 +881,7 @@ Used e.g. when loading a file."
                            (buffer/push-string gap to-the-right))))
                (update :caret inc))]
     (-> gb
+        (put :ever-modified true)
         (update :lowest-changed-at min* caret-before)
         (update
           :actions
@@ -896,6 +901,7 @@ You should probably use `insert-string-at-pos!` instead."
          :gap gap} (move-gap-to-pos! gb pos)
         gap-i (- pos gap-start)]
     (-> gb
+        (put :ever-modified true)
         (update :lowest-changed-to min* pos)
         (update :gap
                 (fn [gap]
@@ -917,6 +923,7 @@ You should probably use `insert-string-at-caret!` instead."
         gb (insert-string-at-pos* gb pos s)]
 
     (-> gb
+        (put :ever-modified true)
         (update :lowest-changed-at min* pos)
         (put :changed-x-pos true)
         (put :changed true)
@@ -949,6 +956,7 @@ You should probably use `insert-string-at-caret!` instead."
                (update :caret + (length s)))]
 
     (-> gb
+        (put :ever-modified true)
         (update :lowest-changed-at min* caret-before)
         (put :changed-x-pos true)
         (put :changed true)

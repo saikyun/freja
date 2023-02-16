@@ -180,12 +180,14 @@
   (put-in editor-state [:gb :search]
           (fn [_]
             (set-open :search)
-            (s/put! state/focus :focus search-state)))
+            (s/put! state/focus :focus search-state)
+            (gb/select-all (search-state :gb))))
 
   (put-in editor-state [:gb :replace]
           (fn [_]
             (set-open :replace)
-            (s/put! state/focus :focus replace-state)))
+            (s/put! state/focus :focus replace-state)
+            (gb/select-all (replace-state :gb))))
 
   (put-in editor-state [:gb :goto-line]
           (fn [_]

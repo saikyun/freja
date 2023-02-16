@@ -149,12 +149,14 @@
     (print "Can't close a lonely buffer.")
     (let [comp (last (state/editor-state :stack))
           state (in comp 1)]
+      (defn cb
+        []
+        (state/remove-buffer-stack comp)
+        (when-let [[_ top-state] (last (state/editor-state :stack))]
+          (when (top-state :freja/focus)
+            (:freja/focus top-state))))
       (when (state :freja/quit)
-        (:freja/quit state))
-      (state/remove-buffer-stack comp)
-      (when-let [[_ top-state] (last (state/editor-state :stack))]
-        (when (top-state :freja/focus)
-          (:freja/focus top-state))))))
+        (:freja/quit state cb)))))
 
 (defn swap-top-two-buffers
   [_]
