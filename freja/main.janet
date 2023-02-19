@@ -269,8 +269,9 @@
                                     [;(state/editor-state :stack)
                                      (state/editor-state :other)]))
 
-               (defn try-quit [[_ s]]
+               (defn try-quit [component]
                  (print "try quit")
+                 (def s (component 1))
                  (pp [(type s) (= s to-quit)])
                  (try
                    (when (s :freja/quit)
@@ -278,7 +279,7 @@
                        (:freja/quit s inner-quit)
                        (:freja/quit s |(do
                                          (print "closing...")
-                                         (state/remove-buffer-stack comp)
+                                         (state/remove-buffer-stack component)
                                          (when-let [[_ top-state] (last (state/editor-state :stack))]
                                            (when (top-state :freja/focus)
                                              (:freja/focus top-state)))

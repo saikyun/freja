@@ -72,7 +72,12 @@
 
 (defn remove-buffer-stack
   [o]
+  (def len-before (length (editor-state :stack)))
   (def new-stack (filter |(not= o $) (editor-state :stack)))
+
+  (when (= len-before (length new-stack))
+    (error "no buffer removed"))
+
   (-> editor-state
       (put :stack new-stack)
       (put :event/changed true)))
