@@ -256,33 +256,48 @@
                (defn inner-quit
                  []
                  (unless any-quit-failed
-                   (do
-                     (spit
-                       (file-handling/data-path "screen-size")
-                       (string/format "%p"
-                                      state/screen-size))
+                   (spit
+                     (file-handling/data-path "screen-size")
+                     (string/format "%p"
+                                    state/screen-size))
 
-                     (close-window)
-                     (os/exit)
-                     (error "QUIT!"))))
+                   (close-window)
+                   (os/exit)
+                   (error "QUIT!")))
 
-               (loop [[_ s] :in (filter |(not (nil? $))
-                                        [;(state/editor-state :stack)
-                                         (state/editor-state :other)])]
+               (def to-quit (filter |(not (nil? $))
+                                    [;(state/editor-state :stack)
+                                     (state/editor-state :other)]))
+
+               (defn try-quit [[_ s]]
+                 (print "try quit")
+                 (pp [(type s) (= s to-quit)])
                  (try
                    (when (s :freja/quit)
-                     (:freja/quit s inner-quit))
+                     (if (empty? to-quit)
+                       (:freja/quit s inner-quit)
+                       (:freja/quit s |(do
+                                         (print "closing...")
+                                         (state/remove-buffer-stack comp)
+                                         (when-let [[_ top-state] (last (state/editor-state :stack))]
+                                           (when (top-state :freja/focus)
+                                             (:freja/focus top-state)))
+
+                                         (try-quit (array/pop to-quit))))))
                    ([err fib]
                      (set any-quit-failed true)
                      (with-dyns [:out stdout]
                        (debug/stacktrace fib err "")
                        (let [string-rep (string/format "%.40m" s)
                              dump-path (file-handling/data-path (string "dump-" (os/time) "-" (math/floor (* 100000 (math/random)))))]
-                         (print "couldn't save. here's the state in text form:")
-                         (print string-rep)
-                         (print)
-                         (print "also dumping it to: " dump-path)
+                         '(print "couldn't save. here's the state in text form:")
+                         '(print string-rep)
+                         '(print)
+                         (print "ERROR: couldn't save. dumping editor state to: " dump-path)
                          (spit dump-path string-rep))))))
+
+               (unless (empty? to-quit)
+                 (try-quit (array/pop to-quit)))
 
                # in case someone presses "cancel" in the :freja/quit call above
                (set state/quit false))
