@@ -13,7 +13,7 @@
 
 (defn key-handler
   [key scancode kind mods]
-  (pp [key scancode kind mods])
+  # (pp [key scancode kind mods])
   (queue/push
     state/keyboard
     @{(case kind
