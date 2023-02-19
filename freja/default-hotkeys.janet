@@ -62,12 +62,13 @@
 
     :control @{:shift @{:left select-backward-word
                         :right select-forward-word
-                        :c show-checkpoints
                         #
 
 
                         :l echoer/toggle-console
-                        :e echoer/clear-console}
+                        :c echoer/clear-console}
+
+               :alt @{:c show-checkpoints}
 
                :backspace delete-word-backward!
                :delete delete-word-forward!
