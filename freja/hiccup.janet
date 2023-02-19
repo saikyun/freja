@@ -56,7 +56,7 @@
 
 
 (defn handle-ev
-  [tree ev name]
+  [tree ev]
   # only run events if no one else has already taken the event
   (unless (state/callbacks ev)
     # offset is the top left corner of each element
@@ -151,7 +151,7 @@
                        (put :props ev)
                        (put :root (:compile self ev)))
 
-                   (handle-ev (self :root) ev (self :name)))
+                   (handle-ev (self :root) ev))
 
                  ([err fib]
                    (eprint "Error during event:")

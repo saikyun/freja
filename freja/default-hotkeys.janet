@@ -10,6 +10,8 @@
 (import ./open-file)
 (import ./find-file)
 
+(import freja/event/subscribe :as s)
+
 (varfn reset-blink
   [props]
   (put props :blink 0))

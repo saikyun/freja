@@ -2,7 +2,7 @@
 (import ./state)
 (import spork/path)
 (import ./hiccup :as h)
-
+(import freja/event/subscribe :as s)
 
 (defn string->path-line-column
   ``
@@ -467,7 +467,10 @@
 
 (defn save-before-closing-component
   [props]
-  (def {:gb gb :path path :callback callback} props)
+  (def {:gb gb
+        :path path
+        :callback callback
+        :focused focused} props)
 
   (defn cancel
     [& _]
@@ -480,7 +483,7 @@
     (callback))
 
   (defn save-and-close-file
-    [_]
+    [& _]
     (save-file gb)
     (close-file))
 
@@ -494,9 +497,40 @@
        "Your file was modified."
        "Do you want to save?"
        [:row {}
-        [:clickable {:weight 1 :on-click save-and-close-file} "Yes"]
-        [:clickable {:weight 1 :on-click close-file} "No"]
-        [:clickable {:weigth 1 :on-click cancel} "Cancel"]]]]
+        [:event-handler
+         {:init (fn [self _]
+                  (s/put! state/focus :focus self))
+          :on-event (fn [self ev]
+                      (match ev
+                        {:key/down :escape}
+                        (cancel)
+
+                        {:key/down :tab}
+                        (s/update! props :focused |(mod (inc $) 3))
+
+                        {:key/down :enter}
+                        (do (h/handle-ev (get-in self [:children focused]) ev)
+                          true)
+
+                        {:key/repeat :tab} (s/update! props :focused |(mod (inc $) 3))))}
+         [:background {:weight 1 :color (if (= focused 0) :purple :blank)}
+          [:event-handler {:on-event (fn [_ ev]
+                                       (match ev
+                                         {:key/down :enter}
+                                         (save-and-close-file)))}
+           [:clickable {:on-click save-and-close-file} "Yes"]]]
+         [:background {:weight 1 :color (if (= focused 1) :purple :blank)}
+          [:event-handler {:on-event (fn [_ ev]
+                                       (match ev
+                                         {:key/down :enter}
+                                         (close-file)))}
+           [:clickable {:on-click close-file} "No"]]]
+         [:background {:weight 1 :color (if (= focused 2) :purple :blank)}
+          [:event-handler {:on-event (fn [_ ev]
+                                       (match ev
+                                         {:key/down :enter}
+                                         (cancel)))}
+           [:clickable {:on-click cancel} "Cancel"]]]]]]]
      [:block {:weight 1}]]
     [:block {:weight 1}]]])
 
@@ -506,12 +540,13 @@
                save-before-closing-component
                @{:path (gb :path)
                  :gb gb
+                 :focused 0
                  :callback callback}))
 
 (comment
   #
   (do
-    (save-before-closing-dialog nil)
+    (save-before-closing nil nil)
     :ok)
   #
 )

@@ -13,13 +13,15 @@
 
 (defn key-handler
   [key scancode kind mods]
-  # (pp [ key scancode kind mods ])
-  (queue/push state/keyboard
+  (pp [key scancode kind mods])
+  (queue/push
+    state/keyboard
     @{(case kind
         :press :key/down
         :repeat :key/repeat
         :release :key/release)
-      key}))
+      key
+      :key/mods mods}))
 
 (defn char-handler
   [key]

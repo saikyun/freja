@@ -145,7 +145,11 @@
 
    [menu-row
     {:f dh/search-dialog
-     :label "Search"}]])
+     :label "Search"}]
+
+   [menu-row
+    {:f dh/replace-dialog
+     :label "Replace"}]])
 
 
 (defn view-menu

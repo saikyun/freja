@@ -21,7 +21,7 @@
                            (checkpoint/save-checkpoint (get-in editor [:gb :path]) "before quitting")
 
                            (def path (get-in editor [:gb :path]))
-                           (if (tracev (get-in editor [:gb :ever-modified]))
+                           (if (get-in editor [:gb :ever-modified])
                              (do
                                (fh/save-before-closing (editor :gb)
                                                        |(do (cb)
