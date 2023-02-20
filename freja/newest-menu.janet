@@ -12,6 +12,7 @@
 (import freja/new_gap_buffer :as gb)
 (import freja/theme)
 (import ./find-file)
+(import ./file-explorer)
 
 (use freja/defonce)
 (use freja-jaylib)
@@ -155,6 +156,9 @@
 (defn view-menu
   [props]
   [:shrink {}
+   [menu-row
+    {:f file-explorer/toggle
+     :label "Toggle File Explorer"}]
    [menu-row
     {:f echoer/toggle-console
      :label "Toggle Log"}]

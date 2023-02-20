@@ -9,6 +9,7 @@
 (import ./evaling)
 (import ./open-file)
 (import ./find-file)
+(import ./file-explorer)
 
 (import freja/event/subscribe :as s)
 
@@ -68,7 +69,8 @@
                         :l echoer/toggle-console
                         :c echoer/clear-console}
 
-               :alt @{:c show-checkpoints}
+               :alt @{:c show-checkpoints
+                      :e file-explorer/toggle}
 
                :backspace delete-word-backward!
                :delete delete-word-forward!

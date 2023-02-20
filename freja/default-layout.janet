@@ -5,6 +5,7 @@
 (import freja/new_gap_buffer :as gb)
 (import freja/state)
 (import freja/event/subscribe :as s)
+(import freja/open-file)
 (use freja/defonce)
 
 (defn default-left-editor
@@ -68,6 +69,34 @@
     [:clickable
      {:on-click (fn [_]
                   (s/put! state/editor-state :other nil)
+                  (when-let [[_ top-state] (last (state/editor-state :stack))]
+                    (when (:freja/focus top-state)
+                      (:freja/focus top-state))))}
+     [:padding {:all 4}
+      [:text {:size 16
+              :color :white
+              :text "X"}]]]
+    #
+]])
+
+(defn menu-column
+  [{:hiccup hiccup}]
+  (def [_ state] hiccup)
+  [:block {}
+   [:row {}
+    [:clickable
+     {:weight 1
+      :on-click (fn [_]
+                  (when (state :freja/focus)
+                    (:freja/focus state)))}
+     [:padding {:all 4}
+      [:text {:size 16
+              :color :white
+              :text (state :freja/label)}]]]
+
+    [:clickable
+     {:on-click (fn [_]
+                  (s/put! state/editor-state :menu-column nil)
                   (when-let [[_ top-state] (last (state/editor-state :stack))]
                     (when (:freja/focus top-state)
                       (:freja/focus top-state))))}
@@ -168,6 +197,11 @@
     [:column {}
      [:row {:weight 1}
       #
+      (when-let [o (props :menu-column)]
+        [:column {:weight 0.3}
+         [menu-column {:hiccup o}]
+         [:block {:weight 1} o]])
+      #
       (unless (empty? (props :stack))
         (let [s (reverse (props :stack))
               top (first s)
@@ -218,45 +252,13 @@
 
 (defn init
   []
-  # (put state/editor-state :stack @[[default-left-editor @{}]])
   (unless (state/editor-state :stack)
     (put state/editor-state :stack @[]))
 
   (set hiccup-layer (h/new-layer
                       :text-area
                       text-area-hc
-                      state/editor-state))
-
-  (s/put! state/editor-state
-          :right
-          nil
-          #default-right-editor
-)
-
-  (comment
-    (keys (get-in state/editor-state [:old-left 1 :freja/label]))
-    (get state/editor-state :last-left)
-    #
-)
-
-  (s/subscribe!
-    state/focus
-    (fn [{:focus focus
-          :last-focut last-focus}]
-      (unless (= focus last-focus)
-        (s/put! state/editor-state :force-refresh true))
-
-      (if (= focus (get-in state/editor-state [:left-state :editor]))
-        (unless (state/editor-state :left-focus)
-          (s/put! state/editor-state :left-focus true))
-        (when (state/editor-state :left-focus)
-          (s/put! state/editor-state :left-focus false)))
-
-      (if (= focus (get-in state/editor-state [:right-state :editor]))
-        (unless (state/editor-state :right-focus)
-          (s/put! state/editor-state :right-focus true))
-        (when (state/editor-state :right-focus)
-          (s/put! state/editor-state :right-focus false))))))
+                      state/editor-state)))
 
 (comment
   (use freja-layout/compile-hiccup)
@@ -272,6 +274,6 @@
 
 #
 # this will only be true when running load-file inside freja
-(when ((curenv) :freja/loading-file)
+(when (dyn :freja/loading-file)
   (print "reiniting :)")
   (init))
