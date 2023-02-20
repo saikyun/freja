@@ -140,6 +140,10 @@
 (import ./echoer :as echoer)
 (put module/cache "freja/echoer" echoer)
 
+(def file-explorer (require "./file-explorer"))
+(import ./file-explorer :as file-explorer)
+(put module/cache "freja/file-explorer" file-explorer)
+
 (def vector-math (require "./vector-math"))
 (import ./vector-math :as vector-math)
 (put module/cache "freja/vector-math" vector-math)
@@ -569,6 +573,7 @@ flags:
   (put module/cache "freja/flow" flow)
   (put module/cache "freja/rainbow" rainbow)
   (put module/cache "freja/echoer" echoer)
+  (put module/cache "freja/file-explorer" file-explorer)
   (put module/cache "freja/vector-math" vector-math)
   (put module/cache "freja/event/default-subscriptions" default-subscriptions)
   (put module/cache "freja/event/jaylib-to-events" jaylib->events)
