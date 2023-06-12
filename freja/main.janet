@@ -369,15 +369,16 @@
       #(set-config-flags :window-highdpi)
       (set-config-flags :window-resizable)
 
-      (if-let [{:screen/width w
-                :screen/height h} (try
-                                    (-> (slurp (file-handling/data-path "screen-size"))
-                                        parse)
-                                    ([err fib]
-                                      (eprint err)
-                                      nil))]
+      (if-let [size (try
+                      (-> (slurp (file-handling/data-path "screen-size"))
+                          parse)
+                      ([err fib]
+                        (eprint err)
+                        nil))]
 
-        (init-window w h "Freja")
+        (let [{:screen/width w
+               :screen/height h} size]
+          (init-window w h "Freja"))
 
         (init-window 800 600 "Freja"))
 
