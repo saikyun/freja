@@ -21,7 +21,7 @@
     (let [paths (os/dir (props :path))
           [dirs files] (->> (split |(= :directory ((or (os/stat (string (props :path) "/" $)) (errorf "path %p not found" $)) :mode)) paths)
                             (map sort))]
-      ;[;(seq [path :in dirs
+      ;(seq [path :in dirs
                :let [expanded? (get-in props [:expanded (string (props :path) "/" path)])]]
            [:block {}
             [:clickable
@@ -45,7 +45,7 @@
               (fn [_] (open-file/open-file (string (props :path) "/" path)))}
              [:text {:color :white
                      :size 16
-                     :text path}]]])])]])
+                     :text path}]]]))]])
 
 (defn toggle
   [& _]
